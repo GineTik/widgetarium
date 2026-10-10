@@ -3,12 +3,18 @@ import type { App } from "@chrome/lib";
 import { ActionLine } from "./action-line";
 import { AppMark, MARK_PX } from "./app-mark";
 
-export interface CurrentAppProps {
-	readonly app: App;
-	readonly onEdit: () => void;
+export interface CanvasAction {
+	readonly icon: string;
+	readonly said: string;
+	readonly run: () => void;
 }
 
-export function CurrentApp({ app, onEdit }: CurrentAppProps) {
+export interface CurrentAppProps {
+	readonly app: App;
+	readonly canvas: CanvasAction;
+}
+
+export function CurrentApp({ app, canvas }: CurrentAppProps) {
 	return (
 		<Card data-name="Current app">
 			<Rows data-name="Profile and actions">
@@ -21,8 +27,8 @@ export function CurrentApp({ app, onEdit }: CurrentAppProps) {
 						</span>
 					</span>
 				</LayoutItem>
-				<LayoutItem role="button" tabIndex={0} onClick={onEdit}>
-					<ActionLine icon="pencil-ruler" said="Edit in canvas" />
+				<LayoutItem role="button" tabIndex={0} onClick={canvas.run}>
+					<ActionLine icon={canvas.icon} said={canvas.said} />
 				</LayoutItem>
 				<LayoutItem aria-disabled="true">
 					<ActionLine icon="settings" said="Settings" isSoon />

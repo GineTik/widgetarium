@@ -21,6 +21,10 @@
 		"editInCanvas": {
 			"label": "Edit in canvas",
 			"hint": "Opens this app's design canvas."
+		},
+		"backToView": {
+			"label": "Back to view",
+			"hint": "Leaves the canvas for the page it shows."
 		}
 	},
 	"props": {
@@ -55,6 +59,17 @@
 			"label": "Starts open",
 			"hint": "Whether the dropdown is open when drawn.",
 			"design": true,
+			"writes": ["get"],
+			"default": {
+				"value": false
+			}
+		},
+		"getIsInCanvas": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "In the canvas",
+			"hint": "On, the menu stands in the app's canvas and offers to go back to the view.",
 			"writes": ["get"],
 			"default": {
 				"value": false

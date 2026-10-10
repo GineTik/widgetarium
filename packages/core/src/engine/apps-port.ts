@@ -11,6 +11,7 @@ export interface AppsPort {
 	open(id: string): Promise<void>;
 	create(): Promise<void>;
 	editInCanvas(id: string): Promise<void>;
+	backToView(id: string): Promise<void>;
 	toggleAssistant(): Promise<void>;
 	subscribe(changed: () => void): () => void;
 }
@@ -23,6 +24,7 @@ export const NO_APPS_PORT: AppsPort = {
 	open: () => Promise.reject(new Error(NO_APPS_MESSAGE)),
 	create: () => Promise.reject(new Error(NO_APPS_MESSAGE)),
 	editInCanvas: () => Promise.reject(new Error(NO_APPS_MESSAGE)),
+	backToView: () => Promise.reject(new Error(NO_APPS_MESSAGE)),
 	toggleAssistant: () => Promise.reject(new Error(NO_APPS_MESSAGE)),
 	subscribe: () => () => undefined,
 };

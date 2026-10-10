@@ -1,6 +1,12 @@
 import { definePack } from "@widgetarium/core/engine/packs.js";
 import { defineCommandMetadata, defineGatewayMetadata } from "@widgetarium/core/gateway/implementation-metadata.js";
-import { CreateAppCommand, EditInCanvasCommand, OpenAppCommand, ToggleAssistantCommand } from "./commands.js";
+import {
+	BackToViewCommand,
+	CreateAppCommand,
+	EditInCanvasCommand,
+	OpenAppCommand,
+	ToggleAssistantCommand,
+} from "./commands.js";
 import { AppsQuery, CurrentAppQuery } from "./queries.js";
 import { AppFieldsSchema, NoFieldsSchema } from "./schemas.js";
 
@@ -49,6 +55,14 @@ export const chromePack = definePack({
 			title: "Edit in canvas",
 			resource: "Apps",
 			description: "Opens the app's design canvas.",
+			fields: AppFieldsSchema,
+			consent: "free",
+		}),
+		defineCommandMetadata(BackToViewCommand, {
+			id: "@chrome/back-to-view",
+			title: "Back to view",
+			resource: "Apps",
+			description: "Leaves the app's design canvas for the page it shows.",
 			fields: AppFieldsSchema,
 			consent: "free",
 		}),

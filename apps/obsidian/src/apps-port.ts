@@ -3,7 +3,7 @@ import { SPEC_FOLDER } from "@widgetarium/core/app-spec.js";
 import type { AppsPort, HostApp } from "@widgetarium/core/engine/apps-port.js";
 import { AI_VIEW_TYPE } from "./ai/view.js";
 import { readAppSpec } from "./app-of-note.js";
-import { openDesign } from "./design-view.js";
+import { DESIGN_VIEW_TYPE, DesignView, openDesign } from "./design-view.js";
 import type WidgetariumPlugin from "./main.js";
 
 const NEW_APP_NAME = "Untitled app";
@@ -22,6 +22,7 @@ export function createAppsPort(plugin: WidgetariumPlugin): AppsPort {
 			announce();
 		},
 		editInCanvas: (id) => openDesign(plugin.app, id),
+		backToView: (id) => backToView(plugin, id),
 		toggleAssistant: () => toggleAssistant(plugin),
 		subscribe: (changed) => {
 			changes.add(changed);
@@ -63,6 +64,12 @@ function freeNameOf(taken: ReadonlySet<string>): string {
 		const name = NUMBERED_NAME.replace("{name}", NEW_APP_NAME).replace("{number}", String(number));
 		if (!taken.has(name)) return name;
 	}
+}
+
+async function backToView(plugin: WidgetariumPlugin, id: string): Promise<void> {
+	const views = plugin.app.workspace.getLeavesOfType(DESIGN_VIEW_TYPE).map((leaf) => leaf.view);
+	const shown = views.find((view): view is DesignView => view instanceof DesignView && view.getState()["app"] === id);
+	if (shown) await shown.returnToAppNote();
 }
 
 async function toggleAssistant(plugin: WidgetariumPlugin): Promise<void> {

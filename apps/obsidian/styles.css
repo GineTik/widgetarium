@@ -305,6 +305,11 @@ pre:has(> :is(.block-language-widgetarium, .block-language-widgetarium-app)),
 
 body {
 	--wg-kit-page: var(--background-primary);
+	--wg-page-layer: 50;
+}
+
+.wg-app-window .wg-page {
+	top: var(--wg-window-band);
 }
 
 .view-content:has(.wg-root.is-screen),
@@ -322,7 +327,7 @@ body {
 .wg-page {
 	position: absolute;
 	inset: 0;
-	z-index: 50;
+	z-index: var(--wg-page-layer);
 	overflow: auto;
 	background: var(--wg-kit-page);
 }
@@ -7920,7 +7925,7 @@ body.wg-tree-carrying .wg-tile-body {
 	position: absolute;
 	inset-inline: 0;
 	top: 0;
-	z-index: 3;
+	z-index: calc(var(--wg-page-layer) + 1);
 	display: flex;
 	align-items: flex-start;
 	justify-content: space-between;
@@ -8049,10 +8054,6 @@ body.wg-tree-carrying .wg-tile-body {
 	border-radius: 999px;
 }
 
-:is(.wg-root, .wg-portal) .wg-design-page-switch.is-s button {
-	height: calc(var(--wg-kit-control-s) - 4px);
-}
-
 :is(.wg-root, .wg-portal) .wg-design-page-switch button:has(.wg-design-pages-trigger) {
 	padding: 0;
 }
@@ -8067,7 +8068,7 @@ body.wg-tree-carrying .wg-tile-body {
 	align-items: center;
 	gap: 4px;
 	height: 100%;
-	padding: 0 var(--size-4-2, 8px);
+	padding: 0 var(--size-4-4, 16px);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-pop.wg-design-pages-menu .wg-kit-pop-inner {

@@ -43,6 +43,19 @@ export class EditInCanvasCommand extends ICommand {
 	}
 }
 
+export class BackToViewCommand extends ICommand {
+	constructor(
+		private readonly fields: AppFields,
+		private readonly ports: ImplementationPorts,
+	) {
+		super();
+	}
+
+	run(): Promise<void> {
+		return this.ports.apps.backToView(this.fields.app);
+	}
+}
+
 export class ToggleAssistantCommand extends ICommand {
 	constructor(
 		readonly fields: NoFields,

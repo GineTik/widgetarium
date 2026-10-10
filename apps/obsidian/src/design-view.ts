@@ -211,7 +211,7 @@ export class DesignView extends ItemView {
 		);
 	}
 
-	private async returnToAppNote(): Promise<void> {
+	async returnToAppNote(): Promise<void> {
 		const read = await readAppSpec(this.app.vault.adapter, this.appName);
 		if (read?.refusal !== undefined) {
 			console.error("[widgetarium] the canvas cannot return to the app", read.refusal);

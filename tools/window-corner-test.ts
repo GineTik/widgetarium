@@ -10,7 +10,10 @@ interface Seen {
 	readonly ai?: { readonly right: number; readonly y: number; readonly h: number };
 	readonly letter?: string;
 	readonly asked?: readonly string[];
+	readonly hasSearch?: boolean;
 }
+
+type Scene = "with-apps" | "no-apps" | "canvas";
 
 const LEAF_PX = 900;
 const BAND_INSET_PX = 8;
@@ -53,8 +56,17 @@ const until = async (find) => { for (let at = 0; at < 60; at += 1) { const found
 	const report = () => (document.getElementById("seen").textContent = JSON.stringify({ ...seen, asked: [...window.__ASKED__] }));
 	report();
 	if (ai) ai.click();
-	if (menu && !window.__NO_APPS__) {
+	const leafNamed = (said) => [...document.querySelectorAll("*")].find((one) => one.children.length === 0 && one.textContent.trim() === said);
+	if (menu && window.__SCENE__ === "canvas") {
 		menu.click();
+		const back = await until(() => leafNamed("Back to view"));
+		seen.hasSearch = Boolean(document.querySelector('input[placeholder="Search apps"]'));
+		if (back) back.click();
+	}
+	if (menu && window.__SCENE__ === "with-apps") {
+		menu.click();
+		await until(() => leafNamed("CRM"));
+		seen.hasSearch = Boolean(document.querySelector('input[placeholder="Search apps"]'));
 		const crm = await until(() => [...document.querySelectorAll("*")].find((one) => one.children.length === 0 && one.textContent.trim() === "CRM"));
 		if (crm) crm.click();
 		await wait(300);
@@ -66,7 +78,7 @@ const until = async (find) => { for (let at = 0; at < 60; at += 1) { const found
 	report();
 })();`;
 
-function pageOf(hasNoApps: boolean): string {
+function pageOf(scene: Scene): string {
 	return `<!doctype html><html><head><meta charset="utf-8">
 <style>${readFileSync("apps/obsidian/styles.css", "utf8")}</style>
 <style>${builtSheets}</style>
@@ -80,7 +92,7 @@ body { margin: 0; ${THEMES.light} background: var(--background-secondary); color
 <div class="workspace-leaf-content wg-app-window"><div class="view-content"></div>
 <div class="wg-window-corners"><div id="left" class="wg-window-corner is-left" style="width:${cornerWidthOf("left", "macos")}px"></div><div id="right" class="wg-window-corner is-right" style="width:${cornerWidthOf("right", "macos")}px"></div></div></div>
 <pre id="boom"></pre><pre id="seen"></pre>
-<script>window.__FILES__=${JSON.stringify(files)};window.__NO_APPS__=${String(hasNoApps)};</script>
+<script>window.__FILES__=${JSON.stringify(files)};window.__SCENE__=${JSON.stringify(scene)};</script>
 <script>${bundle}</script>
 <script>${MEASURE_SCRIPT}</script>
 </body></html>`;
@@ -94,11 +106,11 @@ function textOfPre(dom: string, id: string): string {
 	return dom.slice(start, dom.indexOf("</pre>", start)).replaceAll("&quot;", '"').trim();
 }
 
-function seenOf(hasNoApps: boolean, name: string): { readonly seen: Seen; readonly reported: string } {
-	const file = path.join(shotsAt, `${name}.html`);
-	writeFileSync(file, pageOf(hasNoApps));
+function seenOf(scene: Scene): { readonly seen: Seen; readonly reported: string } {
+	const file = path.join(shotsAt, `${scene}.html`);
+	writeFileSync(file, pageOf(scene));
 	const size = { width: LEAF_PX, height: 640 };
-	shoot(file, [`--screenshot=${path.join(shotsAt, `${name}.png`)}`], size);
+	shoot(file, [`--screenshot=${path.join(shotsAt, `${scene}.png`)}`], size);
 	const dom = shoot(file, ["--dump-dom", "--virtual-time-budget=8000"], size);
 	const parsed: unknown = JSON.parse(textOfPre(dom, "seen") || "{}");
 	return { seen: parsed !== null && typeof parsed === "object" ? parsed : {}, reported: textOfPre(dom, "boom") };
@@ -110,7 +122,7 @@ function check(what: string, isOk: boolean, got: unknown): void {
 	console.log(`${isOk ? "ok  " : "FAIL"} ${what} — ${JSON.stringify(got)}`);
 }
 
-const withApps = seenOf(false, "with-apps");
+const withApps = seenOf("with-apps");
 check("the page drew without a failure", withApps.reported === "", withApps.reported);
 const { menu, ai, letter, asked = [] } = withApps.seen;
 check("the menu stands after the macOS safe area", menu?.x === MAC_SAFE_AREA_PX + CORNER_GAP_PX, menu);
@@ -122,8 +134,17 @@ check("the mark carries the app's first letter", letter === "R", letter);
 check("the AI button asks for the sidebar", asked.includes("assistant"), asked);
 check("a row opens its app", asked.includes("open CRM"), asked);
 check("Edit in canvas opens this app's canvas", asked.includes("edit Reading list"), asked);
+check("two apps draw no search field", withApps.seen.hasSearch === false, withApps.seen.hasSearch);
 
-const noApps = seenOf(true, "no-apps");
+const inCanvas = seenOf("canvas");
+check("ten apps draw a search field", inCanvas.seen.hasSearch === true, inCanvas.seen.hasSearch);
+check(
+	"in the canvas the menu goes back to the view",
+	(inCanvas.seen.asked ?? []).includes("back Reading list"),
+	inCanvas.seen.asked,
+);
+
+const noApps = seenOf("no-apps");
 check("with no apps the mark is the draft's", noApps.seen.letter === "U", noApps.seen.letter);
 
 console.log(`shots in ${shotsAt}`);

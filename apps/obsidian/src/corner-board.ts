@@ -2,6 +2,13 @@ export type CornerSide = "left" | "right";
 
 export type Platform = "macos" | "windows" | "web";
 
+export interface CornerPlace {
+	readonly side: CornerSide;
+	readonly app: string;
+	readonly platform: Platform;
+	readonly isInCanvas: boolean;
+}
+
 type Binding = { readonly implementation: string; readonly fields: Readonly<Record<string, unknown>> };
 
 type Mounted = { readonly name: string; readonly widget: string; readonly props: Readonly<Record<string, Binding>> };
@@ -22,10 +29,10 @@ export function cornerWidthOf(side: CornerSide, platform: Platform): number {
 	return (SYSTEM_BUTTONS_PX[platform][side] ?? WINDOW_EDGE_PX) + CORNER_GAP_PX + BUTTON_PX;
 }
 
-export function cornerBoardOf(side: CornerSide, app: string, platform: Platform): Record<string, unknown> {
+export function cornerBoardOf(place: CornerPlace): Record<string, unknown> {
 	return {
 		v: 2,
-		tiles: [cornerTileOf(side, itemsOf(side, app, platform))],
+		tiles: [cornerTileOf(place.side, itemsOf(place))],
 		layout: { dir: "row", of: [{ dir: "column", keep: true, of: [{ id: CORNER_TILE, surface: "none" }] }] },
 	};
 }
@@ -40,7 +47,7 @@ function cornerTileOf(side: CornerSide, items: readonly Mounted[]): Record<strin
 	};
 }
 
-function itemsOf(side: CornerSide, app: string, platform: Platform): readonly Mounted[] {
+function itemsOf({ side, app, platform, isInCanvas }: CornerPlace): readonly Mounted[] {
 	const safeArea: Mounted = {
 		name: "Safe area",
 		widget: "@chrome/safe-area",
@@ -63,6 +70,8 @@ function itemsOf(side: CornerSide, app: string, platform: Platform): readonly Mo
 			openApp: bound("@chrome/open-app"),
 			createApp: bound("@chrome/create-app"),
 			editInCanvas: bound("@chrome/edit-in-canvas", { app }),
+			getIsInCanvas: typed(isInCanvas),
+			backToView: bound("@chrome/back-to-view", { app }),
 		},
 	};
 	return [safeArea, menu];
@@ -72,6 +81,6 @@ function bound(implementation: string, fields: Readonly<Record<string, unknown>>
 	return { implementation, fields };
 }
 
-function typed(value: string): Binding {
+function typed(value: string | boolean): Binding {
 	return bound("@core/typed-value", { value });
 }

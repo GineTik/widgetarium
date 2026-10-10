@@ -477,6 +477,17 @@
 			"default": {
 				"value": false
 			}
+		},
+		"getIsInCanvas": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "In the canvas",
+			"hint": "On, the menu stands in the app's canvas and offers to go back to the view.",
+			"writes": ["get"],
+			"default": {
+				"value": false
+			}
 		}
 	},
 	"@chrome/corner": {

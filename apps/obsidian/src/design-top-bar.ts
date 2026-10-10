@@ -1,4 +1,4 @@
-import { createElement as h, useRef, useState } from "react";
+import { createElement as h, useEffect, useRef, useState } from "react";
 import type { ReactElement, ReactNode } from "react";
 import { Button, Icon, Popover, PopoverItem, Segmented } from "@widgetarium/kit";
 
@@ -47,6 +47,7 @@ export function TopBar({
 }: TopBarProps): ReactElement {
 	const [isPicking, setIsPicking] = useState(false);
 	const isOnPage = pages.some((one) => one.value === page);
+	const [asked, ask] = useTabAskedBefore(page);
 	const picked = useRef<string | null>(null);
 	const pick = (next: string): void => {
 		picked.current = next;
@@ -93,13 +94,22 @@ export function TopBar({
 			h(Segmented<string>, {
 				key: "pages",
 				items: [...leading, ...(pages.length > 0 ? [pagesTab] : []), ...trailing],
-				value: isOnPage ? PAGES_TAB : page,
-				onValueChange: (next) => (next === PAGES_TAB ? undefined : onPage(next)),
-				size: "s",
+				value: asked ?? (isOnPage ? PAGES_TAB : page),
+				onValueChange: (next) => {
+					if (next === PAGES_TAB) return;
+					ask(next);
+					onPage(next);
+				},
 				className: "wg-design-page-switch",
 			}),
-			h(Button, { key: "return", size: "s", variant: "tinted", onClick: onReturn }, RETURN),
+			h(Button, { key: "return", variant: "tinted", onClick: onReturn }, RETURN),
 			corners?.end ?? null,
 		]),
 	]);
+}
+
+function useTabAskedBefore(page: string): readonly [string | null, (next: string) => void] {
+	const [asked, setAsked] = useState<string | null>(null);
+	useEffect(() => setAsked(null), [page]);
+	return [asked, setAsked];
 }

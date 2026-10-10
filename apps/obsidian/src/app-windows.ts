@@ -43,7 +43,7 @@ function putCornersOn(
 ): void {
 	takeCornersOff(drawn, container);
 	const node = container.createDiv({ cls: CORNERS_CLASS });
-	const drawing = { app, registry: plugin.registry, host: plugin.host };
+	const drawing = { app, isInCanvas: false, registry: plugin.registry, host: plugin.host };
 	render(
 		[
 			h(WindowCorner, { key: "left", side: "left", ...drawing }),

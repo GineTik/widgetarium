@@ -164,8 +164,8 @@ function topBarOf(
 		status,
 		layers,
 		corners: {
-			start: h(WindowCorner, { key: "start", side: "left", app, registry, host }),
-			end: h(WindowCorner, { key: "end", side: "right", app, registry, host }),
+			start: h(WindowCorner, { key: "start", side: "left", app, isInCanvas: true, registry, host }),
+			end: h(WindowCorner, { key: "end", side: "right", app, isInCanvas: true, registry, host }),
 		},
 	});
 }
