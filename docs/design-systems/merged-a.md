@@ -70,7 +70,7 @@ Urbanist. Display lines light (300), titles medium, body regular green-grey. Amo
 - **Mist card** — photo dissolving into the card's tone, italic title on the fade, glass square counter on the photo.
 - **Harvest meter** — a row of thin ticks under a light number; filled ticks forest, the next goal tick lime.
 - **Lime index band** — a lime strip tucked behind the top edge of a white card, carrying one fact (hours, a status).
-- **Ripening track** — progress where the done part is diagonal forest stripes and the knob is a glass square.
+- **Ripening track** — progress where the done part is diagonal forest stripes and the knob is a soft-green rounded square ringed in white.
 - **Round-pill dock** — separate circles inside one soft-green pill; current one forest.
 
 ## Density

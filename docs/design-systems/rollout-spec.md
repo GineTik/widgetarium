@@ -52,6 +52,7 @@ Each stage ends green on its checks before the next one starts.
 - **Shipping.** Laid read-only into the vault like `@catalogue`, with a `.laid-by-plugin` mark (`tools/system-widget-files.mts`).
 - **Command.** `widgets.mjs systems --centre function,information --tone calm …` returns systems ranked by matched parameters, each with its score and its conditional traits already filtered.
 - **Seed.** Verdant, Gallery, Cloud, converted from `docs/design-systems/`. The old "Quiet and strict" style becomes one more catalogue system, so the default is no longer special.
+- **Product patterns.** A second catalogue, `catalogue/patterns/<id>.md`, in the format of `docs/design-systems/patterns/README.md`: the structure of a product (what stands in the centre, which regions serve it, how they behave), independent of the look. Same fit parameters plus `object kind` and `activity`, so one filter serves both. Seed: `stage-inspector`, plus the fifteen bases of `packages/core/src/layouts.ts` rewritten as patterns. Command: `widgets.mjs patterns --…`.
 - **Checks.** The schema refuses a system with a missing category or a trait without an id; the ranking test pins the order for three briefs (kanban, delivery, sea-swim) and is falsified by swapping one fit value.
 
 ### Stage 2: the agent's grants and context
@@ -67,12 +68,13 @@ Each stage ends green on its checks before the next one starts.
 It runs after the spec and before any page design. Stages become: 1 spec, **2 design system**, 3 domain, 4 design, 5 data, 6 pages.
 
 1. **Fit.** The orchestrator fills the app's fit profile from the spec. Each parameter may hold several values when the request is vague.
-2. **Sources.** `systems --…` returns the ranking; take the top three or more. Conditional traits the app fails are already dropped.
-3. **Merge.** The orchestrator writes three merged systems by `merging.md`: each has a new idea, deliberate compatible traits, no source above 40%, colour as a logic with the hue chosen for the product, and an imagery role and type. Output: `.widgetarium/apps/<app>/design-systems/proposed/<n>.md`.
-4. **Books.** Three `design-system` jobs run **in parallel**, Opus at low effort, each drawing one design book (format below) on the canvas, with new CC0 photos found for the product.
-5. **Choice.** The orchestrator asks one question: keep 1, 2 or 3, or say what to change. Edits loop on the same jobs until one is chosen.
-6. **Writer.** `withDesignSystemChosen(app, n)` is the one writer. It moves `<n>` to `.widgetarium/apps/<app>/design-system.md` and the book to the Design system tab, and keeps the others under `proposed/` as history the person can return to.
-7. **Tab.** A canvas tab **Design system** (remove `"Design system": DOCS_PAGE` from `TABS_RENAMED`) shows the chosen book, the system file and the proposals.
+2. **Shortlist.** `systems --…` and `patterns --…` each return their top 12 by matched parameters; conditional traits the app fails are already dropped. Reading only cards (idea, fit), the orchestrator keeps 3–5 of each, one line per drop.
+3. **Review.** It reads the kept entries in full and writes `.widgetarium/apps/<app>/design-systems/review.md`: for each, what to take, what to reject for this product, and why.
+4. **Design.** Using them as references, not parts, it writes three proposals by `merging.md`. Each has a pattern (the structure) and a system (the look): a new idea, deliberate compatible traits, no reference above 40%, colour as a logic with the hue chosen for the product, and an imagery role and type. Output: `.widgetarium/apps/<app>/design-systems/proposed/<n>.md`.
+5. **Books.** Three `design-system` jobs run **in parallel**, Opus at low effort, each drawing one design book (format below) on the canvas, with new CC0 photos found for the product.
+6. **Choice.** The orchestrator asks one question: keep 1, 2 or 3, or say what to change. Edits loop on the same jobs until one is chosen.
+7. **Writer.** `withDesignSystemChosen(app, n)` is the one writer. It moves `<n>` to `.widgetarium/apps/<app>/design-system.md` and the book to the Design system tab, and keeps the others under `proposed/` as history the person can return to.
+8. **Tab.** A canvas tab **Design system** (remove `"Design system": DOCS_PAGE` from `TABS_RENAMED`) shows the chosen book, the system file and the proposals.
 
 - **Checks.** A job test runs the stage on a fixture app and asserts three proposals, three books, one choice written and two kept. Falsify by letting the writer drop the history.
 
