@@ -10,11 +10,12 @@ interface SurfacePair {
 }
 
 const REPO = path.resolve(import.meta.dirname, "..");
-const ENGINE = path.join(REPO, "packages/widgetarium");
+const ENGINE = path.join(REPO, "packages/core");
 const KIT = path.join(REPO, "packages/kit");
 const SDK_SURFACE = path.join(REPO, "packages/sdk/types/widgetarium.d.ts");
 const KIT_SUBPATH = "./kit";
-const HOST_ENTRIES: readonly string[] = ["./app", "./studio"];
+const HOST_ENTRIES: readonly string[] = ["./app"];
+const INTERNAL_FILES = "*";
 const PROBE = "probe.ts";
 const PROBE_OPTIONS = {
 	target: "ES2022",
@@ -59,7 +60,7 @@ function typedAgainstOf(engineSubpath: string, kitSources: ReadonlyMap<string, s
 function surfacePairs(): SurfacePair[] {
 	const kitSources = exportSourcesOf(KIT);
 	return [...exportSourcesOf(ENGINE)]
-		.filter(([subpath]) => !HOST_ENTRIES.includes(subpath))
+		.filter(([subpath]) => !HOST_ENTRIES.includes(subpath) && !subpath.includes(INTERNAL_FILES))
 		.map(([subpath, shipped]) => ({
 			shipped,
 			typedAgainst: typedAgainstOf(subpath, kitSources),

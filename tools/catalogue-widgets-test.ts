@@ -30,7 +30,7 @@ const { collectionGateway, soloGateway } = await import("../packages/core/src/ga
 
 type Props = Readonly<Record<string, unknown>>;
 
-const WIDGETS = "../packages/widgetarium/src/studio/catalogue/widgets";
+const WIDGETS = "../apps/studio/src/catalogue/widgets";
 
 async function widgetAt(folder: string): Promise<FunctionComponent<Props>> {
 	const held: unknown = (await import(`${WIDGETS}/${folder}/widget.tsx`)).default;

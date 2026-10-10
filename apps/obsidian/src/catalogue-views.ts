@@ -4,8 +4,8 @@ import { createElement as h } from "react";
 import { render } from "@widgetarium/core/engine/render.js";
 import { CATALOGUE_REQUESTS } from "@widgetarium/core/engine/catalogue-requests.js";
 import { shieldFromEditor } from "@widgetarium/core/editor-shield.js";
-import { CatalogueBoard, studioFrameOf } from "widgetarium/studio";
-import type { CatalogueBoardName } from "widgetarium/studio";
+import { CatalogueBoard, studioFrameOf } from "@widgetarium/studio";
+import type { CatalogueBoardName } from "@widgetarium/studio";
 import type WidgetariumPlugin from "./main.js";
 
 export const CATALOGUE_VIEW_TYPE = "widgetarium-catalogue";

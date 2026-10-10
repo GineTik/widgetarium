@@ -8,14 +8,17 @@ import { fieldOf } from "./export-source.mts";
 
 const FROM_THE_REPO = ["react", "react-dom", "zod", "typescript", "@types/react", "@types/react-dom"];
 const LIB_CHECK_ON = ["--skipLibCheck", "false"];
-const SHIPPED_DECLARATION = "node_modules/widgetarium/dist/index.d.ts";
-const SHIPPED_STUDIO = ["node_modules/widgetarium/dist/studio.js", "node_modules/widgetarium/dist/studio.css"];
-const STUDIO_SHEET = "widgetarium/studio.css";
+const SHIPPED_DECLARATION = "node_modules/@widgetarium/core/dist/index.d.ts";
+const SHIPPED_STUDIO = [
+	"node_modules/@widgetarium/studio/dist/index.js",
+	"node_modules/@widgetarium/studio/dist/studio.css",
+];
+const STUDIO_SHEET = "@widgetarium/studio/studio.css";
 const UNRESOLVABLE_IMPORT =
 	'import type { Missing } from "widgetarium-shipped-nowhere";\nexport type Broken = Missing;\n';
 
-const WIDGET = `import { IQuery, PageInputSchema, PageOf, createWidget } from "widgetarium";
-import { Card } from "widgetarium/kit";
+const WIDGET = `import { IQuery, PageInputSchema, PageOf, createWidget } from "@widgetarium/core";
+import { Card } from "@widgetarium/kit";
 import { z } from "zod";
 
 const TaskSchema = z.object({ title: z.string() });
@@ -146,11 +149,11 @@ try {
 			.join(", "),
 		"",
 	);
-	check("the widgetarium tarball ships the studio's code and sheet", missingIn(project, SHIPPED_STUDIO), "");
+	check("the studio tarball ships the studio's code and sheet", missingIn(project, SHIPPED_STUDIO), "");
 	check(
 		`a created app's import of ${STUDIO_SHEET} resolves to the shipped sheet`,
 		resolvedSheetIn(project, STUDIO_SHEET),
-		"node_modules/widgetarium/dist/studio.css",
+		"node_modules/@widgetarium/studio/dist/studio.css",
 	);
 	check("a widget importing the engine, the kit and zod by name typechecks", typeErrorsIn(project, WIDGET).trim(), "");
 	check(

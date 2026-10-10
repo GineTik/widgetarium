@@ -18,7 +18,7 @@ export const TEXT_LOADERS: Readonly<Record<string, Loader>> = { ".md": "text", "
 const WIDGETS_CLI_SPECIFIER = "widgetarium:widgets-cli";
 const WIDGETS_CLI_SOURCE = "apps/obsidian/src/ai/widgets-cli.ts";
 const WIDGET_TYPES_SPECIFIER = "widgetarium:widget-types";
-const CATALOGUE_WIDGETS_FOLDER = "packages/widgetarium/src/studio/catalogue/widgets";
+const CATALOGUE_WIDGETS_FOLDER = "apps/studio/src/catalogue/widgets";
 const BUILD_STAMP_SPECIFIER = "widgetarium:build-stamp";
 
 const SUPPLIED_BY_ELECTRON_AT_RUNTIME = [

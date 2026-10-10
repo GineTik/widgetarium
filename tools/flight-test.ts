@@ -1,4 +1,4 @@
-import { flightBetween } from "../packages/widgetarium/src/studio/canvas/flight.ts";
+import { flightBetween } from "../apps/studio/src/canvas/flight.ts";
 
 let failed = 0;
 function check(what: string, ok: boolean, got: unknown): void {

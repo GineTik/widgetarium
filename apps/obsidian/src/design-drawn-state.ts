@@ -4,8 +4,8 @@ import type { Board } from "@widgetarium/core/model.js";
 import { screenPathOf, vaultBindingOf } from "@widgetarium/core/app-design.js";
 import type { ScreenState } from "@widgetarium/core/app-design.js";
 import type { WidgetStates } from "@widgetarium/core/registry-scope.js";
-import { statePropsOf } from "widgetarium/studio";
-import type { StatePicture } from "widgetarium/studio";
+import { statePropsOf } from "@widgetarium/studio";
+import type { StatePicture } from "@widgetarium/studio";
 import type { DrawnState } from "@widgetarium/core/engine/design-port.js";
 
 export interface DrawnStateSource {

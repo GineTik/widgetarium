@@ -1,4 +1,4 @@
-import { browserStudioHost } from "../packages/widgetarium/src/studio/browser-studio-host.ts";
+import { browserStudioHost } from "../apps/studio/src/browser-studio-host.ts";
 
 interface TitlebarRect {
 	readonly x: number;

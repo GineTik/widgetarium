@@ -19,11 +19,11 @@ const APP_STARTER: Starter = {
 };
 
 const STUDIO_STARTER: Starter = {
-	entry: "widgetarium/studio",
+	entry: "@widgetarium/studio",
 	start: "startStudio",
 	root: "WidgetariumStudio",
 	prop: "started",
-	sheets: ["widgetarium/studio.css"],
+	sheets: ["@widgetarium/studio/studio.css"],
 };
 
 export function startModuleSourceOf(mode: string): string {

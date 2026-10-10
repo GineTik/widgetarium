@@ -33,7 +33,7 @@ export const TaskSchema = z.object({ id: z.string(), title: z.string() });
 export type Task = z.infer<typeof TaskSchema>;
 `;
 
-const HANDLER = `import { IQuery, PageInputSchema, PageOf, type Page, type PageInput } from "widgetarium";
+const HANDLER = `import { IQuery, PageInputSchema, PageOf, type Page, type PageInput } from "@widgetarium/core";
 import { TaskSchema, type Task } from "@schemas/task";
 
 const TASKS: readonly Task[] = [
@@ -48,8 +48,8 @@ export class TasksQuery extends IQuery.input(PageInputSchema).output(PageOf(Task
 }
 `;
 
-const WIDGET = `import { IQuery, PageInputSchema, PageOf, createWidget, defineLayout, defineMetadata, defineStates, useData } from "widgetarium";
-import { Card } from "widgetarium/kit";
+const WIDGET = `import { IQuery, PageInputSchema, PageOf, createWidget, defineLayout, defineMetadata, defineStates, useData } from "@widgetarium/core";
+import { Card } from "@widgetarium/kit";
 import { TaskSchema } from "@schemas/task";
 
 const TaskList = createWidget({

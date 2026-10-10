@@ -5,8 +5,8 @@ import { render } from "@widgetarium/core/engine/render.js";
 import { shieldFromEditor } from "@widgetarium/core/editor-shield.js";
 import type { DesignPort } from "@widgetarium/core/engine/design-port.js";
 import { isObject } from "@widgetarium/core/engine/is-object.js";
-import { DESIGN_OPENED_ON, DesignStage } from "widgetarium/studio";
-import type { DesignViewState } from "widgetarium/studio";
+import { DESIGN_OPENED_ON, DesignStage } from "@widgetarium/studio";
+import type { DesignViewState } from "@widgetarium/studio";
 import { obsidianDesignPort } from "./design-port-obsidian.js";
 import type WidgetariumPlugin from "./main.js";
 

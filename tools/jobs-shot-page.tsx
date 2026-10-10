@@ -3,13 +3,13 @@ import { createRoot } from "react-dom/client";
 import { Segmented } from "../packages/kit/src/index.ts";
 import { JobSchema } from "../packages/core/src/app-jobs.ts";
 import type { Job } from "../packages/core/src/app-jobs.ts";
-import type { JobControls } from "../packages/widgetarium/src/studio/design/design-job.ts";
-import { PlannedPageRegion, pageLabelOf } from "../packages/widgetarium/src/studio/design/design-job.ts";
-import { JobLine } from "../packages/widgetarium/src/studio/design/design-job-line.ts";
-import { ReferencesRegion } from "../packages/widgetarium/src/studio/design/design-references.ts";
+import type { JobControls } from "../apps/studio/src/design/design-job.ts";
+import { PlannedPageRegion, pageLabelOf } from "../apps/studio/src/design/design-job.ts";
+import { JobLine } from "../apps/studio/src/design/design-job-line.ts";
+import { ReferencesRegion } from "../apps/studio/src/design/design-references.ts";
 
 const PICTURE = `data:image/svg+xml;utf8,${encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='640' height='420'><rect width='640' height='420' fill='#f3f3f1'/></svg>")}`;
-import { Group } from "../packages/widgetarium/src/studio/design/design-group.ts";
+import { Group } from "../apps/studio/src/design/design-group.ts";
 
 const MINUTE = 60000;
 const NOW = Date.now();

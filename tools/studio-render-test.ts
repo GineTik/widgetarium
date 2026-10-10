@@ -7,7 +7,7 @@ import { promisify } from "node:util";
 import esbuild from "esbuild";
 import { NOT_AVAILABLE_ON_HOST } from "../packages/core/src/engine/studio-host.ts";
 import { ASSISTANT_NOT_AVAILABLE } from "../packages/core/src/engine/assistant-port.ts";
-import { STUDIO_BAND_PX } from "../packages/widgetarium/src/studio/shared/studio-band-size.ts";
+import { STUDIO_BAND_PX } from "../apps/studio/src/shared/studio-band-size.ts";
 import {
 	catalogueImportsIn,
 	checkCatalogueAbsentInApp,
@@ -93,13 +93,13 @@ const MAC_SAFE_AREA_PX = 76;
 const CENTRE_SLACK_PX = 2;
 const REACT_ID = /«[^»]*»|:r[0-9a-z]+:|_r_[0-9a-z]+_/g;
 const APP_ENTRY = "packages/core/src/app.ts";
-const STUDIO_FOLDER = "packages/widgetarium/src/studio/";
+const STUDIO_FOLDER = "apps/studio/src/";
 
 const shotsAt = path.resolve(process.argv[2] ?? path.join(tmpdir(), "wg-studio-render"));
 mkdirSync(shotsAt, { recursive: true });
 
 const bundle = await bundleOf("tools/studio-render-page.tsx");
-const sheets = ["packages/widgetarium/src/browser-host.css", "apps/obsidian/styles.css"]
+const sheets = ["packages/core/browser-host.css", "apps/obsidian/styles.css"]
 	.map((at) => readFileSync(at, "utf8"))
 	.join("\n");
 

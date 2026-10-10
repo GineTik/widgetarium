@@ -43,8 +43,8 @@ const { WidgetSurface } = await import("../packages/core/src/surface.js");
 const { ModuleRegistry } = await import("../packages/core/src/engine/module-registry.js");
 const { normalizeBoard } = await import("../packages/core/src/model.js");
 const { boardEdits } = await import("../packages/core/src/surface/board-edits.js");
-const { CATALOGUE_BOARDS } = await import("../packages/widgetarium/src/studio/catalogue/catalogue-boards.ts");
-const { CATALOGUE_WIDGETS } = await import("../packages/widgetarium/src/studio/catalogue/catalogue-widgets.ts");
+const { CATALOGUE_BOARDS } = await import("../apps/studio/src/catalogue/catalogue-boards.ts");
+const { CATALOGUE_WIDGETS } = await import("../apps/studio/src/catalogue/catalogue-widgets.ts");
 const { DOC_PAGES } = await import("../packages/core/src/docs.js");
 const { TEMPLATES } = await import("../packages/core/src/templates.js");
 
@@ -278,9 +278,9 @@ check("and the list follows the page", facet(DOC_PAGES[1]?.title ?? "")?.classLi
 console.log("\n— a request goes to whoever asked —");
 render(null, node);
 const { registerBoardViews } = await import("../apps/obsidian/src/catalogue-views.ts");
-const { useTakesCatalogueAsks } = await import("../packages/widgetarium/src/studio/studio-on-screen.ts");
-const { StudioCatalogue } = await import("../packages/widgetarium/src/studio/catalogue/studio-catalogue.ts");
-const { createStudioState } = await import("../packages/widgetarium/src/studio/studio-state.ts");
+const { useTakesCatalogueAsks } = await import("../apps/studio/src/studio-on-screen.ts");
+const { StudioCatalogue } = await import("../apps/studio/src/catalogue/studio-catalogue.ts");
+const { createStudioState } = await import("../apps/studio/src/studio-state.ts");
 const { Board } = await import("../packages/core/src/surface/board.ts");
 const { CatalogueAsk } = await import("../packages/core/src/catalogue-ask.ts");
 const sidebarShown: number[] = [];

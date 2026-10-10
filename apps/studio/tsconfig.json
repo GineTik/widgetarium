@@ -15,12 +15,24 @@
 		"exactOptionalPropertyTypes": true,
 		"noUncheckedIndexedAccess": true,
 		"noEmit": true,
-		"tsBuildInfoFile": "../../node_modules/.cache/widgetarium/widgetarium.tsbuildinfo",
+		"tsBuildInfoFile": "../../node_modules/.cache/widgetarium/studio.tsbuildinfo",
 		"isolatedModules": true,
 		"verbatimModuleSyntax": true,
 		"skipLibCheck": true,
 		"types": ["node"]
 	},
-	"references": [{ "path": "../kit" }, { "path": "../core" }],
-	"include": ["src/**/*.ts", "src/**/*.tsx", "../core/src/*.d.ts", "../kit/src/jsx-namespace.d.ts"]
+	"references": [
+		{
+			"path": "../../packages/kit"
+		},
+		{
+			"path": "../../packages/core"
+		}
+	],
+	"include": [
+		"src/**/*.ts",
+		"src/**/*.tsx",
+		"../../packages/core/src/*.d.ts",
+		"../../packages/kit/src/jsx-namespace.d.ts"
+	]
 }

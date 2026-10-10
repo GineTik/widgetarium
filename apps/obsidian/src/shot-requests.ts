@@ -19,8 +19,8 @@ import {
 	screensOfPage,
 	whileAgentLooks,
 	widgetOpenerOf,
-} from "widgetarium/studio";
-import type { AgentLook } from "widgetarium/studio";
+} from "@widgetarium/studio";
+import type { AgentLook } from "@widgetarium/studio";
 import { withBlocks } from "./design-block-registry.js";
 import { designOf } from "./design-port-obsidian.js";
 import { canvasOf, drawnOffScreen, pngOf, stackedPngOf } from "./off-screen.js";

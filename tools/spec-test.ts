@@ -30,17 +30,17 @@ const { readSpec, withFeatureToggled, withChoicePicked, specPathOf, BUILD_STAGES
 const { specAppIn, lastSpecAppIn, buildRunIn, buildStartedIn, installsIn } =
 	await import("../apps/obsidian/src/ai/spec-calls.js");
 const { buildsIn } = await import("../apps/obsidian/src/ai/builds.js");
-const { PinnedRun, scrollToCard } = await import("../packages/widgetarium/src/studio/assistant/cards/pinned-run.js");
+const { PinnedRun, scrollToCard } = await import("../apps/studio/src/assistant/cards/pinned-run.js");
 const { argumentsIn } = await import("../apps/obsidian/src/ai/tools.js");
 const { specOfApp, stageOfApp } = await import("../apps/obsidian/src/ai/spec-command.js");
-const { SpecCard } = await import("../packages/widgetarium/src/studio/assistant/cards/spec-card.js");
-const { BuildRunCard } = await import("../packages/widgetarium/src/studio/assistant/cards/build-run-card.js");
+const { SpecCard } = await import("../apps/studio/src/assistant/cards/spec-card.js");
+const { BuildRunCard } = await import("../apps/studio/src/assistant/cards/build-run-card.js");
 const { briefFor } = await import("../apps/obsidian/src/ai/brief.js");
-const { noteNameOf } = await import("../packages/widgetarium/src/studio/assistant/target-note.js");
+const { noteNameOf } = await import("../apps/studio/src/assistant/target-note.js");
 const { HANDBOOK } = await import("../apps/obsidian/src/ai/agent-files.js");
 import type { AssistantCall } from "../packages/core/src/engine/assistant-port.js";
-import type { AppFiles, JobsPort } from "../packages/widgetarium/src/studio/assistant/cards/card-ports.js";
-import type { Report } from "../packages/widgetarium/src/studio/assistant/failure-line.js";
+import type { AppFiles, JobsPort } from "../apps/studio/src/assistant/cards/card-ports.js";
+import type { Report } from "../apps/studio/src/assistant/failure-line.js";
 import type { Job } from "../packages/core/src/app-jobs.js";
 
 let failed = 0;
@@ -640,7 +640,7 @@ check(
 	),
 	[true],
 );
-const { buildStatusOf } = await import("../packages/widgetarium/src/studio/assistant/cards/build-stages.js");
+const { buildStatusOf } = await import("../apps/studio/src/assistant/cards/build-stages.js");
 const finishedElsewhere = {
 	key: "b",
 	widget: "@you/x",
@@ -674,7 +674,7 @@ check(
 	),
 	"failed",
 );
-const { latestPerWidget } = await import("../packages/widgetarium/src/studio/assistant/cards/build-stages.js");
+const { latestPerWidget } = await import("../apps/studio/src/assistant/cards/build-stages.js");
 check(
 	"a widget started three times stands once, as its latest start",
 	latestPerWidget([
@@ -776,7 +776,7 @@ render(null, host);
 
 const { readDesign, designPathOf } = await import("../packages/core/src/app-design.ts");
 const { lastDesignAppIn } = await import("../apps/obsidian/src/ai/spec-calls.js");
-const { DesignCard } = await import("../packages/widgetarium/src/studio/assistant/cards/design-card.js");
+const { DesignCard } = await import("../apps/studio/src/assistant/cards/design-card.js");
 const DESIGN = JSON.stringify({
 	app: "Vocabulary",
 	screens: [

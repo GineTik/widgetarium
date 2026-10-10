@@ -24,7 +24,7 @@ export const ENGINE_PACKAGES: readonly string[] = [
 	"packages/packs/stats",
 	"packages/packs/git",
 	"packages/packs/catalogue",
-	"packages/widgetarium",
+	"apps/studio",
 	"packages/vite",
 	"packages/cli",
 ];
@@ -39,7 +39,7 @@ const PackageManifestSchema = z.object({
 	optionalDependencies: DependenciesSchema,
 });
 type PackageManifest = z.infer<typeof PackageManifestSchema>;
-const PACKAGES_ROOT = path.join(REPO, "packages");
+const BUILT_ROOTS: readonly string[] = [path.join(REPO, "packages"), path.join(REPO, "apps/studio")];
 const INTERNAL_PACKAGE = /^(?:widgetarium|@widgetarium\/.+)$/;
 const BUILT_TO = "dist";
 const SOURCE_FOLDER = "src";
@@ -50,10 +50,10 @@ const NODE_TARGET = "node20";
 const BUILT_BIN = /^\.\/dist\/(.+)\.js$/;
 const HANDBOOK = { from: path.join(REPO, "docs/ai"), into: path.join(REPO, "packages/cli/dist/handbook") };
 const BROWSER_STYLES = {
-	host: path.join(REPO, "packages/widgetarium/src/browser-host.css"),
+	host: path.join(REPO, "packages/core/browser-host.css"),
 	board: path.join(REPO, "apps/obsidian/styles.css"),
-	into: path.join(REPO, "packages/widgetarium/dist/styles.css"),
-	studioInto: path.join(REPO, "packages/widgetarium/dist/studio.css"),
+	into: path.join(REPO, "packages/core/dist/styles.css"),
+	studioInto: path.join(REPO, "apps/studio/dist/studio.css"),
 };
 
 export async function packEngine(): Promise<PackedPackage[]> {
@@ -116,7 +116,7 @@ function internalDependenciesOf(manifest: PackageManifest): [string, string][] {
 }
 
 function clearBuilds(): void {
-	for (const built of builtFoldersUnder(PACKAGES_ROOT)) fs.rmSync(built, { recursive: true, force: true });
+	for (const built of BUILT_ROOTS.flatMap(builtFoldersUnder)) fs.rmSync(built, { recursive: true, force: true });
 }
 
 function builtFoldersUnder(at: string): string[] {

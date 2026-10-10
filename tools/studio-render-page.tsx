@@ -21,13 +21,9 @@ import { corePack } from "../packages/packs/core/src/index.js";
 import { createMemoryRouter } from "../packages/core/src/app/memory-router.js";
 import { WidgetariumApp, startProject } from "../packages/core/src/app/widgetarium-app.js";
 import type { WidgetariumProject } from "../packages/core/src/app/widgetarium-project.js";
-import {
-	WidgetariumStudio,
-	startOpenedStudio,
-	startStudio,
-} from "../packages/widgetarium/src/studio/widgetarium-studio.js";
-import type { StartedStudio, StudioStart } from "../packages/widgetarium/src/studio/widgetarium-studio.js";
-import { STUDIO_PACKS } from "../packages/widgetarium/src/studio/logic/studio-pack.js";
+import { WidgetariumStudio, startOpenedStudio, startStudio } from "../apps/studio/src/widgetarium-studio.js";
+import type { StartedStudio, StudioStart } from "../apps/studio/src/widgetarium-studio.js";
+import { STUDIO_PACKS } from "../apps/studio/src/logic/studio-pack.js";
 import * as taskList from "./studio-fixture-widget.tsx";
 import { FixtureTaskSchema } from "./studio-fixture-widget.tsx";
 import { boom, pageGlobal, reportsFailures, stackOf } from "./page-harness.ts";

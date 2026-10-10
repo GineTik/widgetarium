@@ -17,6 +17,10 @@
 			"types": "./dist/app.d.ts",
 			"default": "./dist/app.js"
 		},
+		"./styles.css": {
+			"style": "./dist/styles.css",
+			"default": "./dist/styles.css"
+		},
 		"./*": {
 			"source": "./src/*",
 			"types": "./dist/*",

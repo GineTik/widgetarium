@@ -12,8 +12,8 @@ import { INSTALL_JOBS } from "../packages/core/src/engine/install-jobs.ts";
 import { CATALOGUE_REQUESTS } from "../packages/core/src/engine/catalogue-requests.ts";
 import { placeWidget } from "../packages/core/src/surface/drop-receivers.ts";
 import { TEMPLATES } from "../packages/core/src/templates.js";
-import { CATALOGUE_BOARDS } from "../packages/widgetarium/src/studio/catalogue/catalogue-boards.js";
-import { CATALOGUE_WIDGETS } from "../packages/widgetarium/src/studio/catalogue/catalogue-widgets.js";
+import { CATALOGUE_BOARDS } from "../apps/studio/src/catalogue/catalogue-boards.js";
+import { CATALOGUE_WIDGETS } from "../apps/studio/src/catalogue/catalogue-widgets.js";
 import { createProbeHost, createRowSlot } from "./vault-fixture.ts";
 import { reportsFailures } from "./page-harness.ts";
 

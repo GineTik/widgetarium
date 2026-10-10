@@ -179,7 +179,7 @@ const { checkedAssistantPort } = await import("./obsidian-assistant-port-checks.
 const { NO_ASSISTANT } = await import("../packages/core/src/engine/assistant-port.js");
 const { NO_CATALOGUE_PORT } = await import("../packages/core/src/engine/catalogue-port.js");
 const { shutPortsOf } = await import("../packages/core/src/engine/packs.js");
-const { AppsQuery } = await import("../packages/widgetarium/src/studio/logic/apps-queries.js");
+const { AppsQuery } = await import("../apps/studio/src/logic/apps-queries.js");
 registerPacks(corePack);
 
 const APP_NOTE = { path: "Apps/Farm.md", basename: "Farm" };

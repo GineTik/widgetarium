@@ -2,7 +2,7 @@ import { ItemView } from "obsidian";
 import type { WorkspaceLeaf } from "obsidian";
 import { createElement as h } from "react";
 import { render } from "@widgetarium/core/engine/render.js";
-import { AssistantChat } from "widgetarium/studio";
+import { AssistantChat } from "@widgetarium/studio";
 import type { ObsidianAssistantPort } from "./assistant-port-obsidian.js";
 
 export const AI_VIEW_TYPE = "widgetarium-ai";

@@ -1,5 +1,5 @@
-import { ancestorsOf, parentsOf, pickedHit } from "../packages/widgetarium/src/studio/design/design-selection.ts";
-import type { Hit } from "../packages/widgetarium/src/studio/design/design-selection.ts";
+import { ancestorsOf, parentsOf, pickedHit } from "../apps/studio/src/design/design-selection.ts";
+import type { Hit } from "../apps/studio/src/design/design-selection.ts";
 
 let failed = 0;
 function check(what: string, got: unknown, wanted: unknown): void {

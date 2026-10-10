@@ -13,7 +13,7 @@ import type { Held, StreamPart, ToolCall, ToolResult } from "../apps/obsidian/sr
 import type { AssistantCall } from "../packages/core/src/engine/assistant-port.ts";
 import type { RunAnswer } from "../apps/obsidian/src/ai/run.ts";
 import type { Build, StepStatus } from "../packages/core/src/engine/assistant-cards.ts";
-import type { SaidProps } from "../packages/widgetarium/src/studio/assistant/said.ts";
+import type { SaidProps } from "../apps/studio/src/assistant/said.ts";
 import type { Spawn, SpawnAsk } from "../apps/obsidian/src/ai/run.ts";
 import type { AssistantPlugin } from "../apps/obsidian/src/ai/assistant.ts";
 import type { AgentFilesAdapter } from "../apps/obsidian/src/ai/agent-files.ts";
@@ -33,15 +33,14 @@ const { layAgentFiles, HANDBOOK_DIR, TOOL_PATH, HANDBOOK, WIDGETS_DIR } =
 	await import("../apps/obsidian/src/ai/agent-files.js");
 const { glyphForTool, glyphOf, hintOf, titleOf, ourCallIn, withResult } =
 	await import("../apps/obsidian/src/ai/tools.js");
-const { failuresIn, firstGlyphsOf } = await import("../packages/widgetarium/src/studio/assistant/tool-calls.js");
+const { failuresIn, firstGlyphsOf } = await import("../apps/studio/src/assistant/tool-calls.js");
 const { canRenderMarkdown } = await import("../apps/obsidian/src/ai/assistant-port-obsidian.js");
-const { settledPart, Said } = await import("../packages/widgetarium/src/studio/assistant/said.js");
-const { saidElapsed, saidTokens, saidPhase, saidProgress } =
-	await import("../packages/widgetarium/src/studio/assistant/spent.js");
+const { settledPart, Said } = await import("../apps/studio/src/assistant/said.js");
+const { saidElapsed, saidTokens, saidPhase, saidProgress } = await import("../apps/studio/src/assistant/spent.js");
 const { createElement } = await import("react");
 const { renderToStaticMarkup } = await import("react-dom/server");
 const { briefGoesInTheMessage } = await import("../apps/obsidian/src/ai/providers.js");
-const { sendState } = await import("../packages/widgetarium/src/studio/assistant/composer.js");
+const { sendState } = await import("../apps/studio/src/assistant/composer.js");
 const { buildsIn, startIn } = await import("../apps/obsidian/src/ai/builds.js");
 
 let failed = 0;

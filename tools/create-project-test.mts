@@ -12,8 +12,8 @@ const KIT_CONSUMER = "src/widgets/greeting/widget.tsx";
 const BUNDLED_ICON = "src/app-icon.svg";
 const RENAMED_APP = 'Farm & "Field"';
 const ICON_LINK = '<link rel="icon" type="image/svg+xml" href="/icon.svg">';
-const KIT_CONSUMER_SOURCE = `import { createWidget, defineLayout, defineMetadata } from "widgetarium";
-import { Card } from "widgetarium/kit";
+const KIT_CONSUMER_SOURCE = `import { createWidget, defineLayout, defineMetadata } from "@widgetarium/core";
+import { Card } from "@widgetarium/kit";
 
 const Greeting = createWidget({ draw: () => <Card>Hello</Card> });
 

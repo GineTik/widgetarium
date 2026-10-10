@@ -1,0 +1,31 @@
+{
+	"name": "@widgetarium/studio",
+	"version": "0.1.0",
+	"description": "The studio drawn around a Widgetarium app",
+	"license": "FSL-1.1-ALv2",
+	"type": "module",
+	"files": [
+		"dist"
+	],
+	"exports": {
+		".": {
+			"source": "./src/index.ts",
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		},
+		"./studio.css": {
+			"style": "./dist/studio.css",
+			"default": "./dist/studio.css"
+		}
+	},
+	"dependencies": {
+		"@widgetarium/core": "0.1.0",
+		"@widgetarium/kit": "0.1.0",
+		"@widgetarium/pack-catalogue": "0.1.0"
+	},
+	"peerDependencies": {
+		"react": "^19.2.8",
+		"react-dom": "^19.2.8",
+		"zod": "^4.6.5"
+	}
+}

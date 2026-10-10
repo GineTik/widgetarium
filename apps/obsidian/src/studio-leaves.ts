@@ -1,7 +1,7 @@
 import type { App, TFile, ViewState, WorkspaceLeaf } from "obsidian";
 import type { AssistantPort } from "@widgetarium/core/engine/assistant-port.js";
 import { registerPacks } from "@widgetarium/core/engine/packs.js";
-import { STUDIO_PACKS } from "widgetarium/studio";
+import { STUDIO_PACKS } from "@widgetarium/studio";
 import type WidgetariumPlugin from "./main.js";
 import type { AppProjects } from "./app-projects.js";
 import { bindNote } from "./host.js";

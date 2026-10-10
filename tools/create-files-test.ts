@@ -100,7 +100,7 @@ function templateDriftFrom(): string[] {
 	const tools = fieldOf(template, "devDependencies");
 	const declared = {
 		...RecordSchema.parse(fieldOf(jsonAt(path.join(REPO, "packages/kit/package.json")), "dependencies")),
-		...RecordSchema.parse(fieldOf(jsonAt(path.join(REPO, "packages/widgetarium/package.json")), "peerDependencies")),
+		...RecordSchema.parse(fieldOf(jsonAt(path.join(REPO, "apps/studio/package.json")), "peerDependencies")),
 	};
 	const runtimeDrift = Object.entries(declared).filter(([name, range]) => fieldOf(runtime, name) !== range);
 	const toolDrift = ["typescript", "@types/react", "@types/react-dom", "@types/node"].filter(

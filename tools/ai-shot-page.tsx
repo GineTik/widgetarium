@@ -1,7 +1,7 @@
 import "./packs-registered.ts";
 import { createElement as h } from "react";
 import { createRoot } from "react-dom/client";
-import { AssistantChat } from "../packages/widgetarium/src/studio/assistant/assistant-chat.js";
+import { AssistantChat } from "../apps/studio/src/assistant/assistant-chat.js";
 import { obsidianAssistantPort } from "../apps/obsidian/src/ai/assistant-port-obsidian.js";
 import { DEFAULT_PRESET, PRESETS } from "../apps/obsidian/src/ai/providers.js";
 import type { AssistantCall, ProgressWidget } from "../packages/core/src/engine/assistant-port.js";
