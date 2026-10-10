@@ -68,6 +68,9 @@ export function createDeclaredWidget(props: DeclaredProps, draw: (drawn: DrawnPr
 	const declared = Object.entries(props).map(([name, held]) => [name, declarationOfInterface(held)] as const);
 	const reads = declared.filter(([, declaration]) => declaration?.kind !== "command");
 	const commands = declared.filter((entry): entry is readonly [string, Declaration] => entry[1]?.kind === "command");
+	function DrawnWidget({ drawn }: { readonly drawn: DrawnProps }): ReactNode {
+		return draw(drawn);
+	}
 	function InjectedWidget(given: GivenProps): ReactNode {
 		const drawn: Record<string, unknown> = {};
 		const failures: string[] = [];
@@ -81,7 +84,7 @@ export function createDeclaredWidget(props: DeclaredProps, draw: (drawn: DrawnPr
 		for (const [name, declaration] of commands)
 			drawn[name] = useCommandOver(name, declaration, given[name], readGatewayIds);
 		if (failures.length > 0) return notReadNotice(failures);
-		return draw(drawn);
+		return h(DrawnWidget, { drawn });
 	}
 	InjectedWidget.declared = props;
 	return InjectedWidget;

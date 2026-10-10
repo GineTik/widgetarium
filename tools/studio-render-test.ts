@@ -32,9 +32,15 @@ interface Seen {
 	readonly cornerGap?: number | null;
 	readonly refusal?: string | null;
 	readonly appsFailure?: string | null;
+	readonly navigated?: boolean;
+	readonly memoryLeftTask?: boolean;
+	readonly locationAfter?: string;
+	readonly param?: unknown;
+	readonly navigatedBack?: boolean;
+	readonly paramAfter?: unknown;
 }
 
-type Mode = "app" | "studio" | "studio-mac";
+type Mode = "app" | "studio" | "studio-mac" | "studio-memory";
 
 const VIEW = { width: 1280, height: 800 };
 const BAND_INSET_PX = 8;
@@ -79,6 +85,15 @@ const aiButton = () => document.querySelector('[aria-label="AI assistant"]');
 	if (window.__MODE__ === "studio-mac") {
 		menuButton().click();
 		seen.appsFailure = (await until(() => document.querySelector('[data-name="Apps failure"]')))?.textContent ?? null;
+		report();
+	}
+	if (window.__MODE__ === "studio-memory") {
+		seen.navigated = window.__ROUTER__.navigate("/done/7");
+		seen.memoryLeftTask = Boolean(await until(() => !document.querySelector("[data-task]")));
+		seen.locationAfter = location.pathname;
+		seen.param = await window.__PARAM__("id");
+		seen.navigatedBack = window.__ROUTER__.navigate("/");
+		seen.paramAfter = await window.__PARAM__("id");
 		report();
 	}
 	if (window.__MODE__ !== "studio") return;
@@ -231,6 +246,25 @@ check(
 	"a host holding no apps list says so in the menu instead of a draft",
 	mac.seen.appsFailure === NOT_AVAILABLE_ON_HOST,
 	mac.seen.appsFailure,
+);
+
+const memory = await seenIn("studio-memory");
+check("a studio over an opened project drew without a failure", memory.reported === "", memory.reported);
+check(
+	"a memory router draws the route it starts at",
+	(memory.seen.routeDom ?? "").includes("Water the ferns"),
+	memory.seen.routeTop,
+);
+check("and navigates to another route", memory.seen.navigated === true && memory.seen.memoryLeftTask === true, {
+	navigated: memory.seen.navigated,
+	left: memory.seen.memoryLeftTask,
+});
+check("without touching the page's own location", memory.seen.locationAfter === "/", memory.seen.locationAfter);
+check("writing the route's params under the key it was given", memory.seen.param === "7", memory.seen.param);
+check(
+	"and a route without that param does not read it",
+	memory.seen.navigatedBack === true && (memory.seen.paramAfter ?? null) === null,
+	{ navigatedBack: memory.seen.navigatedBack, paramAfter: memory.seen.paramAfter },
 );
 
 server.close();

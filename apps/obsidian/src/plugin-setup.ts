@@ -37,6 +37,8 @@ import { openDesignInLeaf, registerDesignView } from "./design-view.js";
 import { appScreenOfNote } from "./app-of-note.js";
 import { APP_BLOCK_LANGUAGE, drawAppBlock } from "./app-block.js";
 import { createAppProjects, type AppProjects } from "./app-projects.js";
+import { registerStudioView } from "./studio-leaves.js";
+import { followAppFolderRename } from "./studio-renames.js";
 import type WidgetariumPlugin from "./main.js";
 import type { WantedWidgets } from "./main.js";
 
@@ -210,6 +212,7 @@ function registerAppBlocks(plugin: WidgetariumPlugin): void {
 		drawAppBlock(place, source, element, context),
 	);
 	reportVaultChangesTo(plugin, projects);
+	registerStudioView(plugin, projects);
 }
 
 function reportVaultChangesTo(plugin: WidgetariumPlugin, projects: AppProjects): void {
@@ -222,6 +225,9 @@ function reportVaultChangesTo(plugin: WidgetariumPlugin, projects: AppProjects):
 		plugin.app.vault.on("rename", (file: TAbstractFile, was: string) => {
 			projects.changed(was);
 			changed(file);
+			followAppFolderRename(plugin.app, file, was).catch((failure: unknown) =>
+				console.error(`[widgetarium] notes naming ${was} → not renamed to ${file.path}`, failure),
+			);
 		}),
 	);
 }

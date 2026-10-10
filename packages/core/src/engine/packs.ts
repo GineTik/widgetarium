@@ -131,6 +131,7 @@ export interface PortsHost {
 	readonly studio?: StudioHostPort | undefined;
 	readonly confirm?: ((said: string) => Promise<boolean>) | undefined;
 	readonly notePath?: string | undefined;
+	readonly pageParamsKey?: string | undefined;
 }
 
 const OUTSIDE_THE_PACK = '{id} is not named under its pack "{pack}": name it "{pack}/…"';

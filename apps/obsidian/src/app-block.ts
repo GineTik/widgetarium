@@ -3,18 +3,17 @@ import { createElement as h, useState } from "react";
 import type { ReactElement } from "react";
 import { readAppPointer } from "@widgetarium/core/project/app-pointer.js";
 import { render } from "@widgetarium/core/engine/render.js";
-import { failureMessage } from "@widgetarium/core/engine/failure-message.js";
 import { withPageParams } from "@widgetarium/core/engine/page-params.js";
 import { normalizeBoard } from "@widgetarium/core/model.js";
 import type { Board } from "@widgetarium/core/model.js";
 import { WidgetSurface } from "@widgetarium/core/surface.js";
 import { shieldFromEditor } from "@widgetarium/core/editor-shield.js";
-import { formatFindings, matchProjectRoute } from "@widgetarium/core/project/index.js";
-import type { ProjectFinding } from "@widgetarium/core/project/index.js";
+import { matchProjectRoute } from "@widgetarium/core/project/index.js";
 import type { OpenedRoute } from "@widgetarium/core/project/open-project.js";
 import type { BoardRegistry, SurfaceHost } from "@widgetarium/core/surface/use-surface-shared.js";
 import type { MountContext } from "./board-mount.js";
 import type { AppOpening, AppProjects } from "./app-projects.js";
+import { refusalOf, reportNotDrawn, reportRefused } from "./app-refusal.js";
 
 export const APP_BLOCK_LANGUAGE = "widgetarium-app";
 
@@ -52,18 +51,15 @@ interface RouteBoardProps {
 
 const BLOCK_UNREADABLE =
 	'This widgetarium-app block cannot be read: {reason}. It names a project folder and a route, such as "app: Apps/Demo" and "route: /tasks/42".';
-const PROJECT_REFUSED = "The app at {folder} cannot open:\n{findings}";
 const NO_SUCH_ROUTE = "The app at {folder} has no route answering {route}. Its routes: {routes}.";
-const NOT_DRAWN = "The app at {folder} could not be drawn: {failure}";
 const NO_ROUTES = "none";
-const REFUSAL_CLASS = "wg-app-refusal";
 const QUERY_OR_HASH = /[?#].*$/;
 
 export function drawAppBlock(place: AppBlockPlace, source: string, element: HTMLElement, context: MountContext): void {
 	const { node, closers } = blockNodeIn(element, context);
 	const block = appBlockOf(source);
 	if ("refusal" in block) return render(refusalOf(block.refusal), node);
-	closers.push(...drawnOnEveryChange(place.projects, { block, node, host: place.hostOf(context.sourcePath) }));
+	closers.push(...redrawOnEveryChange(place.projects, { block, node, host: place.hostOf(context.sourcePath) }));
 }
 
 function blockNodeIn(element: HTMLElement, context: MountContext): BlockNode {
@@ -78,7 +74,7 @@ function blockNodeIn(element: HTMLElement, context: MountContext): BlockNode {
 	return { node, closers };
 }
 
-function drawnOnEveryChange(projects: AppProjects, placed: PlacedBlock): (() => void)[] {
+function redrawOnEveryChange(projects: AppProjects, placed: PlacedBlock): (() => void)[] {
 	let latest = 0;
 	const draw = (): void => {
 		const asked = (latest += 1);
@@ -108,14 +104,13 @@ async function drawOpening(view: BlockView, asked: Promise<AppOpening>): Promise
 		const drawn = await drawnOpening(view, await asked);
 		if (view.isCurrent()) render(drawn, view.node);
 	} catch (failure) {
-		console.error(`[widgetarium] the app at ${view.block.folder} → not drawn`, failure);
-		const said = NOT_DRAWN.replace("{folder}", view.block.folder).replace("{failure}", failureMessage(failure));
+		const said = reportNotDrawn(view.block.folder, failure);
 		if (view.isCurrent()) render(refusalOf(said), view.node);
 	}
 }
 
 async function drawnOpening({ block, host, node }: BlockView, opening: AppOpening): Promise<ReactElement> {
-	if (!opening.ok) return refusalOf(projectRefusal(block.folder, opening.findings));
+	if (!opening.ok) return refusalOf(reportRefused(block.folder, opening.findings));
 	const matched = matchProjectRoute(opening.routes, block.route);
 	if (!matched) return refusalOf(missingRoute(block, opening.routes));
 	// TRADE-OFF: params are kept per note, so two app blocks in one note share them
@@ -145,14 +140,6 @@ function RouteBoard({ board, registry, host, boardNode }: RouteBoardProps): Reac
 
 function routePageOf(board: unknown): Board {
 	return { ...normalizeBoard(board), mode: "expanded" };
-}
-
-function refusalOf(said: string): ReactElement {
-	return h("pre", { className: REFUSAL_CLASS }, said);
-}
-
-function projectRefusal(folder: string, findings: readonly ProjectFinding[]): string {
-	return PROJECT_REFUSED.replace("{folder}", folder).replace("{findings}", formatFindings(findings));
 }
 
 function missingRoute({ folder, route }: AppBlock, routes: readonly OpenedRoute[]): string {

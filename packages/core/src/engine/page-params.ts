@@ -5,11 +5,11 @@ export type PageParams = Readonly<Record<string, string>>;
 
 const cellOfParam = createViewCells();
 
-// TRADE-OFF: kept per note, not per tab; two tabs of one note share their parameters
-export function pageParamCell(notePath: string, key: string): ViewCell {
-	return cellOfParam(`${notePath}#${key}`);
+// TRADE-OFF: an app block keys by its note, so two tabs of one block share
+export function pageParamCell(keptAt: string, key: string): ViewCell {
+	return cellOfParam(`${keptAt}#${key}`);
 }
 
-export async function withPageParams(notePath: string, params: PageParams): Promise<void> {
-	for (const [key, value] of Object.entries(params)) await pageParamCell(notePath, key).update(value);
+export async function withPageParams(keptAt: string, params: PageParams): Promise<void> {
+	for (const [key, value] of Object.entries(params)) await pageParamCell(keptAt, key).update(value);
 }

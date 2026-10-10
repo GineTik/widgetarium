@@ -219,6 +219,48 @@ check(
 	[1],
 );
 
+const { gatewayCache } = await import("../packages/core/src/gateway/cache.ts");
+const { useState } = await import("react");
+const NOT_READ_NOTICE = "A prop could not be read";
+const flakyRead = { fails: false };
+const flakyNote = soloGateway(
+	() => {
+		if (flakyRead.fails) throw new Error("the stored note went away");
+		return "kept";
+	},
+	{},
+	"problems-test/flaky-note",
+);
+const HookedProbe = createDeclaredWidget(
+	declareProps({ note: IValueGateway.of(z.string().default("")).pick("get") }),
+	({ note }) => {
+		const [held] = useState(note);
+		return h("span", null, String(held));
+	},
+);
+async function drawnAfterReadFails(): Promise<{ readonly text: string; readonly hookErrors: number }> {
+	const said: string[] = [];
+	const quietError = console.error;
+	console.error = (...parts: unknown[]) => said.push(parts.map(String).join(" "));
+	const drawnInto = document.createElement("div");
+	render(h(HookedProbe, { note: flakyNote }), drawnInto);
+	await new Promise((settle) => setTimeout(settle, 0));
+	flakyRead.fails = true;
+	await gatewayCache.refetch(["problems-test/flaky-note"]);
+	await new Promise((settle) => setTimeout(settle, 0));
+	const text = drawnInto.textContent ?? "";
+	render(null, drawnInto);
+	console.error = quietError;
+	return { text, hookErrors: said.filter((line) => line.includes("hooks")).length };
+}
+const afterFailure = await drawnAfterReadFails();
+check(
+	"a value read failing after the first draw draws the notice",
+	afterFailure.text.startsWith(NOT_READ_NOTICE),
+	true,
+);
+check("and React counts the same hooks on every draw", afterFailure.hookErrors, 0);
+
 const { ENGINE_SCOPE } = await import("../packages/core/src/registry.js");
 const { propSchemaOf } = await import("../packages/core/src/surface/prop-gateway.ts");
 const DRAWS_NOTHING = new Proxy({}, { get: () => () => null });

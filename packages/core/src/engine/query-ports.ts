@@ -1,6 +1,7 @@
 import { propConfig } from "../model.js";
 import { declaredOf, needsOf, requestedVerbs, typedIn, typedKeyOf, withFieldsPatched } from "../gateway/props.js";
 import { refOf } from "../gateway/refs.js";
+import type { ViewCell } from "../gateway/refs.js";
 import type { HostGatewayContext, HostSpec } from "./host-context.js";
 import { portsOf } from "./packs.js";
 import { pageParamCell } from "./page-params.js";
@@ -13,9 +14,13 @@ export function queryPortsOf(context: HostGatewayContext, isDeclaredSource: bool
 		prop: propPortOf(spec, isDeclaredSource),
 		kept: keptPortOf(context),
 		screen: { cell: cellFor },
-		page: { param: (key) => (host.notePath ? pageParamCell(host.notePath, key) : null) },
+		page: { param: (key) => pageParamOf(host.pageParamsKey ?? host.notePath, key) },
 		notes: host,
 	};
+}
+
+function pageParamOf(keptAt: string | undefined, key: string): ViewCell | null {
+	return keptAt ? pageParamCell(keptAt, key) : null;
 }
 
 function propPortOf(spec: HostSpec, isDeclaredSource: boolean): PropPort {

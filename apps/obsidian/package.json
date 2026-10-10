@@ -13,7 +13,8 @@
 		"@widgetarium/pack-stats": "0.1.0",
 		"modern-screenshot": "^4.7.0",
 		"react": "^19.2.8",
-		"react-dom": "^19.2.8"
+		"react-dom": "^19.2.8",
+		"widgetarium": "0.1.0"
 	},
 	"devDependencies": {
 		"@types/node": "^22.20.4",

@@ -34,8 +34,10 @@ export class ItemView {
 	constructor(leaf: unknown) {
 		this.leaf = leaf;
 	}
+	onPaneMenu(): void {}
 }
 export class MarkdownView extends ItemView {}
+export class FileView extends ItemView {}
 export class PluginSettingTab {
 	app: unknown;
 	plugin: unknown;
@@ -51,7 +53,7 @@ export class MarkdownRenderChild {
 		this.containerEl = containerEl;
 	}
 }
-export const Platform = { isDesktopApp: true, isMobileApp: false, isMobile: false };
+export const Platform = { isDesktopApp: true, isMobileApp: false, isMobile: false, isMacOS: false, isWin: false };
 
 const FENCE = "```";
 const FENCE_LANGUAGE_LINE = /^[a-z-]*\n/;

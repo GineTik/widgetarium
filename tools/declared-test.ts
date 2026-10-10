@@ -726,7 +726,7 @@ check(
 			resource: "Disk",
 		}),
 	),
-	'@test/answers names the resource "Disk"; name one of This board, Another widget, Note, Folder, Search, Statistics, Web, Git, Catalogue, Console',
+	'@test/answers names the resource "Disk"; name one of This board, Another widget, Note, Folder, Search, Statistics, Web, Git, Catalogue, Apps, Console',
 );
 check(
 	"outputWithin marks a bound, output does not",

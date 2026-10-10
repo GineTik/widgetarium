@@ -195,4 +195,14 @@ itself built from `@studio` widgets and a pack. Replaced: `@chrome` widgets in t
 - **The host says where its window buttons are**; the shell never guesses a platform. A browser tab
   reports nothing, an installed PWA reads the Window Controls Overlay.
 - **The studio's state is one per page.** `STUDIO_STATE` is a module singleton, so two studios on
-  one page would share their view and sidebar; a page draws one studio.
+  one page would share their view and sidebar; a page draws one studio. Two studio panes in one
+  Obsidian window share it too, accepted for now: the canvas opened in one opens in the other.
+- **Obsidian displays the engine's app and draws nothing of its own.** An app note is switched to a
+  studio `FileView` the way the Kanban plugin switches its boards: a front matter key decides, and
+  "Open as Markdown" is remembered per leaf. Replaced: chrome a note laid over itself. A file type
+  of its own stays refused for the reason the block was chosen.
+- **The router is a port.** `ProjectRouter` (pathname, subscribe, navigate, where params are kept)
+  has a browser and a memory implementation, because a pane inside Obsidian cannot own the window's
+  history and two panes must not move each other.
+- **One composition.** `startOpenedStudio` takes routes and a built registry, so the Vite build and
+  the vault's in-memory compile reach the same studio; only how a project is opened differs.

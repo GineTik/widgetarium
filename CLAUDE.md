@@ -63,7 +63,8 @@ others open too.
   event under the folder drops the opening and redraws its blocks.
 - **One route matcher**: `matchProjectRoute` (`project-route-match.ts`), static segments before
   `:param`. The browser router and the block both use it, and both write the matched params into
-  page-param cells — keyed by the pathname in a browser, the note in Obsidian — read through
+  page-param cells — keyed by the pathname in a browser, the note in an app block, and note, leaf and
+  pathname in the studio view, so a param never reaches another route or tab — read through
   `@core/page-param`. A second matcher is the defect this line forbids.
 
 Pinned by `test:project` (config, discovery, findings), `test:create-files` (the files `create`
@@ -550,6 +551,19 @@ open live in `STUDIO_STATE`, written only by `@studio` commands. What the host c
 `StudioHostPort` (`packages/core/src/engine/studio-host.ts`): window-button insets, which the safe areas
 read as `--wg-studio-inset-left|right`, and the apps; a host without them answers "not available" and
 the shell stays. `@catalogue` ships inside the plugin (`tools/system-widget-files.mts`), read-only.
+
+**In Obsidian an app note opens in the studio view, and Obsidian draws nothing of its own over it.** A
+markdown note whose front matter holds `widgetarium-app: <project folder>` (and optionally
+`widgetarium-route: /path`, `/` by default) is switched, in whatever leaf opens it, to the
+`widgetarium-studio` `FileView` (`apps/obsidian/src/studio-view.ts`, switching in `studio-leaves.ts`),
+which hides its own header and mounts `WidgetariumStudio` through `startOpenedStudio`, the one
+function the browser's `startStudio` calls too. Its pane menu's "Open as Markdown" switches that leaf
+back and is remembered for that leaf and note only. Inside Obsidian routing is a `createMemoryRouter`
+per view, never `pushState`, its page params kept under the note's path as the block keeps them; a
+browser's `createBrowserRouter` keeps them by pathname. Obsidian lends only its `StudioHostPort`
+(`studio-host-obsidian.ts`): window-button insets, the vault's projects (folders holding
+`widgetarium.json`), opening an app's note and creating "Untitled app". A `widgetarium-app` code block
+still embeds one route in an ordinary note. `test:obsidian-studio` pins the switch and the drawing.
 
 **A tile is carried to a path, and the drop says what it means.** A carry measures every box and leaf
 on the board, takes the deepest one under the pointer, and reads the pointer against it: along the

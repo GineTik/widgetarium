@@ -17,7 +17,9 @@
 		"allowUnreachableCode": false,
 		"allowUnusedLabels": false,
 		"noEmit": true,
-		"jsx": "preserve",
+		"jsx": "react",
+		"jsxFactory": "h",
+		"jsxFragmentFactory": "Fragment",
 		"tsBuildInfoFile": "../../node_modules/.cache/widgetarium/obsidian.tsbuildinfo",
 		"isolatedModules": true,
 		"verbatimModuleSyntax": true,
@@ -26,5 +28,5 @@
 		"types": ["node"]
 	},
 	"references": [{ "path": "../../packages/kit" }, { "path": "../../packages/core" }],
-	"include": ["src/**/*.ts", "../../packages/core/src/*.d.ts"]
+	"include": ["src/**/*.ts", "../../packages/core/src/*.d.ts", "../../packages/kit/src/jsx-namespace.d.ts"]
 }

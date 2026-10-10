@@ -5,31 +5,49 @@ import { ModuleRegistry } from "@widgetarium/core/engine/module-registry.js";
 import { registerPacks } from "@widgetarium/core/engine/packs.js";
 import { projectPackOf } from "@widgetarium/core/engine/project-pack.js";
 import { matchProjectRoute } from "@widgetarium/core/project/index.js";
+import type { SurfaceHost } from "@widgetarium/core/surface/use-surface-shared.js";
+import { browserHostOf } from "./browser-host.js";
 import { createBrowserRouter } from "./browser-router.js";
-import type { BrowserRouter } from "./browser-router.js";
+import type { ProjectRouter } from "./project-router.js";
 import { NoRoute } from "./no-route.js";
 import { RouteBoard } from "./route-board.js";
 import type { ProjectRouteBoard, WidgetariumAppIdentity, WidgetariumProject } from "./widgetarium-project.js";
 
-export interface StartedProject {
+export type HostOfPathname = (pathname: string) => SurfaceHost;
+
+export interface OpenedApp {
 	readonly app: WidgetariumAppIdentity;
 	readonly routes: readonly ProjectRouteBoard[];
 	readonly registry: ModuleRegistry;
-	readonly router: BrowserRouter;
+}
+
+export interface StartedProject extends OpenedApp {
+	readonly router: ProjectRouter;
+	readonly hostOf: HostOfPathname;
+}
+
+export interface ProjectStart {
+	readonly router?: ProjectRouter;
+	readonly hostOf?: HostOfPathname;
 }
 
 export interface WidgetariumAppProps {
 	readonly project: StartedProject;
 }
 
-export function startProject(project: WidgetariumProject): StartedProject {
+export function startProject(project: WidgetariumProject, start: ProjectStart = {}): StartedProject {
+	return startOpenedProject(openApp(project), start);
+}
+
+export function openApp(project: WidgetariumProject): OpenedApp {
 	registerPacks(corePack, projectPackOf(project.handlers));
-	return {
-		app: project.app,
-		routes: project.routes,
-		registry: new ModuleRegistry(project.widgets),
-		router: createBrowserRouter(project.routes),
-	};
+	return { app: project.app, routes: project.routes, registry: new ModuleRegistry(project.widgets) };
+}
+
+export function startOpenedProject(opened: OpenedApp, start: ProjectStart): StartedProject {
+	const router = start.router ?? createBrowserRouter(opened.routes);
+	const hostOf = start.hostOf ?? ((pathname: string) => browserHostOf(router, router.paramsKeyOf(pathname)));
+	return { ...opened, router, hostOf };
 }
 
 export function WidgetariumApp({ project }: WidgetariumAppProps): ReactElement {
@@ -43,7 +61,7 @@ export function routeElementOf(project: StartedProject, pathname: string): React
 	return h(RouteBoard, {
 		key: pathname,
 		registry: project.registry,
-		router: project.router,
+		hostOf: project.hostOf,
 		route: matched.route,
 		pathname,
 	});

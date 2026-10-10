@@ -11885,6 +11885,24 @@ body.wg-tree-carrying .wg-tile-body {
 	background: var(--wg-kit-page);
 }
 
+body:not(.is-mobile) .workspace-leaf-content[data-type="widgetarium-studio"] > .view-header {
+	display: none;
+}
+
+.workspace-leaf-content[data-type="widgetarium-studio"] > .view-content.wg-studio-view {
+	padding: 0;
+	overflow: hidden;
+}
+
+.wg-studio-mount,
+.wg-studio-view .wg-studio {
+	height: 100%;
+}
+
+.wg-studio-view .wg-studio {
+	background: var(--background-primary);
+}
+
 .wg-studio-band {
 	--wg-board-pad: 0px;
 	--wg-root-head: 0px;
