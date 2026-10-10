@@ -16,7 +16,12 @@ const CONTAINER_BLOCK = /@container[^{]*\{([\s\S]*?)\n\}/g;
 
 const roots = process.argv.slice(2).filter((root) => fs.existsSync(root));
 const classesTheEngineOwns = new Set(["orbi", "wg-widget-root", ...classesStyledIn(pluginSheet())]);
-const offences = roots.flatMap((root) => widgetFiles(root).flatMap(offencesIn));
+const TAILWIND_IMPORT = /@import\s+["']tailwindcss["']/;
+const offences = roots.flatMap((root) =>
+	widgetFiles(root)
+		.filter((file) => !isTailwindStyled(file))
+		.flatMap(offencesIn),
+);
 
 if (offences.length > 0) {
 	console.error("class gate: every class in the markup needs a rule, or the host app styles it instead");
@@ -38,6 +43,10 @@ function offencesIn(file: string): string[] {
 		.filter((name) => !used.has(name) && !quotedInClassExpressions.has(name) && !classesTheEngineOwns.has(name))
 		.map((name) => `${file} — @container rule targets ".${name}", which the markup never uses`);
 	return [...unstyled, ...deadContainerTargets];
+}
+
+function isTailwindStyled(file: string): boolean {
+	return TAILWIND_IMPORT.test(ownSheets(file));
 }
 
 function pluginSheet(): string {

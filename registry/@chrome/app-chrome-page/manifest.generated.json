@@ -1,0 +1,34 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "App chrome",
+	"description": "A window with no header bar: the system's corners, the control menu and the AI button over the app.",
+	"keywords": ["chrome", "window", "titlebar", "safe area", "app switcher", "ai", "layout", "page"],
+	"role": "layout",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto"
+	},
+	"mounts": {
+		"start": {
+			"default": [],
+			"label": "Left corner",
+			"hint": "The left safe area, then the control menu."
+		},
+		"end": {
+			"default": [],
+			"label": "Right corner",
+			"hint": "The AI button, then the right safe area."
+		},
+		"app": {
+			"default": [],
+			"label": "App",
+			"hint": "Everything the app draws under and between the corners."
+		}
+	},
+	"props": {},
+	"migrates": [],
+	"files": ["widget.tsx", "widget.css"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

@@ -401,6 +401,176 @@
 			}
 		}
 	},
+	"@chrome/ai-button": {
+		"getIsShown": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Shown",
+			"hint": "Off keeps its place empty, so the corner never shifts for people without AI.",
+			"writes": ["get"],
+			"default": {
+				"value": true
+			}
+		},
+		"getLook": {
+			"kind": "value",
+			"control": "choice",
+			"type": "line",
+			"label": "Look",
+			"hint": "Rest, hovered, or pressed with the sidebar open.",
+			"design": true,
+			"writes": ["get"],
+			"default": {
+				"value": "rest"
+			},
+			"options": [
+				{
+					"value": "rest",
+					"label": "Rest"
+				},
+				{
+					"value": "hover",
+					"label": "Hovered"
+				},
+				{
+					"value": "open",
+					"label": "Sidebar open"
+				}
+			]
+		}
+	},
+	"@chrome/app-chrome-page": {},
+	"@chrome/control-menu": {
+		"getCurrentApp": {
+			"kind": "value",
+			"control": "json",
+			"label": "This app",
+			"hint": "The app the menu stands in: its mark is the button.",
+			"writes": ["get"],
+			"default": {
+				"value": {
+					"id": "widgetarium",
+					"name": "Widgetarium",
+					"icon": "layout-grid",
+					"shape": "clover4-leaf",
+					"tone": "purple",
+					"line": "Your apps, built from widgets"
+				}
+			}
+		},
+		"getApps": {
+			"kind": "collection",
+			"label": "Apps",
+			"hint": "Every app the person can switch to.",
+			"writes": ["list", "get"],
+			"default": {
+				"rows": []
+			}
+		},
+		"getVariant": {
+			"kind": "value",
+			"control": "choice",
+			"type": "line",
+			"label": "Arrangement",
+			"hint": "How the list and this app's controls share the dropdown.",
+			"design": true,
+			"writes": ["get"],
+			"default": {
+				"value": "two-columns"
+			},
+			"options": [
+				{
+					"value": "two-columns",
+					"label": "List left, controls right"
+				},
+				{
+					"value": "mirrored",
+					"label": "Controls left, list right"
+				},
+				{
+					"value": "stacked",
+					"label": "Controls over the list"
+				},
+				{
+					"value": "rail",
+					"label": "A rail of marks beside the controls"
+				}
+			]
+		},
+		"getIsOpen": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Starts open",
+			"hint": "Whether the dropdown is open when drawn.",
+			"design": true,
+			"writes": ["get"],
+			"default": {
+				"value": false
+			}
+		}
+	},
+	"@chrome/safe-area": {
+		"getSide": {
+			"kind": "value",
+			"control": "choice",
+			"type": "line",
+			"label": "Side",
+			"hint": "Left holds macOS's three buttons, right holds Windows' three.",
+			"writes": ["get"],
+			"default": {
+				"value": "left"
+			},
+			"options": [
+				{
+					"value": "left",
+					"label": "left"
+				},
+				{
+					"value": "right",
+					"label": "right"
+				}
+			]
+		},
+		"getPlatform": {
+			"kind": "value",
+			"control": "choice",
+			"type": "line",
+			"label": "Platform",
+			"hint": "The system the app runs on; a corner the system leaves free keeps only a narrow edge.",
+			"writes": ["get"],
+			"default": {
+				"value": "macos"
+			},
+			"options": [
+				{
+					"value": "macos",
+					"label": "macos"
+				},
+				{
+					"value": "windows",
+					"label": "windows"
+				},
+				{
+					"value": "web",
+					"label": "web"
+				}
+			]
+		},
+		"getDrawsSystemButtons": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Draw the system's buttons",
+			"hint": "Only for a design: the system draws its own buttons over this space.",
+			"design": true,
+			"writes": ["get"],
+			"default": {
+				"value": false
+			}
+		}
+	},
 	"@default/add-button": {
 		"getLabel": {
 			"kind": "value",

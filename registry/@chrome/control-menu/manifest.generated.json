@@ -1,0 +1,108 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Control menu",
+	"description": "The app's corner button: switch to another app, or edit, set up and connect this one.",
+	"keywords": ["app switcher", "menu", "workspace", "control", "settings", "chrome", "corner", "apps"],
+	"role": "navigation",
+	"size": {
+		"preferredWidth": 36,
+		"preferredHeight": 36
+	},
+	"commands": {
+		"openApp": {
+			"label": "Open an app",
+			"hint": "Switches to the app pressed in the list."
+		},
+		"createApp": {
+			"label": "New app",
+			"hint": "Opens an empty canvas in a new tab."
+		},
+		"editInCanvas": {
+			"label": "Edit in canvas",
+			"hint": "Opens this app's design canvas."
+		}
+	},
+	"props": {
+		"getCurrentApp": {
+			"kind": "value",
+			"control": "json",
+			"label": "This app",
+			"hint": "The app the menu stands in: its mark is the button.",
+			"writes": ["get"],
+			"default": {
+				"value": {
+					"id": "widgetarium",
+					"name": "Widgetarium",
+					"icon": "layout-grid",
+					"shape": "clover4-leaf",
+					"tone": "purple",
+					"line": "Your apps, built from widgets"
+				}
+			}
+		},
+		"getApps": {
+			"kind": "collection",
+			"label": "Apps",
+			"hint": "Every app the person can switch to.",
+			"writes": ["list", "get"],
+			"default": {
+				"rows": []
+			}
+		},
+		"getVariant": {
+			"kind": "value",
+			"control": "choice",
+			"type": "line",
+			"label": "Arrangement",
+			"hint": "How the list and this app's controls share the dropdown.",
+			"design": true,
+			"writes": ["get"],
+			"default": {
+				"value": "two-columns"
+			},
+			"options": [
+				{
+					"value": "two-columns",
+					"label": "List left, controls right"
+				},
+				{
+					"value": "mirrored",
+					"label": "Controls left, list right"
+				},
+				{
+					"value": "stacked",
+					"label": "Controls over the list"
+				},
+				{
+					"value": "rail",
+					"label": "A rail of marks beside the controls"
+				}
+			]
+		},
+		"getIsOpen": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Starts open",
+			"hint": "Whether the dropdown is open when drawn.",
+			"design": true,
+			"writes": ["get"],
+			"default": {
+				"value": false
+			}
+		}
+	},
+	"migrates": [],
+	"files": [
+		"widget.tsx",
+		"action-line.tsx",
+		"app-list.tsx",
+		"app-mark.tsx",
+		"app-rail.tsx",
+		"current-app.tsx",
+		"widget.css"
+	],
+	"dependencies": {},
+	"widgetDependencies": []
+}
