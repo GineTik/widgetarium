@@ -13,12 +13,12 @@
 		"start": {
 			"default": [],
 			"label": "Left corner",
-			"hint": "The left safe area, then the control menu."
+			"hint": "A window corner holding the left safe area and the control menu."
 		},
 		"end": {
 			"default": [],
 			"label": "Right corner",
-			"hint": "The AI button, then the right safe area."
+			"hint": "A window corner holding the AI button and the right safe area."
 		},
 		"app": {
 			"default": [],

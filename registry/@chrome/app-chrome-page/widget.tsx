@@ -18,13 +18,13 @@ const AppChromePage = createWidget({
 				</Container>
 			</div>
 			<div
-				className="pointer-events-none absolute inset-x-0 top-0 flex h-[50px] items-center justify-between"
+				className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between"
 				data-name="Corners"
 			>
-				<div className="pointer-events-auto flex h-[50px] items-center gap-1" data-name="Left corner">
+				<div className="pointer-events-auto" data-name="Left corner">
 					<Slots of={start} />
 				</div>
-				<div className="pointer-events-auto flex h-[50px] items-center gap-1" data-name="Right corner">
+				<div className="pointer-events-auto" data-name="Right corner">
 					<Slots of={end} />
 				</div>
 			</div>
@@ -37,8 +37,8 @@ export const metadata = defineMetadata(AppChromePage, {
 	description: "A window with no header bar: the system's corners, the control menu and the AI button over the app.",
 	keywords: ["chrome", "window", "titlebar", "safe area", "app switcher", "ai", "layout", "page"],
 	props: {
-		start: { label: "Left corner", hint: "The left safe area, then the control menu." },
-		end: { label: "Right corner", hint: "The AI button, then the right safe area." },
+		start: { label: "Left corner", hint: "A window corner holding the left safe area and the control menu." },
+		end: { label: "Right corner", hint: "A window corner holding the AI button and the right safe area." },
 		app: { label: "App", hint: "Everything the app draws under and between the corners." },
 	},
 });
@@ -95,12 +95,8 @@ const SAMPLE_APP_BODY = [
 	},
 ];
 
-type Variant = "two-columns" | "mirrored" | "stacked" | "rail";
-
 type MenuLook = {
 	readonly getIsOpen?: boolean;
-	readonly getVariant?: Variant;
-	readonly getCurrentApp?: App;
 	readonly getApps?: readonly App[];
 };
 
@@ -111,6 +107,11 @@ const safeArea = (side: "left" | "right", platform: Platform) => ({
 	props: { getSide: side, getPlatform: platform, getDrawsSystemButtons: true },
 });
 
+const corner = (side: "left" | "right", items: readonly object[]) => ({
+	widget: "@chrome/corner",
+	props: { getSide: side, items },
+});
+
 const menu = (props: MenuLook) => ({
 	widget: "@chrome/control-menu",
 	props: { getCurrentApp: READING_APP, getApps: [...SAMPLE_APPS], ...props },
@@ -119,12 +120,10 @@ const menu = (props: MenuLook) => ({
 const aiButton = (props: AiLookProps) => ({ widget: "@chrome/ai-button", props });
 
 const windowOf = (platform: Platform, menuProps: MenuLook = {}, ai: AiLookProps = {}) => ({
-	start: [safeArea("left", platform), menu(menuProps)],
-	end: [aiButton(ai), safeArea("right", platform)],
+	start: [corner("left", [safeArea("left", platform), menu(menuProps)])],
+	end: [corner("right", [aiButton(ai), safeArea("right", platform)])],
 	app: SAMPLE_APP_BODY,
 });
-
-const opened = (variant: Variant): MenuLook => ({ getIsOpen: true, getVariant: variant });
 
 export const states = defineStates(AppChromePage, {
 	macOS: windowOf("macos"),
@@ -133,11 +132,8 @@ export const states = defineStates(AppChromePage, {
 	Hover: windowOf("macos", {}, { getLook: "hover" }),
 	"Sidebar open": windowOf("macos", {}, { getLook: "open" }),
 	"Space kept": windowOf("macos", {}, { getIsShown: false }),
-	"A two columns": windowOf("macos", opened("two-columns")),
-	"B mirrored": windowOf("macos", opened("mirrored")),
-	"C stacked": windowOf("macos", opened("stacked")),
-	"D rail": windowOf("macos", opened("rail")),
-	"A on Windows": windowOf("windows", opened("two-columns")),
+	Open: windowOf("macos", { getIsOpen: true }),
+	"Open on Windows": windowOf("windows", { getIsOpen: true }),
 	"No apps": { ...windowOf("macos", { getIsOpen: true, getApps: [] }), app: [] },
 	Empty: { start: [], end: [], app: [] },
 });

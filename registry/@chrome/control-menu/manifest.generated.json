@@ -4,7 +4,7 @@
 	"title": "Control menu",
 	"description": "The app's corner button: switch to another app, or edit, set up and connect this one.",
 	"keywords": ["app switcher", "menu", "workspace", "control", "settings", "chrome", "corner", "apps"],
-	"role": "navigation",
+	"role": "control",
 	"size": {
 		"preferredWidth": 34,
 		"preferredHeight": 34
@@ -48,36 +48,6 @@
 				"rows": []
 			}
 		},
-		"getVariant": {
-			"kind": "value",
-			"control": "choice",
-			"type": "line",
-			"label": "Arrangement",
-			"hint": "How the list and this app's controls share the dropdown.",
-			"design": true,
-			"writes": ["get"],
-			"default": {
-				"value": "two-columns"
-			},
-			"options": [
-				{
-					"value": "two-columns",
-					"label": "List left, controls right"
-				},
-				{
-					"value": "mirrored",
-					"label": "Controls left, list right"
-				},
-				{
-					"value": "stacked",
-					"label": "Controls over the list"
-				},
-				{
-					"value": "rail",
-					"label": "A rail of marks beside the controls"
-				}
-			]
-		},
 		"getIsOpen": {
 			"kind": "value",
 			"control": "boolean",
@@ -92,15 +62,7 @@
 		}
 	},
 	"migrates": [],
-	"files": [
-		"widget.tsx",
-		"action-line.tsx",
-		"app-list.tsx",
-		"app-mark.tsx",
-		"app-rail.tsx",
-		"current-app.tsx",
-		"widget.css"
-	],
+	"files": ["widget.tsx", "action-line.tsx", "app-list.tsx", "app-mark.tsx", "current-app.tsx", "widget.css"],
 	"dependencies": {},
 	"widgetDependencies": []
 }

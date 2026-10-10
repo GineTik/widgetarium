@@ -466,36 +466,6 @@
 				"rows": []
 			}
 		},
-		"getVariant": {
-			"kind": "value",
-			"control": "choice",
-			"type": "line",
-			"label": "Arrangement",
-			"hint": "How the list and this app's controls share the dropdown.",
-			"design": true,
-			"writes": ["get"],
-			"default": {
-				"value": "two-columns"
-			},
-			"options": [
-				{
-					"value": "two-columns",
-					"label": "List left, controls right"
-				},
-				{
-					"value": "mirrored",
-					"label": "Controls left, list right"
-				},
-				{
-					"value": "stacked",
-					"label": "Controls over the list"
-				},
-				{
-					"value": "rail",
-					"label": "A rail of marks beside the controls"
-				}
-			]
-		},
 		"getIsOpen": {
 			"kind": "value",
 			"control": "boolean",
@@ -507,6 +477,29 @@
 			"default": {
 				"value": false
 			}
+		}
+	},
+	"@chrome/corner": {
+		"getSide": {
+			"kind": "value",
+			"control": "choice",
+			"type": "line",
+			"label": "Side",
+			"hint": "Which top corner: the right one lines its items up against the right edge.",
+			"writes": ["get"],
+			"default": {
+				"value": "left"
+			},
+			"options": [
+				{
+					"value": "left",
+					"label": "left"
+				},
+				{
+					"value": "right",
+					"label": "right"
+				}
+			]
 		}
 	},
 	"@chrome/safe-area": {
