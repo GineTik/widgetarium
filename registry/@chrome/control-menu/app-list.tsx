@@ -1,6 +1,7 @@
 import { Emblem, EmblemFallback, Icon, PopoverItem, ScrollArea } from "widgetarium/kit";
 import type { App } from "@chrome/lib";
 import { AppMark, MARK_PX } from "./app-mark";
+import { NoOtherApps } from "./no-other-apps";
 
 export interface AppListProps {
 	readonly apps: readonly (App & { readonly ref: string })[];
@@ -10,12 +11,12 @@ export interface AppListProps {
 }
 
 export function AppList({ apps, currentId, onOpen, onCreate }: AppListProps) {
+	if (!apps.some((app) => app.id !== currentId)) return <NoOtherApps onCreate={onCreate} />;
 	return (
 		<div className="flex min-w-0 flex-1 flex-col gap-parts" data-name="App list">
-			<span className="px-3 text-xs text-muted-foreground">Apps</span>
+			<span className="px-3 pt-3 text-xs text-muted-foreground">Apps</span>
 			<ScrollArea fade className="max-h-[228px]">
 				<div className="flex flex-col" data-name="Apps">
-					{apps.length === 0 ? <span className="px-3 text-sm text-muted-foreground">No other apps yet</span> : null}
 					{apps.map((app) => (
 						<PopoverItem key={app.ref} checked={app.id === currentId} onClick={() => onOpen(app.id)}>
 							<span className="flex min-w-0 items-center gap-items">

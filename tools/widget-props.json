@@ -452,9 +452,7 @@
 				"value": {
 					"id": "widgetarium",
 					"name": "Widgetarium",
-					"icon": "layout-grid",
 					"shape": "clover4-leaf",
-					"tone": "purple",
 					"line": "Your apps, built from widgets"
 				}
 			}

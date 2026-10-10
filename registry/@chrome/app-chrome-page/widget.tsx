@@ -1,7 +1,8 @@
 import { ISlot, createWidget, defineLayout, defineMetadata, defineStates } from "widgetarium";
-import type { SlotList } from "widgetarium";
 import { Container } from "widgetarium/kit";
 import { READING_APP, SAMPLE_APPS, WIDGETARIUM_APP } from "@chrome/lib";
+import type { App } from "@chrome/lib";
+import { Slots } from "./slots";
 
 const AppChromePage = createWidget({
 	inject: {
@@ -30,16 +31,6 @@ const AppChromePage = createWidget({
 		</div>
 	),
 });
-
-function Slots({ of }: { readonly of: SlotList }) {
-	return (
-		<>
-			{of.map((Slot) => (
-				<Slot key={Slot.id} />
-			))}
-		</>
-	);
-}
 
 export const metadata = defineMetadata(AppChromePage, {
 	title: "App chrome",
@@ -104,29 +95,36 @@ const SAMPLE_APP_BODY = [
 	},
 ];
 
+type Variant = "two-columns" | "mirrored" | "stacked" | "rail";
+
+type MenuLook = {
+	readonly getIsOpen?: boolean;
+	readonly getVariant?: Variant;
+	readonly getCurrentApp?: App;
+	readonly getApps?: readonly App[];
+};
+
+type AiLookProps = { readonly getLook?: AiLook; readonly getIsShown?: boolean };
+
 const safeArea = (side: "left" | "right", platform: Platform) => ({
 	widget: "@chrome/safe-area",
 	props: { getSide: side, getPlatform: platform, getDrawsSystemButtons: true },
 });
 
-const menu = (props: Readonly<Record<string, unknown>>) => ({
+const menu = (props: MenuLook) => ({
 	widget: "@chrome/control-menu",
 	props: { getCurrentApp: READING_APP, getApps: [...SAMPLE_APPS], ...props },
 });
 
-const aiButton = (props: Readonly<Record<string, unknown>>) => ({ widget: "@chrome/ai-button", props });
+const aiButton = (props: AiLookProps) => ({ widget: "@chrome/ai-button", props });
 
-const windowOf = (
-	platform: Platform,
-	menuProps: Readonly<Record<string, unknown>> = {},
-	ai: { getLook?: AiLook; getIsShown?: boolean } = {},
-) => ({
+const windowOf = (platform: Platform, menuProps: MenuLook = {}, ai: AiLookProps = {}) => ({
 	start: [safeArea("left", platform), menu(menuProps)],
 	end: [aiButton(ai), safeArea("right", platform)],
 	app: SAMPLE_APP_BODY,
 });
 
-const opened = (variant: string) => ({ getIsOpen: true, getVariant: variant });
+const opened = (variant: Variant): MenuLook => ({ getIsOpen: true, getVariant: variant });
 
 export const states = defineStates(AppChromePage, {
 	macOS: windowOf("macos"),

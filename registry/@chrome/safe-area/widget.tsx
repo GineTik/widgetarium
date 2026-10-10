@@ -2,6 +2,7 @@ import { IQuery, createWidget, defineLayout, defineMetadata, defineStates } from
 import { z } from "zod";
 import { PLATFORMS } from "@chrome/lib";
 import { CaptionButtons } from "./caption-buttons";
+import { TrafficLights } from "./traffic-lights";
 
 const SIDES = ["left", "right"] as const;
 
@@ -10,8 +11,6 @@ type Platform = (typeof PLATFORMS)[number];
 type Side = (typeof SIDES)[number];
 
 const OWNER_OF_SIDE: Readonly<Record<Side, Platform>> = { left: "macos", right: "windows" };
-
-const TRAFFIC_LIGHTS = ["bg-red", "bg-yellow", "bg-green"] as const;
 
 const SafeArea = createWidget({
 	inject: {
@@ -25,18 +24,6 @@ const SafeArea = createWidget({
 		return <CaptionButtons isDrawn={drawsSystemButtons} />;
 	},
 });
-
-function TrafficLights({ isDrawn }: { readonly isDrawn: boolean }) {
-	return (
-		<span
-			className="flex h-11 w-[76px] shrink-0 items-center gap-2 pl-4"
-			data-name="macOS window buttons"
-			aria-hidden="true"
-		>
-			{isDrawn ? TRAFFIC_LIGHTS.map((fill) => <span key={fill} className={`size-3 rounded-pill ${fill}`} />) : null}
-		</span>
-	);
-}
 
 export const metadata = defineMetadata(SafeArea, {
 	title: "Safe area",

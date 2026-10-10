@@ -70,7 +70,7 @@
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx", "caption-buttons.tsx", "widget.css"],
+	"files": ["widget.tsx", "caption-buttons.tsx", "traffic-lights.tsx", "widget.css"],
 	"dependencies": {},
 	"widgetDependencies": []
 }

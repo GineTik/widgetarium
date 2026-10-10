@@ -29,10 +29,12 @@ const ControlMenu = createWidget({
 		const [isOpen, setOpen] = useState<boolean | null>(null);
 		const { data: apps } = useData(getApps, { limit: APPS_AT_MOST });
 		const shown = isOpen ?? getIsOpen;
-		const closedAfter = (run: () => Promise<unknown>) => async () => {
-			setOpen(false);
-			await run();
-		};
+		const closedAfter =
+			<Answer,>(run: () => Promise<Answer>) =>
+			async () => {
+				setOpen(false);
+				await run();
+			};
 		const listed = {
 			apps,
 			currentId: current.id,

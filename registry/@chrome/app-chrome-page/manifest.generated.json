@@ -28,7 +28,7 @@
 	},
 	"props": {},
 	"migrates": [],
-	"files": ["widget.tsx", "widget.css"],
+	"files": ["widget.tsx", "slots.tsx", "widget.css"],
 	"dependencies": {},
 	"widgetDependencies": []
 }
