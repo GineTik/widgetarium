@@ -13,13 +13,6 @@ export function writeTemplates(templates: string, target: string, values: Templa
 	}
 }
 
-export function copyFiles(from: string, to: string, isCopied: (relative: string) => boolean): void {
-	for (const relative of filesUnder(from, isCopied)) {
-		fs.mkdirSync(path.dirname(path.join(to, relative)), { recursive: true });
-		fs.copyFileSync(path.join(from, relative), path.join(to, relative));
-	}
-}
-
 export function filled(text: string, values: TemplateValues): string {
 	return text.replace(PLACEHOLDER, (placeholder, key: string) => values[key] ?? placeholder);
 }

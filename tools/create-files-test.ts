@@ -9,6 +9,18 @@ import type { CliOutput } from "../packages/widgetarium/src/cli/cli-output.js";
 import { z } from "zod";
 import { fieldOf } from "./export-source.mts";
 import { fakeEngine } from "./fake-engine.ts";
+import {
+	COMPONENTS,
+	KIT_FOLDER,
+	collidingPartsRefusal,
+	componentNamesIn,
+	filesIn,
+	kitBytesIn,
+	kitFilesIn,
+	kitModulesInRepo,
+	missingFromMerged,
+	exportsInRepoOf,
+} from "./merged-kit-probe.ts";
 
 interface CliRun {
 	readonly code: number;
@@ -16,11 +28,9 @@ interface CliRun {
 }
 
 const REPO = path.resolve(import.meta.dirname, "..");
-const KIT_SOURCE = path.join(REPO, "packages/kit/src");
 const SCHEMA_FILE = path.join(REPO, "packages/widgetarium/widgetarium.schema.json");
 const TEMPLATE_MANIFEST = path.join(REPO, "packages/widgetarium/templates/project/package.json");
 const WRITE_SCHEMA = process.argv.includes("--write-schema");
-const KIT_FOLDER = "src/shared/kit";
 const HANDBOOK_FOLDER = "docs/widgetarium";
 const UNFILLED = /\{(?:name|handbook|paths\.[a-z]+)\}/;
 const RecordSchema = z.record(z.string(), z.unknown()).catch({});
@@ -67,20 +77,6 @@ async function cli(argv: readonly string[]): Promise<CliRun> {
 	return { code, said: lines.join("\n") };
 }
 
-function filesIn(root: string): string[] {
-	return fs
-		.readdirSync(root, { recursive: true, withFileTypes: true })
-		.filter((entry) => entry.isFile())
-		.map((entry) => path.relative(root, path.join(entry.parentPath, entry.name)))
-		.sort();
-}
-
-function kitModulesInRepo(): string[] {
-	return filesIn(KIT_SOURCE).filter(
-		(at) => /\.tsx?$/.test(at) && !at.split(path.sep).some((part) => part.startsWith(".")),
-	);
-}
-
 function jsonAt(at: string): unknown {
 	return JSON.parse(fs.readFileSync(at, "utf8"));
 }
@@ -124,10 +120,36 @@ try {
 	const files = filesIn(project);
 	const outsideCopies = files.filter((at) => !at.startsWith(`${KIT_FOLDER}/`) && !at.startsWith(`${HANDBOOK_FOLDER}/`));
 	check("create writes exactly the expected files beside the kit and the handbook", outsideCopies, EXPECTED_FILES);
+	const kitFiles = kitFilesIn(project);
+	const components = componentNamesIn(kitFiles);
+	const repoComponents = componentNamesIn(kitModulesInRepo());
+	console.log(`     kit component files: ${repoComponents.length} in the repo, ${components.length} in the project`);
 	check(
-		"the kit is copied whole: every module of packages/kit/src and its theme, no dot-folder",
-		files.filter((at) => at.startsWith(`${KIT_FOLDER}/`)).map((at) => at.slice(KIT_FOLDER.length + 1)),
-		[...kitModulesInRepo(), "theme.css"].sort(),
+		"every kit module outside components/ is copied, and the theme, no dot-folder",
+		kitFiles.filter((at) => !at.startsWith(COMPONENTS)),
+		[...kitModulesInRepo().filter((at) => !at.startsWith(COMPONENTS)), "theme.css"].sort(),
+	);
+	check(
+		"every component of the repo lands in the project file named for it or for a root it extends",
+		repoComponents.filter((name) => !components.some((file) => file === name || name.startsWith(`${file}-`))),
+		[],
+	);
+	check(
+		"the calendar is one calendar.tsx exporting Calendar and every part, with no calendar-* file beside it",
+		[
+			components.filter((name) => name.startsWith("calendar")),
+			missingFromMerged(project, "calendar.tsx", ["Calendar", ...exportsInRepoOf("calendar")]),
+		],
+		[["calendar"], []],
+	);
+	check(
+		"button-group.tsx holds its separator and text, button.tsx its mark and skeleton",
+		[
+			missingFromMerged(project, "button-group.tsx", exportsInRepoOf("button-group")),
+			missingFromMerged(project, "button.tsx", ["button-mark", "button-skeleton"].flatMap(exportsInRepoOf)),
+			components.filter((name) => name.startsWith("button-group-")),
+		],
+		[[], [], []],
 	);
 	check(
 		"the handbook holds the pages that apply to a project",
@@ -190,6 +212,15 @@ try {
 		[planted.code, planted.said.includes(DUPLICATE_WIDGET)],
 		[1, true],
 	);
+
+	check(
+		"a name two parts of one component both declare is refused, not merged",
+		collidingPartsRefusal(),
+		"the kit cannot be merged into one file per component: components/dial.ts declares SIZE, which components/dial-face.ts declares too, in dial",
+	);
+	const twin = path.join(scratch, "twin");
+	await cli(["create", twin, "--engine", engine, "--no-install", "--no-git"]);
+	check("the merged kit is the same bytes on a second create", kitBytesIn(twin), kitBytesIn(project));
 
 	const again = await cli(["create", project, "--engine", engine, "--no-install", "--no-git"]);
 	check("create refuses a folder that is not empty", [again.code, again.said.includes("is not empty")], [1, true]);

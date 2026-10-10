@@ -55,6 +55,7 @@
 		}
 	},
 	"dependencies": {
+		"@babel/parser": "^8.0.5",
 		"@widgetarium/core": "0.1.0",
 		"@widgetarium/kit": "0.1.0",
 		"@widgetarium/pack-core": "0.1.0"
