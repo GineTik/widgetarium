@@ -145,3 +145,33 @@ repo import it: `Field` with no children is still the input, `Tabs items` still 
 `Dialog isOpen` still the one-piece panel. A `Button` or `Badge` with no `variant` keeps the kit's
 quiet look rather than shadcn's primary one, because every caller written before the switch passes
 none.
+
+## Apps are projects
+
+An app is a folder with `widgetarium.json`, built with Vite and run in a browser or drawn in a note.
+The decisions, each with what it replaced:
+
+- **The engine ships as versioned packages** whose `exports` carry `source` → `src`, `types` and
+  `default` → `dist`. The monorepo builds from source with no build step between packages, and a
+  project installs the same code as tarballs; `pack:engine` refuses siblings asking for each other at
+  different versions, so the packages move as one.
+- **Widgets and the kit are copied in, and a project holds no widget versions.** shadcn/ui's model:
+  `create` copies the kit, `add` copies a widget and writes `origin.json` naming where it came from,
+  and nothing updates either afterwards. A widget installed as a dependency would be one an agent
+  cannot refactor to the project's schemas; the vault's commit-pinned generations stay a vault law.
+- **The contract is tRPC-shaped.** A port is an input schema and an output schema, a handler answers
+  it with `(input, ctx)`, `ctx` carrying the user, an abort signal and the host; a list is
+  `PageOf(Row)` read with `PageInputSchema`. One shape on both sides of the call, checked by zod at
+  the crossing, which is what an agent already writes for an API.
+- **A filter is a plain field of the input**, picked from the record's shared schema, so the handler's
+  input schema says exactly what it can serve.
+- **The matching machinery is out of the contract.** Type-only matching is deleted. Field maps
+  (`gateway/mapped.ts`), the filter operators (`gateway/operators.ts`) and `aka` still serve vault
+  boards bound to notes; in a project the schema is owned by code, and a feature handler does their
+  job in code a person can read.
+- **One route matcher**, `matchProjectRoute` in core. The browser app's own copy was deleted when the
+  note block needed one, so a path answers the same route in a browser and in a note.
+- **A note block, not a `.wapp` file.** A `widgetarium-app` code block names a project folder and a
+  route and draws in reading mode and Live Preview through one code-block processor, in any note,
+  while the project stays a folder that also runs alone. A file type of its own would have needed a
+  view of its own and held the app in a second format.

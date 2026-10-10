@@ -56,6 +56,31 @@ widgetarium add @default/table
 with its imports moved onto `@libs`, and writes `origin.json` beside it. In a vault,
 `node {tool} find`, `show` and `install` (tools.md) do the same.
 
+### Where a project runs
+
+**In a browser**, `npm run dev`: the Vite plugin reads the project and `widgetarium/app` draws the
+board of the route matching the address. A widget moves between routes with
+`navigator.navigate("/tasks/42")`; a link no route answers is refused. A route folder `[id]` matches
+any one segment, and a static segment wins over a parameter. The matched `id` is a page parameter:
+a widget reads it through a prop bound to `{ implementation: "@core/page-param", fields: { key: "id" } }`,
+like any parameter handed over by a press.
+
+**In Obsidian**, a code block in any note draws one route of a project in the vault:
+
+````md
+```widgetarium-app
+app: Apps/Shop
+route: /tasks/42
+```
+````
+
+`route` defaults to `/`. Saving any file under the folder redraws the block. A project that does
+not check draws its findings in the block instead of a board.
+
+**The kit differs between the two for now.** In a browser the project draws with its own copy in
+`src/shared/kit`; inside Obsidian its widgets draw with the plugin's kit, so a change to the copy
+shows only in the browser.
+
 ## The folder
 
 A widget folder holds `widget.tsx`, or `widget.ts` when it draws no JSX, and any `.ts` or `.tsx`

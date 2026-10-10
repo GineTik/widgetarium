@@ -37,8 +37,10 @@ A command written `node {tool} …` in the handbook belongs to the Obsidian plug
 
 ## Catalogue code is a starting point
 
-Install it, then move its schema into `{paths.schemas}` or map this project's records to it in a
-feature handler, and refactor it to the project like code of your own.
+1. Find it: `npx widgetarium catalogue search <words>`, then `catalogue show <id>` for its props and commands.
+2. `npx widgetarium add <id>`, with `--as <name>` when the name is taken; it lands in `{paths.widgets}` and is yours, never updated.
+3. Move its schema into `{paths.schemas}`, or map this project's records to it in a feature handler under `{paths.logic}`.
+4. `npm run typecheck && npm run check`.
 
 ## Code style
 
@@ -53,6 +55,8 @@ feature handler, and refactor it to the project like code of your own.
 - `npm run dev`: the app on a local server.
 - `npm run typecheck`: TypeScript over `src` and `vite.config.ts`.
 - `npm run check`: `widgetarium check`, every layer against `widgetarium.json`; exits 1 on findings.
-- `npx widgetarium catalogue` and `npx widgetarium add`: coming in S8.
+- `npx widgetarium catalogue list | search <words> | show <id>`: the widgets the registries offer.
+- `npx widgetarium add <id> [--as <name>]`: copies one into `{paths.widgets}`.
+- `npx widgetarium check`: what `npm run check` runs.
 
 After every change run `npm run typecheck && npm run check`.

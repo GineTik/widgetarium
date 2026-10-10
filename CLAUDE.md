@@ -23,7 +23,7 @@ packages/core     FSL  the board builder: tree, engine, queries and commands, re
 packages/packs/*  MIT  every query and command implementation, one workspace per pack (@core, @obsidian, @stats, @git): schemas, *Query, *Command; the host registers them
 packages/kit      MIT  everything drawn: TSX, one file per kit item in components/ (emblem, button, layout, popover, …); plate laws in utils/plate-laws.ts
 packages/sdk      FSL  what a widget author compiles against: types/widgetarium.d.ts
-packages/widgetarium FSL  the package a project's widgets import: `widgetarium`, `widgetarium/kit[/emojis|/charts]`
+packages/widgetarium FSL  what a project imports: `widgetarium`, `widgetarium/kit[/emojis|/charts]`, `/app`, `/vite`, and the `widgetarium` CLI
 registry/         MIT  the widget library everyone installs from: @default, @flow, @media
 ```
 
@@ -36,6 +36,40 @@ it reads a `dist` that `npm run pack:engine` deletes after packing. `npm run pac
 packs each one into `dist-packages/`; `npm run test:engine-package` installs the tarballs into a
 project outside the repo and type-checks a widget there. Widgets import `z` from `zod`; the engine
 hands `zod` to vault widgets like React.
+
+**An app is a project folder, and one reader decides what it holds.** `widgetarium.json` at its root
+(`ProjectConfigSchema`, `packages/core/src/project/project-config.ts`) requires only `name`: every
+layer's path has a default, a path is project-relative with `/` and never `..`, and `aliases` adds to
+`@kit`, `@schemas`, `@libs`, `@logic` and `@widgets`. `discover-project.ts` walks every layer
+recursively through the `ProjectFiles` port — over Node (`project-files-node.ts`) and over the vault
+(`apps/obsidian/src/project-files-vault.ts`) — and finds a handler by parsing its class, never by
+running it. `checkDiscovered` in `check-project.ts` is the one judge: the CLI's `check`, the Vite
+plugin and the Obsidian block all refuse a project through it, so a project one of them opens the
+others open too.
+
+- **The CLI** is `packages/widgetarium/src/cli`, `npx widgetarium create | check | catalogue | add`.
+  `create` vendors the engine tarballs into the app, copies the kit into `paths.kit` and writes
+  aliases sending `@widgetarium/kit` and its subpaths there. `add` copies a catalogue widget, writes
+  `origin.json` beside it and never writes over a widget of the same name: there are no widget
+  versions in a project, so nothing may ever update code a person refactored.
+- **The standalone app** is `widgetarium/app` (`startProject`, `WidgetariumApp`) fed by
+  `virtual:widgetarium/project`, which the `widgetarium/vite` plugin builds from discovery and fails
+  the build on findings. `widgetarium/styles.css` is cut at pack time from `src/browser-host.css` and
+  `apps/obsidian/styles.css` (`tools/pack-engine.mts`), so a board style reaches an app only by a pack.
+- **In Obsidian** a `widgetarium-app` code block names `app: <folder>` and `route: <path>`
+  (`app-block.ts`). `app-projects.ts` opens a project only when a block draws it — **a start reads no
+  project file** — compiling its modules in memory (`project-program.ts`) into the module space vault
+  widgets get, so they draw with the plugin's kit, not the project's copy (TODO in that file). A vault
+  event under the folder drops the opening and redraws its blocks.
+- **One route matcher**: `matchProjectRoute` (`project-route-match.ts`), static segments before
+  `:param`. The browser router and the block both use it, and both write the matched params into
+  page-param cells — keyed by the pathname in a browser, the note in Obsidian — read through
+  `@core/page-param`. A second matcher is the defect this line forbids.
+
+Pinned by `test:project` (config, discovery, findings), `test:create-files` (the files `create`
+lays), `test:create` (a created app installs, type-checks, checks clean and builds), `test:catalogue-cli`,
+`test:project-render` (a created app draws its routes in headless Chrome), `test:app-block`,
+`test:engine-package` and `test:engine-surface` (the packed export sets).
 
 **Kit imports nothing but React, tailwind-merge and, behind `/charts` and `/showcase` alone, Recharts; core never
 imports the app.** A plate law lives in

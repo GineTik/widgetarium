@@ -50,6 +50,20 @@ In a project made by `widgetarium create` there is no vault: the same catalogue 
 `widgetarium catalogue search <words>`, `catalogue show <id>` and `widgetarium add <id>`, which copy
 the widget into the project as code of its own (catalogue.md).
 
+## The project CLI
+
+`npx widgetarium <command>` in a project; none of the commands above run there.
+
+| Command                            | Does                                                                                    |
+| ---------------------------------- | --------------------------------------------------------------------------------------- |
+| `create <dir> [--name <app>]`      | a new app in an empty folder: Vite, React, TypeScript, Tailwind, zod, the kit copied in |
+| `check [dir]`                      | every layer against `widgetarium.json`; exits 1 on findings                             |
+| `catalogue list \| search <words>` | the widgets the registries offer, ranked by the words for `search`                      |
+| `catalogue show <id>`              | one widget's card: props, commands, files, libs, npm dependencies                       |
+| `add <id> [--as <name>]`           | copies the widget into the widgets folder, never over one of the same name              |
+
+`catalogue` and `add` take `--registry <folder or URL>`; `catalogue` takes `--json`.
+
 ## Taking a base
 
 ```bash
