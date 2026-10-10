@@ -1,4 +1,5 @@
 import { JSDOM } from "jsdom";
+import { drawnTextOf } from "./drawn-text.ts";
 import { fakeVault, type FakeVault } from "./fake-vault.ts";
 import { isObject } from "../packages/core/src/engine/is-object.js";
 
@@ -23,10 +24,7 @@ const { publishWidget } = await import("./publish.ts");
 
 let failed = 0;
 let checks = 0;
-const pathIn = (value: unknown, ...keys: readonly string[]): unknown =>
-	keys.reduce<unknown>((held, key) => (isObject(held) ? held[key] : undefined), value);
 const keysOf = (value: unknown): string[] => (isObject(value) ? Object.keys(value) : []);
-const isDrawing = (value: unknown): value is (props: unknown) => unknown => typeof value === "function";
 
 function check(name: string, got: unknown, want: unknown): void {
 	checks += 1;
@@ -104,9 +102,7 @@ async function drawnBy(vault: FakeVault): Promise<string> {
 	await withoutTheReport(() => registry.load());
 	const held = registry.get(ID);
 	if (!held?.component) return String(held?.error ?? "no widget at all");
-	const drawn = held.component({});
-	const drawing = pathIn(drawn, "type");
-	return String(isDrawing(drawing) ? pathIn(drawing(pathIn(drawn, "props")), "props", "children") : undefined);
+	return String(drawnTextOf(held.component));
 }
 
 const vault = fakeVault();

@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
+import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { REPO, packEngine, type PackedPackage } from "./pack-engine.mts";
@@ -8,6 +9,8 @@ import { fieldOf } from "./export-source.mts";
 const FROM_THE_REPO = ["react", "react-dom", "zod", "typescript", "@types/react", "@types/react-dom"];
 const LIB_CHECK_ON = ["--skipLibCheck", "false"];
 const SHIPPED_DECLARATION = "node_modules/widgetarium/dist/index.d.ts";
+const SHIPPED_STUDIO = ["node_modules/widgetarium/dist/studio.js", "node_modules/widgetarium/dist/studio.css"];
+const STUDIO_SHEET = "widgetarium/studio.css";
 const UNRESOLVABLE_IMPORT =
 	'import type { Missing } from "widgetarium-shipped-nowhere";\nexport type Broken = Missing;\n';
 
@@ -106,6 +109,19 @@ function typeErrorsIn(project: string, widget: string, options: readonly string[
 	}
 }
 
+function missingIn(project: string, files: readonly string[]): string {
+	return files.filter((file) => !fs.existsSync(path.join(project, file))).join(", ");
+}
+
+function resolvedSheetIn(project: string, specifier: string): string {
+	try {
+		const resolved = createRequire(path.join(project, "package.json")).resolve(specifier);
+		return path.relative(fs.realpathSync(project), resolved);
+	} catch (failure) {
+		return `unresolved: ${String(fieldOf(failure, "message") ?? failure)}`;
+	}
+}
+
 function withShippedDeclarationBroken<T>(project: string, run: () => T): T {
 	const declaration = path.join(project, SHIPPED_DECLARATION);
 	const shipped = fs.readFileSync(declaration, "utf8");
@@ -129,6 +145,12 @@ try {
 			.map(({ name }) => name)
 			.join(", "),
 		"",
+	);
+	check("the widgetarium tarball ships the studio's code and sheet", missingIn(project, SHIPPED_STUDIO), "");
+	check(
+		`a created app's import of ${STUDIO_SHEET} resolves to the shipped sheet`,
+		resolvedSheetIn(project, STUDIO_SHEET),
+		"node_modules/widgetarium/dist/studio.css",
 	);
 	check("a widget importing the engine, the kit and zod by name typechecks", typeErrorsIn(project, WIDGET).trim(), "");
 	check(

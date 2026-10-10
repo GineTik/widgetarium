@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { JSDOM } from "jsdom";
+import { drawnTextOf } from "./drawn-text.ts";
 import { fakeVault, type FakeVault } from "./fake-vault.ts";
 import { isObject } from "../packages/core/src/engine/is-object.js";
 
@@ -153,7 +154,7 @@ check(
 	[...shelf.files.keys()].filter((at) => at.startsWith(INSTALLED)).sort(),
 	[`${INSTALLED}/build/widget.js`, `${INSTALLED}/widget.tsx`],
 );
-check("and it draws", pathIn((await loadedFrom(shelf))?.component?.({}), "props", "children"), "only a source");
+check("and it draws", drawnTextOf((await loadedFrom(shelf))?.component), "only a source");
 
 check("a widget's sheet is published under the widget's own name", PUBLISHED_SHEET, "widget.css");
 check("and a vault wears it", await sheetsWornBy(vaultHolding({ "widget.css": ".clock { color: red; }" })), [

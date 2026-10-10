@@ -745,6 +745,17 @@ check(
 	[2, 1, 1],
 );
 check(
+	"a tile of an @chrome widget is named as gone, and only that tile",
+	lintSaid({
+		tiles: [
+			{ id: "a", widget: "@chrome/band" },
+			{ id: "b", widget: "@x/stat" },
+		],
+		layout: rootWith([{ id: "a" }, { id: "b" }]),
+	}),
+	[' tile "a": @chrome/band is gone: the app chrome is now the engine\'s studio; remove this tile'],
+);
+check(
 	"a valid layout gives no errors",
 	lintSaid(
 		boardWith([group("indicators", "How it goes", [{ id: "a" }, { id: "b", surface: "group" }], { surface: "group" })]),

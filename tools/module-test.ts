@@ -1,3 +1,4 @@
+import { drawnTextOf } from "./drawn-text.ts";
 import { fakeVault } from "./fake-vault.ts";
 import { fieldAt, fieldIn, textIn } from "./held-fields.ts";
 import { isRecord } from "./page-dom.ts";
@@ -180,16 +181,8 @@ check(
 	[Boolean(registry.get("@demo/clock")?.component), String(registry.get("@demo/clock")?.error ?? "")],
 	[true, ""],
 );
-check(
-	"and what it draws came out of the package",
-	fieldAt(registry.get("@demo/clock")?.component?.({}), "props", "children"),
-	"dragging",
-);
-check(
-	"the second one draws from the same version",
-	fieldAt(registry.get("@task/board")?.component?.({}), "props", "children"),
-	"dragging",
-);
+check("and what it draws came out of the package", drawnTextOf(registry.get("@demo/clock")?.component), "dragging");
+check("the second one draws from the same version", drawnTextOf(registry.get("@task/board")?.component), "dragging");
 
 const orphan = fakeVault();
 orphan.files.set(
@@ -224,11 +217,7 @@ moved.files.set(
 const elsewhere = new WidgetRegistry({ vault: { adapter: moved } });
 await elsewhere.load();
 check("the package is read where the lock says it was written", String(elsewhere.get("@demo/clock")?.error ?? ""), "");
-check(
-	"and the widget still draws from it",
-	fieldAt(elsewhere.get("@demo/clock")?.component?.({}), "props", "children"),
-	"dragging",
-);
+check("and the widget still draws from it", drawnTextOf(elsewhere.get("@demo/clock")?.component), "dragging");
 
 const unlocked = fakeVault();
 for (const [path, text] of vault.files) unlocked.files.set(path, text);

@@ -530,7 +530,7 @@ Obsidian's two sidebar `ItemView`s draw the same component over the plugin's por
 in the vault or the registry, so an engine update is what changes it. The old catalogue dialog (`packages/core/src/catalogue-dialog.ts` and its parts) is kept
 but hidden: nothing opens it. A box's add press, a slot, a view and a substitution each ask
 `CATALOGUE_REQUESTS` (`packages/core/src/engine/catalogue-requests.ts`), which opens the studio's
-catalogue panel while a studio is on screen (`isStudioOnScreen`), Obsidian's sidebar view otherwise, and
+catalogue panel while a studio is on screen (`studioFrameOf`), Obsidian's sidebar view otherwise, and
 answers the pick; a dialog that asked steps aside until it is answered. A card is carried onto a board
 or into a note by `ICarrier`: every board registers a drop receiver
 (`packages/core/src/surface/drop-receivers.ts`), and a drop on markdown writes a new board block under
@@ -548,8 +548,10 @@ studio. `test:studio-render` measures both in Chrome and proves the app entry bu
 (`packages/widgetarium/src/studio/widgets`) over the `@studio` pack; the route is drawn below it by the
 same `routeElementOf` app mode calls, never merged into the band's tree, because a route nested one
 level down stops being regions and changes its spacing. The outlet's view and the one right panel —
-`none | assistant | catalogue`, toggled by the band's Widgets and AI buttons — live in `STUDIO_STATE`,
-written only by `@studio` commands. The canvas view is the engine's `ProjectCanvas`
+`none | assistant | catalogue`, toggled by the band's Widgets and AI buttons — live in the studio's own
+`StudioState`, made by `createStudioState` (`studio/studio-state.ts`) for each `StartedStudio`, one per leaf
+in Obsidian. That object is the one writer: `@studio` commands reach it as `ports.studioState`, and a
+catalogue ask opens the panel through its `openPanel`. The canvas view is the engine's `ProjectCanvas`
 (`packages/widgetarium/src/studio/canvas`): a frame per route on its own memory router and the
 widgets' `defineStates`, under the one pan-zoom the Obsidian design view imports too. What the host can do is its
 `StudioHostPort` (`packages/core/src/engine/studio-host.ts`): window-button insets, which the safe areas

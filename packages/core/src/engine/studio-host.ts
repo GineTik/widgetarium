@@ -3,6 +3,7 @@ export interface HostApp {
 	readonly name: string;
 	readonly pages: number;
 	readonly firstPage: string | null;
+	readonly refusal?: string;
 }
 
 export interface ChromeInsets {

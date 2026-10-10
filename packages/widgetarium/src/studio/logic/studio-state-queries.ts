@@ -1,32 +1,38 @@
 import { z } from "zod";
+import type { ImplementationPorts } from "@widgetarium/core/engine/packs.js";
 import { IQuery } from "@widgetarium/core/gateway/queries.js";
-import { STUDIO_STATE } from "../studio-state.js";
 import type { NoFields, PanelFields } from "./studio-fields.js";
 
 export class IsInCanvasQuery extends IQuery.output(z.boolean()) {
-	constructor(readonly fields: NoFields) {
+	constructor(
+		readonly fields: NoFields,
+		private readonly ports: ImplementationPorts,
+	) {
 		super();
 	}
 
 	async get(): Promise<boolean> {
-		return STUDIO_STATE.now().view === "canvas";
+		return this.ports.studioState.now().view === "canvas";
 	}
 
 	override subscribe(changed: () => void): () => void {
-		return STUDIO_STATE.subscribe(changed);
+		return this.ports.studioState.subscribe(changed);
 	}
 }
 
 export class IsPanelOpenQuery extends IQuery.output(z.boolean()) {
-	constructor(readonly fields: PanelFields) {
+	constructor(
+		readonly fields: PanelFields,
+		private readonly ports: ImplementationPorts,
+	) {
 		super();
 	}
 
 	async get(): Promise<boolean> {
-		return STUDIO_STATE.now().panel === this.fields.panel;
+		return this.ports.studioState.now().panel === this.fields.panel;
 	}
 
 	override subscribe(changed: () => void): () => void {
-		return STUDIO_STATE.subscribe(changed);
+		return this.ports.studioState.subscribe(changed);
 	}
 }

@@ -1,7 +1,7 @@
 import { JSDOM } from "jsdom";
 import type { DataAdapter, Stat } from "obsidian";
 import type { MountContext } from "../apps/obsidian/src/board-mount.js";
-import type { ProjectAdapter } from "../apps/obsidian/src/project-files-vault.js";
+import type { AppProjectsAdapter } from "../apps/obsidian/src/app-projects.js";
 import type { SurfaceHost } from "../packages/core/src/surface/use-surface-shared.js";
 import { standIn } from "./stand-in.ts";
 
@@ -143,12 +143,12 @@ function check(what: string, got: unknown, wanted: unknown): void {
 	);
 }
 
-function adapterOver(files: VaultFiles): ProjectAdapter {
+function adapterOver(files: VaultFiles): AppProjectsAdapter {
 	const under = (folder: string): string[] => Object.keys(files).filter((path) => path.startsWith(`${folder}/`));
 	const childOf = (folder: string, path: string): string => `${folder}/${path.slice(folder.length + 1).split("/")[0]}`;
 	const isFolder = (path: string): boolean => under(path).length > 0;
 	const stat = (type: Stat["type"]): Stat => ({ type, ctime: 0, mtime: 0, size: 0 });
-	const adapter: Pick<DataAdapter, "list" | "read" | "stat"> = {
+	const adapter: Pick<DataAdapter, "list" | "read" | "stat" | "getResourcePath"> = {
 		list: async (folder) => {
 			const children = [...new Set(under(folder).map((path) => childOf(folder, path)))];
 			return { files: children.filter((path) => path in files), folders: children.filter(isFolder) };
@@ -162,6 +162,7 @@ function adapterOver(files: VaultFiles): ProjectAdapter {
 			if (path in files) return stat("file");
 			return isFolder(path) ? stat("folder") : null;
 		},
+		getResourcePath: (path) => path,
 	};
 	return adapter;
 }

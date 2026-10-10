@@ -7,6 +7,8 @@ export { CatalogueBoard } from "./studio/catalogue/catalogue-board.js";
 export type { CatalogueBoardProps } from "./studio/catalogue/catalogue-board.js";
 export type { CatalogueBoardName } from "./studio/catalogue/catalogue-boards.js";
 export { studioFrameOf } from "./studio/studio-on-screen.js";
+export { createStudioState } from "./studio/studio-state.js";
+export type { StudioState } from "@widgetarium/core/engine/studio-state-port.js";
 export type { ChromeInsets, HostApp, StudioHostPort } from "@widgetarium/core/engine/studio-host.js";
 export { AssistantChat } from "./studio/assistant/assistant-chat.js";
 export { foldOf } from "./studio/assistant/cards/spec-rows.js";

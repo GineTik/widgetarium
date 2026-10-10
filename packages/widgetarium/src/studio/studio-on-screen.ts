@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { RefObject } from "react";
 import type { CatalogueRequest, CatalogueRequests } from "@widgetarium/core/engine/catalogue-requests.js";
-import { STUDIO_STATE } from "./studio-state.js";
+import type { StudioState } from "@widgetarium/core/engine/studio-state-port.js";
 
 const MOUNTED_FRAMES = new Set<HTMLElement>();
 
@@ -14,6 +14,7 @@ export function studioFrameOf({ asker }: Pick<CatalogueRequest, "asker">): HTMLE
 export function useTakesCatalogueAsks(
 	frame: RefObject<HTMLElement | null>,
 	requests: CatalogueRequests,
+	state: StudioState,
 ): number | null {
 	const [taken, setTaken] = useState<number | null>(null);
 	useEffect(() => {
@@ -23,13 +24,13 @@ export function useTakesCatalogueAsks(
 		const stopListening = requests.onAsked((request) => {
 			if (studioFrameOf(request) !== node) return;
 			setTaken(request.id);
-			STUDIO_STATE.openPanel("catalogue");
+			state.openPanel("catalogue");
 		});
 		return () => {
 			MOUNTED_FRAMES.delete(node);
 			stopListening();
 		};
-	}, [frame, requests]);
+	}, [frame, requests, state]);
 	return taken;
 }
 

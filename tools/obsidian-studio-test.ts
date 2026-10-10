@@ -1,5 +1,5 @@
 import type { Menu, Stat } from "obsidian";
-import type { ProjectAdapter } from "../apps/obsidian/src/project-files-vault.ts";
+import type { AppProjectsAdapter } from "../apps/obsidian/src/app-projects.ts";
 import { parse } from "yaml";
 import type WidgetariumPlugin from "../apps/obsidian/src/main.ts";
 import type { ShownNote, StudioPlace } from "../apps/obsidian/src/studio-drawing.ts";
@@ -136,8 +136,13 @@ check("another system keeps no inset", chromeInsetsOf(chrome({ system: "other" }
 
 const { JSDOM } = await import("jsdom");
 const dom = new JSDOM("<!doctype html><body></body>", { pretendToBeVisual: true });
+const LAID_WIDTH_PX = 1200;
 class SilentResizeObserver {
-	observe(): void {}
+	constructor(private readonly measured: (entries: readonly object[]) => void) {}
+	observe(target: Element): void {
+		queueMicrotask(() => this.measured([{ target, contentRect: { width: LAID_WIDTH_PX, height: 800 } }]));
+	}
+	unobserve(): void {}
 	disconnect(): void {}
 }
 Object.assign(globalThis, {
@@ -151,6 +156,10 @@ Object.assign(globalThis, {
 	requestAnimationFrame: dom.window.requestAnimationFrame,
 	cancelAnimationFrame: dom.window.cancelAnimationFrame,
 	MutationObserver: dom.window.MutationObserver,
+	MouseEvent: dom.window.MouseEvent,
+	KeyboardEvent: dom.window.KeyboardEvent,
+	Event: dom.window.Event,
+	CSS: { escape: (said: string) => said.replace(/["\\]/g, "\\$&") },
 	ResizeObserver: SilentResizeObserver,
 });
 Object.assign(dom.window, { ResizeObserver: SilentResizeObserver });
@@ -169,7 +178,8 @@ const { STUDIO_VIEW_TYPE, StudioView } = await import("../apps/obsidian/src/stud
 const { checkedAssistantPort } = await import("./obsidian-assistant-port-checks.ts");
 const { NO_ASSISTANT } = await import("../packages/core/src/engine/assistant-port.js");
 const { NO_CATALOGUE_PORT } = await import("../packages/core/src/engine/catalogue-port.js");
-const { STUDIO_STATE } = await import("../packages/widgetarium/src/studio/studio-state.js");
+const { shutPortsOf } = await import("../packages/core/src/engine/packs.js");
+const { AppsQuery } = await import("../packages/widgetarium/src/studio/logic/apps-queries.js");
 registerPacks(corePack);
 
 const APP_NOTE = { path: "Apps/Farm.md", basename: "Farm" };
@@ -178,8 +188,9 @@ const FRONT_MATTER: Record<string, Record<string, unknown> | undefined> = {
 	"Apps/Farm.md": { "widgetarium-app": "Apps/Farm" },
 };
 const VAULT: Readonly<Record<string, string>> = {
-	"Apps/Farm/widgetarium.json": JSON.stringify({ app: { name: "Farm" } }),
+	"Apps/Farm/widgetarium.json": JSON.stringify({ app: { name: "Farm Stand" } }),
 	"Apps/Farm/src/app/routes/board.json": JSON.stringify({ v: 2, layout: { dir: "column", of: [] } }),
+	"Apps/Broken/widgetarium.json": "{ name: ",
 };
 const EMPTY_BOARD = { v: 2, layout: { dir: "column", of: [] } };
 
@@ -214,7 +225,7 @@ const kindAt = (path: string): Stat["type"] | null => {
 	if (path in VAULT) return "file";
 	return under(path).length > 0 ? "folder" : null;
 };
-const adapter: ProjectAdapter = {
+const adapter: AppProjectsAdapter = {
 	list: async (folder: string) => {
 		const children = [
 			...new Set(under(folder).map((path) => `${folder}/${path.slice(folder.length + 1).split("/")[0]}`)),
@@ -229,6 +240,7 @@ const adapter: ProjectAdapter = {
 		const type = kindAt(path);
 		return type ? { type, ctime: 0, mtime: 0, size: 0 } : null;
 	},
+	getResourcePath: (path: string) => `app://vault/${path}`,
 };
 const host = {
 	platform: "test",
@@ -239,6 +251,11 @@ const host = {
 	notePath: APP_NOTE.path,
 };
 const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 200));
+const UNTIL_MS = 3000;
+async function settledUntil(isThere: () => boolean): Promise<void> {
+	const giveUpAt = Date.now() + UNTIL_MS;
+	while (!isThere() && Date.now() < giveUpAt) await settle();
+}
 
 const opened: string[] = [];
 const projects = createAppProjects(adapter);
@@ -269,6 +286,7 @@ function fakePluginOver(leaves: readonly FakeLeaf[]) {
 				on: (_name: string, run: (file: NoteFile) => void) => metadataChanged.push(run),
 				getFileCache: frontMatterOf,
 			},
+			vault: { getFiles: () => [], adapter },
 		},
 	};
 	registerStudioView(
@@ -416,7 +434,10 @@ const checkedAssistant = await checkedAssistantPort(check);
 
 const place = standIn<StudioPlace>(
 	{
-		app: { metadataCache: { getFileCache: frontMatterOf } },
+		app: {
+			metadataCache: { getFileCache: frontMatterOf },
+			vault: { getFiles: () => Object.keys(VAULT).map((path) => ({ path })), adapter },
+		},
 		projects: createAppProjects(adapter),
 		viewType: STUDIO_VIEW_TYPE,
 		assistant: checkedAssistant.port,
@@ -451,8 +472,10 @@ check(
 	[true, true],
 );
 check("and no refusal", studioNode.querySelector(".wg-app-refusal")?.textContent ?? null, null);
-STUDIO_STATE.togglePanel("assistant");
-await settle();
+const pressIn = (node: HTMLElement, label: string): void =>
+	node.querySelector<HTMLElement>(`button[aria-label="${label}"]`)?.click();
+pressIn(studioNode, "AI assistant");
+await settledUntil(() => studioNode.querySelector(".wg-studio-sidebar .wg-studio-ai-turn.is-mine") !== null);
 check(
 	"the studio's sidebar draws the chat over the assistant the plugin lends",
 	[
@@ -461,8 +484,8 @@ check(
 	],
 	[checkedAssistant.providerLabel, checkedAssistant.asked],
 );
-STUDIO_STATE.togglePanel("catalogue");
-await settle();
+pressIn(studioNode, "Widgets");
+await settledUntil(() => studioNode.querySelector('.wg-studio-sidebar[data-panel="catalogue"] .wg-board') !== null);
 check(
 	"the Widgets panel takes the assistant's place and draws the catalogue board",
 	[
@@ -472,8 +495,59 @@ check(
 	],
 	[1, true, true],
 );
-STUDIO_STATE.togglePanel("catalogue");
-await settle();
+pressIn(studioNode, "Widgets");
+await settledUntil(() => studioNode.querySelector(".wg-studio-sidebar") === null);
+const besideNode = await drawnFor(APP_NOTE);
+await settledUntil(() => studioNode.querySelector('button[aria-label="Farm Stand menu"]') !== null);
+pressIn(studioNode, "Farm Stand menu");
+await settledUntil(() => document.querySelector(".wg-studio-action-said") !== null);
+[...document.querySelectorAll(".wg-studio-action-said")]
+	.find((said) => said.textContent === "Edit in canvas")
+	?.closest<HTMLElement>('[role="button"]')
+	?.click();
+await settledUntil(() => studioNode.querySelector(".wg-studio-canvas") !== null);
+check(
+	"Edit in canvas in one studio shows its canvas and leaves the studio beside it on its route",
+	[
+		studioNode.querySelector(".wg-studio-canvas") !== null,
+		besideNode.querySelector(".wg-studio-canvas") !== null,
+		besideNode.querySelector(".wg-studio-outlet .wg-root") !== null,
+	],
+	[true, false, true],
+);
+pressIn(besideNode, "Widgets");
+await settledUntil(() => besideNode.querySelector(".wg-studio-sidebar") !== null);
+check(
+	"and a panel opened in the one beside it stays there",
+	[studioNode.querySelector(".wg-studio-sidebar"), besideNode.querySelector(".wg-studio-sidebar") !== null],
+	[null, true],
+);
+const opening = await createAppProjects(adapter).open("Apps/Farm");
+check(
+	"an opened app carries the name and icon its widgetarium.json declares",
+	opening.ok ? opening.app : opening.findings,
+	{ name: "Farm Stand", iconHref: "app://vault/Apps/Farm/public/icon.svg" },
+);
+const appRows = await new AppsQuery(
+	{},
+	{
+		...shutPortsOf("apps"),
+		studio: obsidianStudioHost({
+			app: place.app,
+			leaf: standIn<WorkspaceLeaf>({}, [], "leaf"),
+			frame: studioNode,
+			viewType: STUDIO_VIEW_TYPE,
+		}),
+	},
+).query({ cursor: null, limit: 10 });
+check(
+	"a project its widgetarium.json refuses is listed with the refusal as its line",
+	appRows.items.map(({ id, line }) => [id, line.startsWith("widgetarium.json: ")]),
+	[
+		["Apps/Broken", true],
+		["Apps/Farm", false],
+	],
+);
 const plainNode = await drawnFor(PLAIN_NOTE);
 check(
 	"a note naming no app says what to add",
@@ -592,7 +666,9 @@ const renamedFront: Record<string, Record<string, unknown>> = {
 	"Apps/Farm.md": { "widgetarium-app": "Apps/Farm" },
 	"Boards/Farm.md": { "widgetarium-app": "Apps/Farm/" },
 	"Other.md": { "widgetarium-app": "Apps/Farmhouse" },
+	"Stale.md": { "widgetarium-app": "Apps/Elsewhere" },
 };
+const staleCache: Record<string, Record<string, unknown>> = { "Stale.md": { "widgetarium-app": "Apps/Farm" } };
 const moved: string[] = [];
 const renameApp = standIn<App>(
 	{
@@ -600,7 +676,11 @@ const renameApp = standIn<App>(
 			getMarkdownFiles: () => Object.keys(renamedFront).map(noteFileAt),
 			getAbstractFileByPath: (path: string) => (path in renamedFront ? noteFileAt(path) : null),
 		},
-		metadataCache: { getFileCache: (file: { readonly path: string }) => ({ frontmatter: renamedFront[file.path] }) },
+		metadataCache: {
+			getFileCache: (file: { readonly path: string }) => ({
+				frontmatter: staleCache[file.path] ?? renamedFront[file.path],
+			}),
+		},
 		fileManager: {
 			processFrontMatter: async (file: TFile, change: (front: Record<string, unknown>) => void) => {
 				const front = renamedFront[file.path];
@@ -618,9 +698,9 @@ await followAppFolderRename(renameApp, Object.assign(new TFile(), { path: "Apps/
 check("a renamed file is not a renamed folder", moved.length, 0);
 await followAppFolderRename(renameApp, Object.assign(new TFolder(), { path: "Apps/Ranch" }), "Apps/Farm");
 check(
-	"renaming a project folder renames it in every note naming it and moves the note beside it",
+	"renaming a project folder renames it in every note naming it, judged on the front matter written, and moves the note beside it",
 	[Object.values(renamedFront).map((front) => front["widgetarium-app"]), moved],
-	[["Apps/Ranch", "Apps/Ranch", "Apps/Farmhouse"], ["Apps/Farm.md → Apps/Ranch.md"]],
+	[["Apps/Ranch", "Apps/Ranch", "Apps/Farmhouse", "Apps/Elsewhere"], ["Apps/Farm.md → Apps/Ranch.md"]],
 );
 
 if (failed > 0) {

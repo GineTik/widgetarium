@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 import { routeElementOf } from "../app/widgetarium-app.js";
 import type { StartedProject } from "../app/widgetarium-app.js";
 import { ProjectCanvas } from "./canvas/project-canvas.js";
-import type { StudioView } from "./studio-state.js";
+import type { StudioView } from "@widgetarium/core/engine/studio-state-port.js";
 
 export interface StudioOutletProps {
 	readonly project: StartedProject;

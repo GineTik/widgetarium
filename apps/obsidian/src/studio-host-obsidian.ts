@@ -2,7 +2,7 @@ import { Platform, TFile } from "obsidian";
 import type { App, Vault, WorkspaceLeaf } from "obsidian";
 import { failureMessage } from "@widgetarium/core/engine/failure-message.js";
 import type { HostApp, StudioHostPort } from "@widgetarium/core/engine/studio-host.js";
-import { baseNameOf, readProjectConfig } from "@widgetarium/core/project/index.js";
+import { PROJECT_CONFIG_FILE, baseNameOf, readProjectConfig } from "@widgetarium/core/project/index.js";
 import { discoverRoutes } from "@widgetarium/core/project/project-routes.js";
 import { vaultProjectFiles } from "./project-files-vault.js";
 import {
@@ -77,9 +77,14 @@ async function vaultAppsOf(app: App): Promise<readonly HostApp[]> {
 async function hostAppAt(app: App, folder: string): Promise<HostApp> {
 	const files = vaultProjectFiles(app.vault.adapter, folder);
 	const reading = await readProjectConfig(files);
-	if ("refusal" in reading) return { id: folder, name: baseNameOf(folder), pages: 0, firstPage: null };
+	if ("refusal" in reading) return refusedAppAt(folder, `${PROJECT_CONFIG_FILE}: ${reading.refusal}`);
 	const routes = await discoverRoutes(files, reading.config.paths.routes);
 	return { id: folder, name: reading.config.app.name, pages: routes.length, firstPage: routes[0]?.path ?? null };
+}
+
+function refusedAppAt(folder: string, refusal: string): HostApp {
+	console.warn(`[widgetarium] app ${folder} → refused: ${refusal}`);
+	return { id: folder, name: baseNameOf(folder), pages: 0, firstPage: null, refusal };
 }
 
 async function openApp(place: StudioHostPlace, folder: string): Promise<void> {

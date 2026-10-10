@@ -1,6 +1,6 @@
 import { bound, keptValue } from "./shared/board-bindings.js";
 import type { Binding } from "./shared/board-bindings.js";
-import type { OpenablePanel } from "./studio-state.js";
+import type { OpenablePanel } from "@widgetarium/core/engine/studio-state-port.js";
 
 type Mounted = { readonly name: string; readonly widget: string; readonly props: Readonly<Record<string, Binding>> };
 

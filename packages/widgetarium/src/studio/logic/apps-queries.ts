@@ -50,8 +50,8 @@ async function studioAppsOf(ports: ImplementationPorts): Promise<readonly Studio
 	return held.length === 0 ? [DRAFT_APP] : held.map(studioAppOf);
 }
 
-function studioAppOf({ id, name, pages, firstPage }: HostApp): StudioApp {
-	return { id, name, shape: shapeOf(id), line: lineOf(pages, firstPage) };
+function studioAppOf({ id, name, pages, firstPage, refusal }: HostApp): StudioApp {
+	return { id, name, shape: shapeOf(id), line: refusal ?? lineOf(pages, firstPage) };
 }
 
 function shapeOf(id: string): StudioApp["shape"] {

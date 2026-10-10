@@ -1,4 +1,4 @@
-import { OPENABLE_PANELS } from "../studio-state.js";
+import { OPENABLE_PANELS } from "@widgetarium/core/engine/studio-state-port.js";
 import { z } from "zod";
 
 export const NoFieldsSchema = z.object({});

@@ -11,7 +11,7 @@ const ours =
 	WIDGETS_THE_ORBITASK_DESIGN_COVERS.map((n) => widgetSourceAt(`registry/@default/${n}`)).join("\n");
 
 const decl = (css: string, selector: string, prop: string): string | null => {
-	const rules = [...css.matchAll(new RegExp(`([^{}]*)\\${selector}\\s*\\{([^}]*)\\}`, "g"))];
+	const rules = [...css.matchAll(new RegExp(`([^{}]*(?:^|[\\s,>(]))\\${selector}\\s*\\{([^}]*)\\}`, "g"))];
 	if (rules.length === 0) return null;
 	const base = rules.reduce((fewest, rule) =>
 		((rule[1] ?? "").match(/\./g) ?? []).length < ((fewest[1] ?? "").match(/\./g) ?? []).length ? rule : fewest,

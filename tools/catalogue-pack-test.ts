@@ -2,6 +2,7 @@ import type { ImplementationPorts } from "../packages/core/src/engine/packs.ts";
 import type { CataloguePort } from "../packages/core/src/engine/catalogue-port.ts";
 import { NO_CATALOGUE_PORT } from "../packages/core/src/engine/catalogue-port.ts";
 import { NO_STUDIO_HOST } from "../packages/core/src/engine/studio-host.ts";
+import { NO_STUDIO_STATE } from "../packages/core/src/engine/studio-state-port.ts";
 import type { MergedEntry } from "../packages/core/src/catalogue-entries.ts";
 import { createInstallJobs, INSTALL_JOBS } from "../packages/core/src/engine/install-jobs.ts";
 import type { RunInstall } from "../packages/core/src/engine/install-jobs.ts";
@@ -130,6 +131,7 @@ const ports: ImplementationPorts = {
 	},
 	catalogue: port,
 	studio: NO_STUDIO_HOST,
+	studioState: NO_STUDIO_STATE,
 	confirm: async () => true,
 };
 

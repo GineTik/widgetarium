@@ -24,6 +24,8 @@ interface Lint {
 
 const DIRECTIONS = ["row", "column", "swap"];
 const SPACING_WAS = "pad";
+const CHROME_SCOPE_WAS = "@chrome/";
+const CHROME_GONE = "the app chrome is now the engine's studio; remove this tile";
 const HEIGHT_WAS = ["height", "heights"];
 const LEAF_KEYS = ["id", "ratio", "name", "hidden", "surface", "side"];
 const BOX_KEYS = [
@@ -69,6 +71,7 @@ export function lintBoard(raw: unknown, roleOfWidget: RoleOfWidget = () => null)
 	return [
 		...lint.errors,
 		...tiles.flatMap(slotFindings),
+		...tiles.flatMap(chromeTileFindings),
 		...baseFindings(raw, layout, lint.roleOf),
 		...nesting.map((one) => finding(one.path, `law ${one.law}: ${one.reason}`)),
 	];
@@ -111,6 +114,13 @@ function slotFindings(tile: unknown): LintFinding[] {
 		const wrong = outOf(isObject(held) ? held : {}, "surface", SLOT_SURFACES);
 		return wrong ? [finding([], `tile "${String(said["id"])}", slot "${name}": ${wrong}`)] : [];
 	});
+}
+
+function chromeTileFindings(tile: unknown): LintFinding[] {
+	if (!isObject(tile)) return [];
+	const { id, widget } = tile;
+	if (typeof widget !== "string" || !widget.startsWith(CHROME_SCOPE_WAS)) return [];
+	return [finding([], `tile "${String(id)}": ${widget} is gone: ${CHROME_GONE}`)];
 }
 
 function finding(path: NodePath, message: string): LintFinding {

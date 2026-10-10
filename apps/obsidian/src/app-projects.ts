@@ -4,12 +4,15 @@ import { registerPacks } from "@widgetarium/core/engine/packs.js";
 import { PROJECT_PACK_ID, projectPackOf } from "@widgetarium/core/engine/project-pack.js";
 import { openProject } from "@widgetarium/core/project/open-project.js";
 import type { OpenedRoute } from "@widgetarium/core/project/open-project.js";
-import type { ProjectFinding } from "@widgetarium/core/project/index.js";
+import { joinProjectPath, type ProjectApp, type ProjectFinding } from "@widgetarium/core/project/index.js";
+import type { DataAdapter } from "obsidian";
+import type { WidgetariumAppIdentity } from "widgetarium/app";
 import { vaultProjectFiles, type ProjectAdapter } from "./project-files-vault.js";
 
 export type AppOpening =
 	| {
 			readonly ok: true;
+			readonly app: WidgetariumAppIdentity;
 			readonly routes: readonly OpenedRoute[];
 			readonly registry: ModuleRegistry;
 			readonly version: number;
@@ -23,8 +26,10 @@ export interface AppProjects {
 	close(): void;
 }
 
+export type AppProjectsAdapter = ProjectAdapter & Pick<DataAdapter, "getResourcePath">;
+
 interface HeldProjects {
-	readonly adapter: ProjectAdapter;
+	readonly adapter: AppProjectsAdapter;
 	readonly openings: Map<string, Promise<AppOpening>>;
 	readonly redraws: Map<string, Set<() => void>>;
 	readonly timers: Map<string, number>;
@@ -39,7 +44,7 @@ interface AskedOpening {
 
 const SETTLE_MS = 300;
 
-export function createAppProjects(adapter: ProjectAdapter): AppProjects {
+export function createAppProjects(adapter: AppProjectsAdapter): AppProjects {
 	const held: HeldProjects = { adapter, openings: new Map(), redraws: new Map(), timers: new Map(), version: 0 };
 	return {
 		open: (folder) => openingOf(held, folder),
@@ -75,14 +80,24 @@ function openingOf(held: HeldProjects, folder: string): Promise<AppOpening> {
 }
 
 // TODO: scope handler ids per project; two open projects exporting one handler name share the first
-async function openApp(adapter: ProjectAdapter, { folder, version, isCurrent }: AskedOpening): Promise<AppOpening> {
+async function openApp(adapter: AppProjectsAdapter, { folder, version, isCurrent }: AskedOpening): Promise<AppOpening> {
 	const opening = await openProject(vaultProjectFiles(adapter, folder)).catch((failure: unknown) => ({
 		ok: false as const,
 		findings: [{ path: folder, message: failureMessage(failure) }],
 	}));
 	if (!opening.ok) return { ok: false, findings: opening.findings, version };
 	if (isCurrent()) registerPacks({ ...projectPackOf(opening.project.handlers), id: `${PROJECT_PACK_ID}:${folder}` });
-	return { ok: true, routes: opening.project.routes, registry: new ModuleRegistry(opening.project.widgets), version };
+	return {
+		ok: true,
+		app: appIdentityOf(adapter, folder, opening.project.app),
+		routes: opening.project.routes,
+		registry: new ModuleRegistry(opening.project.widgets),
+		version,
+	};
+}
+
+function appIdentityOf(adapter: AppProjectsAdapter, folder: string, app: ProjectApp): WidgetariumAppIdentity {
+	return { name: app.name, iconHref: adapter.getResourcePath(joinProjectPath(folder, app.icon)) };
 }
 
 function watchFolder(held: HeldProjects, folder: string, redraw: () => void): () => void {

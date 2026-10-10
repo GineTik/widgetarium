@@ -2,7 +2,7 @@ import type { ImportedWidgets } from "../engine/module-registry.js";
 import type { ImportedHandlers } from "../engine/project-pack.js";
 import { checkDiscovered } from "./check-project.js";
 import { discoverProject, type ProjectMap } from "./discover-project.js";
-import { PROJECT_CONFIG_FILE, readProjectConfig, type ProjectConfig } from "./project-config.js";
+import { PROJECT_CONFIG_FILE, readProjectConfig, type ProjectApp, type ProjectConfig } from "./project-config.js";
 import type { ProjectRoute } from "./project-entry.js";
 import type { ProjectFinding } from "./project-finding.js";
 import type { ProjectFiles } from "./project-files.js";
@@ -16,7 +16,7 @@ export interface OpenedRoute {
 }
 
 export interface OpenedProject {
-	readonly name: string;
+	readonly app: ProjectApp;
 	readonly routes: readonly OpenedRoute[];
 	readonly widgets: ImportedWidgets;
 	readonly handlers: ImportedHandlers;
@@ -40,7 +40,7 @@ async function openChecked(files: ProjectFiles, config: ProjectConfig, map: Proj
 	if (modules.refused.length > 0) return refused(modules.refused);
 	return {
 		ok: true,
-		project: { name: config.app.name, routes, widgets: modules.widgets, handlers: modules.handlers },
+		project: { app: config.app, routes, widgets: modules.widgets, handlers: modules.handlers },
 	};
 }
 

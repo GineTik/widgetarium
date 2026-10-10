@@ -280,7 +280,7 @@ render(null, node);
 const { registerBoardViews } = await import("../apps/obsidian/src/catalogue-views.ts");
 const { useTakesCatalogueAsks } = await import("../packages/widgetarium/src/studio/studio-on-screen.ts");
 const { StudioCatalogue } = await import("../packages/widgetarium/src/studio/catalogue/studio-catalogue.ts");
-const { STUDIO_STATE } = await import("../packages/widgetarium/src/studio/studio-state.ts");
+const { createStudioState } = await import("../packages/widgetarium/src/studio/studio-state.ts");
 const { Board } = await import("../packages/core/src/surface/board.ts");
 const { CatalogueAsk } = await import("../packages/core/src/catalogue-ask.ts");
 const sidebarShown: number[] = [];
@@ -310,9 +310,10 @@ const note = placed("markdown-preview-view", true);
 const shownStudio = placed("wg-studio", true);
 const hiddenStudio = placed("wg-studio", false);
 let askingFrom: HTMLElement | null = null;
-function StudioFrame({ frame }: { readonly frame: { readonly current: HTMLElement } }): ReturnType<typeof h> {
-	const taken = useTakesCatalogueAsks(frame, CATALOGUE_REQUESTS);
-	const { panel } = react.useSyncExternalStore(STUDIO_STATE.subscribe, STUDIO_STATE.now);
+type HeldFrame = { readonly current: HTMLElement; readonly state: ReturnType<typeof createStudioState> };
+function StudioFrame({ frame }: { readonly frame: HeldFrame }): ReturnType<typeof h> {
+	const taken = useTakesCatalogueAsks(frame, CATALOGUE_REQUESTS, frame.state);
+	const { panel } = react.useSyncExternalStore(frame.state.subscribe, frame.state.now);
 	return h(react.Fragment, null, [
 		panel === "catalogue" ? h(StudioCatalogue, { key: "panel", port, host, openedBy: taken }) : null,
 		askingFrom === frame.current
@@ -324,19 +325,25 @@ function StudioFrame({ frame }: { readonly frame: { readonly current: HTMLElemen
 			: null,
 	]);
 }
-const framesHeld = new Map([shownStudio, hiddenStudio].map((frame) => [frame, { current: frame }]));
+const shownState = createStudioState();
+const hiddenState = createStudioState();
+const framesHeld = new Map<HTMLElement, HeldFrame>([
+	[shownStudio, { current: shownStudio, state: shownState }],
+	[hiddenStudio, { current: hiddenStudio, state: hiddenState }],
+]);
 const drawStudio = (frame: HTMLElement): void =>
-	render(h(StudioFrame, { frame: framesHeld.get(frame) ?? { current: frame } }), frame);
+	render(h(StudioFrame, { frame: framesHeld.get(frame) ?? { current: frame, state: createStudioState() } }), frame);
+const panelsNow = (): string[] => [shownState.now().panel, hiddenState.now().panel];
 drawStudio(shownStudio);
 drawStudio(hiddenStudio);
 await settled();
 const closePanel = (): void => {
-	if (STUDIO_STATE.now().panel === "catalogue") STUDIO_STATE.togglePanel("catalogue");
+	if (shownState.now().panel === "catalogue") shownState.togglePanel("catalogue");
 };
 
 void CATALOGUE_REQUESTS.ask({ mode: "place", asker: note });
 await settled();
-check("a note's ask goes to the sidebar", [sidebarShown.length, STUDIO_STATE.now().panel], [1, "none"]);
+check("a note's ask goes to the sidebar", [sidebarShown.length, panelsNow()], [1, ["none", "none"]]);
 CATALOGUE_REQUESTS.answer(null);
 
 askingFrom = shownStudio;
@@ -344,8 +351,8 @@ drawStudio(shownStudio);
 await settled();
 check(
 	"an ask from inside the studio goes to the studio",
-	[sidebarShown.length, STUDIO_STATE.now().panel],
-	[1, "catalogue"],
+	[sidebarShown.length, panelsNow()],
+	[1, ["catalogue", "none"]],
 );
 check(
 	"because the board it stands on names itself the asker",
@@ -360,14 +367,14 @@ await settled();
 
 void CATALOGUE_REQUESTS.ask({ mode: "place", asker: hiddenStudio });
 await settled();
-check("a hidden studio never takes one", [sidebarShown.length, STUDIO_STATE.now().panel], [2, "none"]);
+check("a hidden studio never takes one", [sidebarShown.length, panelsNow()], [2, ["none", "none"]]);
 CATALOGUE_REQUESTS.answer(null);
 
 console.log("\n— closing the studio's panel keeps other people's requests —");
 void CATALOGUE_REQUESTS.ask({ mode: "place", asker: shownStudio });
 await settled();
 const studioAsk = CATALOGUE_REQUESTS.current()?.id;
-check("the studio's own ask opens its panel", STUDIO_STATE.now().panel, "catalogue");
+check("the studio's own ask opens its own panel", panelsNow(), ["catalogue", "none"]);
 void CATALOGUE_REQUESTS.ask({ mode: "fill", asker: note });
 await settled();
 const noteAsk = CATALOGUE_REQUESTS.current()?.id;

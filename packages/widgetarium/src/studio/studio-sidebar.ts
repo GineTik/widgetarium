@@ -5,7 +5,7 @@ import type { CataloguePort } from "@widgetarium/core/engine/catalogue-port.js";
 import type { SurfaceHost } from "@widgetarium/core/surface/use-surface-shared.js";
 import { AssistantPanel } from "./assistant/assistant-panel.js";
 import { StudioCatalogue } from "./catalogue/studio-catalogue.js";
-import type { OpenablePanel } from "./studio-state.js";
+import type { OpenablePanel } from "@widgetarium/core/engine/studio-state-port.js";
 
 export interface StudioSidebarProps {
 	readonly panel: OpenablePanel;

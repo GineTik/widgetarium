@@ -1,4 +1,5 @@
 import { JSDOM } from "jsdom";
+import { drawnTextOf } from "./drawn-text.ts";
 import { fakeVault, type FakeVault } from "./fake-vault.ts";
 import { isObject } from "../packages/core/src/engine/is-object.js";
 
@@ -94,7 +95,7 @@ async function drawnBy(vault: FakeVault): Promise<string> {
 	await withoutTheReport(() => registry.load());
 	const held = registry.get("@demo/clock");
 	if (!held?.component) return String(held?.error ?? "no widget at all");
-	return String(pathIn(held.component({}), "props", "children"));
+	return String(drawnTextOf(held.component));
 }
 
 const vault = fakeVault();

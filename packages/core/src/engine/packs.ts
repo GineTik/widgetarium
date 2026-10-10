@@ -9,6 +9,8 @@ import { NO_CATALOGUE_PORT } from "./catalogue-port.js";
 import type { CataloguePort } from "./catalogue-port.js";
 import { NO_STUDIO_HOST } from "./studio-host.js";
 import type { StudioHostPort } from "./studio-host.js";
+import { NO_STUDIO_STATE } from "./studio-state-port.js";
+import type { StudioState } from "./studio-state-port.js";
 import type { z } from "zod";
 
 export type PackCommandClass<Input extends z.ZodType, Fields, Command> = (new (
@@ -73,6 +75,7 @@ export interface ImplementationPorts extends HandlerHost {
 	readonly refs: RefsPort;
 	readonly catalogue: CataloguePort;
 	readonly studio: StudioHostPort;
+	readonly studioState: StudioState;
 }
 
 export interface PropPort {
@@ -129,6 +132,7 @@ export interface PortsHost {
 	readonly vault?: VaultPort | undefined;
 	readonly catalogue?: CataloguePort | undefined;
 	readonly studio?: StudioHostPort | undefined;
+	readonly studioState?: StudioState | undefined;
 	readonly confirm?: ((said: string) => Promise<boolean>) | undefined;
 	readonly notePath?: string | undefined;
 	readonly pageParamsKey?: string | undefined;
@@ -207,6 +211,7 @@ export function portsOf(host: PortsHost, refs: RefsPort, self: string): Implemen
 		refs,
 		catalogue: host.catalogue ?? NO_CATALOGUE_PORT,
 		studio: host.studio ?? NO_STUDIO_HOST,
+		studioState: host.studioState ?? NO_STUDIO_STATE,
 		confirm: host.confirm ?? (async () => false),
 	};
 }
