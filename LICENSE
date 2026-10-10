@@ -19,9 +19,12 @@ service. Each version becomes Apache 2.0 two years after its release:
                   packages/core/LICENSE
   packages/sdk/   the types a widget is written against
                   packages/sdk/LICENSE
-  packages/widgetarium/
-                  the package a project's widgets import
-                  packages/widgetarium/LICENSE
+  packages/cli/   the widgetarium command
+                  packages/cli/LICENSE
+  packages/vite/  the Vite plugin a project builds with
+                  packages/vite/LICENSE
+  apps/studio/    the studio drawn around an app
+                  apps/studio/LICENSE
   apps/obsidian/  the Obsidian plugin
                   apps/obsidian/LICENSE
 

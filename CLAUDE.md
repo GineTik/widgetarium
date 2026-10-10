@@ -17,13 +17,16 @@ the rename that fixes it. A `widget.js` beside a TypeScript source is ignored, n
 
 ```
 apps/obsidian     FSL  the host: mounts core in a note, hands it the vault through handlers
+apps/studio       FSL  @widgetarium/studio: the band, canvas, AI chat and catalogue drawn around an app
       ↓
-packages/core     FSL  the board builder: tree, engine, queries and commands, renderer, laws
+packages/cli      FSL  @widgetarium/cli: the `widgetarium` bin (create, check, catalogue, add) and templates/project
+packages/vite     FSL  @widgetarium/vite: dev and build run the app, --mode studio the studio around it
+      ↓
+packages/core     FSL  the board builder: tree, engine, queries and commands, renderer, laws; `.` is the widget API, `./app` app mode and the routers
       ↓
 packages/packs/*  MIT  every query and command implementation, one workspace per pack (@core, @obsidian, @stats, @git): schemas, *Query, *Command; the host registers them
 packages/kit      MIT  everything drawn: TSX, one file per kit item in components/ (emblem, button, layout, popover, …); plate laws in utils/plate-laws.ts
 packages/sdk      FSL  what a widget author compiles against: types/widgetarium.d.ts
-packages/widgetarium FSL  what a project imports: `widgetarium`, `widgetarium/kit[/emojis|/charts]`, `/app`, `/vite`, and the `widgetarium` CLI
 registry/         MIT  the widget library everyone installs from: @default, @flow, @media
 ```
 
@@ -47,14 +50,15 @@ running it. `checkDiscovered` in `check-project.ts` is the one judge: the CLI's 
 plugin and the Obsidian block all refuse a project through it, so a project one of them opens the
 others open too.
 
-- **The CLI** is `packages/widgetarium/src/cli`, `npx widgetarium create | check | catalogue | add`.
+- **The CLI** is `packages/cli`, `npx widgetarium create | check | catalogue | add`.
   `create` vendors the engine tarballs into the app, copies the kit into `paths.kit` and writes
   aliases sending `@widgetarium/kit` and its subpaths there. `add` copies a catalogue widget, writes
   `origin.json` beside it and never writes over a widget of the same name: there are no widget
   versions in a project, so nothing may ever update code a person refactored.
-- **The standalone app** is `widgetarium/app` (`startProject`, `WidgetariumApp`) fed by
-  `virtual:widgetarium/project`, which the `widgetarium/vite` plugin builds from discovery and fails
-  the build on findings. `widgetarium/styles.css` is cut at pack time from `src/browser-host.css` and
+- **The standalone app** is `@widgetarium/core/app` (`startProject`, `WidgetariumApp`) fed by
+  `virtual:widgetarium/project`, which the `@widgetarium/vite` plugin builds from discovery and fails
+  the build on findings; the project hands its packs (`packs: [corePack]`), so core imports no pack.
+  `@widgetarium/core/styles.css` is cut at pack time from `packages/core/browser-host.css` and
   `apps/obsidian/styles.css` (`tools/pack-engine.mts`), so a board style reaches an app only by a pack.
 - **In Obsidian** a `widgetarium-app` code block names `app: <folder>` and `route: <path>`
   (`app-block.ts`). `app-projects.ts` opens a project only when a block draws it — **a start reads no
@@ -523,7 +527,7 @@ a press that opens the catalogue and puts the pick at the end of **that** box. T
 add: a press that named no box left the person guessing where the widget went.
 
 **The catalogue is an engine board of widgets, and every pick is a request.** `CatalogueBoard`
-(`packages/widgetarium/src/studio/catalogue`) draws the catalogue or the docs board
+(`apps/studio/src/catalogue`) draws the catalogue or the docs board
 (`catalogue-boards.ts`) of static `@catalogue` widgets (`catalogue/widgets`) over the `@catalogue`
 pack and a `CataloguePort`; it is the one owner of that UI. The studio draws it in its panel, and
 Obsidian's two sidebar `ItemView`s draw the same component over the plugin's port. Nothing of it is
@@ -537,22 +541,22 @@ or into a note by `ICarrier`: every board registers a drop receiver
 the line. A widget placed before it is installed stands at once and draws the install ring, read from
 the one owner of install progress, `INSTALL_JOBS`.
 
-**Two modes, one app.** `widgetarium/app` runs a project alone and imports nothing of the studio;
-`widgetarium/studio` (`startStudio`, `WidgetariumStudio`) wraps the same route board in the engine's
+**Two modes, one app.** `@widgetarium/core/app` runs a project alone and imports nothing of the studio;
+`@widgetarium/studio` (`startStudio`, `WidgetariumStudio`) wraps the same route board in the engine's
 shell. A project's `main.tsx` starts through `virtual:widgetarium/start`, which the Vite plugin answers
 per `--mode` (`start-module-source.ts`): `npm run dev` and `build` are the app, `npm run studio` the
 studio. `test:studio-render` measures both in Chrome and proves the app entry bundles no studio module;
 `test:project-render` builds a created app both ways.
 
 **The studio is a Widgetarium app.** Its band is a board of `@studio/*` widgets
-(`packages/widgetarium/src/studio/widgets`) over the `@studio` pack; the route is drawn below it by the
+(`apps/studio/src/widgets`) over the `@studio` pack; the route is drawn below it by the
 same `routeElementOf` app mode calls, never merged into the band's tree, because a route nested one
 level down stops being regions and changes its spacing. The outlet's view and the one right panel —
 `none | assistant | catalogue`, toggled by the band's Widgets and AI buttons — live in the studio's own
 `StudioState`, made by `createStudioState` (`studio/studio-state.ts`) for each `StartedStudio`, one per leaf
 in Obsidian. That object is the one writer: `@studio` commands reach it as `ports.studioState`, and a
 catalogue ask opens the panel through its `openPanel`. The canvas view is the engine's `ProjectCanvas`
-(`packages/widgetarium/src/studio/canvas`): a frame per route on its own memory router and the
+(`apps/studio/src/canvas`): a frame per route on its own memory router and the
 widgets' `defineStates`, under the one pan-zoom the Obsidian design view imports too. What the host can do is its
 `StudioHostPort` (`packages/core/src/engine/studio-host.ts`): window-button insets, which the safe areas
 read as `--wg-studio-inset-left|right`, and the apps; a host without them answers "not available" and

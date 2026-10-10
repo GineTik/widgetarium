@@ -24,7 +24,7 @@ docs/                                  the spec, the design, the references
 Only `app.name` is required: `{ "app": { "name": "shop" }, "paths": { "widgets": "src/ui/widgets" } }`
 moves one layer and keeps the rest; a path is relative to the root, never `..`. `app` is the app's
 one name and its icon, `public/icon.svg` by default: the Vite plugin writes both into the page's
-title, `application-name` and favicon, and `widgetarium/app` hands them to the running app as
+title, `application-name` and favicon, and `@widgetarium/core/app` hands them to the running app as
 `project.app`, `{ name, iconHref }`. `@kit`, `@schemas`, `@libs`, `@logic`
 and `@widgets` point at their paths, and `aliases` adds to them. Discovery skips `node_modules`, `build`, `dist` and every dot-folder, and these
 names must be unique across the project:
@@ -61,7 +61,7 @@ with its imports moved onto `@libs`, and writes `origin.json` beside it. In a va
 
 ### Where a project runs
 
-**In a browser**, `npm run dev`: the Vite plugin reads the project and `widgetarium/app` draws the
+**In a browser**, `npm run dev`: the Vite plugin reads the project and `@widgetarium/core/app` draws the
 board of the route matching the address. A widget moves between routes with
 `navigator.navigate("/tasks/42")`; a link no route answers is refused. A route folder `[id]` matches
 any one segment, and a static segment wins over a parameter. The matched `id` is a page parameter:

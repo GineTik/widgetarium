@@ -180,9 +180,25 @@ The decisions, each with what it replaced:
   in `AGENTS.md`, not a display order; numbered prefixes would leak into every import, alias and
   prompt. FSD keeps its plain names for the same reason.
 
+## One package, one job
+
+`packages/widgetarium` held five jobs — the widget API facade, app mode, the studio, the CLI and the
+Vite plugin — and was split so each has one owner: app mode and the routers moved into core
+(`@widgetarium/core/app`), the CLI into `packages/cli`, the plugin into `packages/vite`, the studio into
+`apps/studio` as `@widgetarium/studio`, and the facade was deleted. Files moved as they were; only
+imports and package wiring changed.
+
+- **Core imports no pack.** `openApp` registered `corePack` itself, which would have made core depend
+  on a pack that depends on core. A project now carries `packs`, and the Vite plugin's project module
+  hands `[corePack]`.
+- **Core still exports `./*`.** About 250 files of the Obsidian app, the packs and the studio import
+  core's internal files; a public entry covering them is a separate change. Widgets and created apps use `.` and
+  `./app`.
+- TODO: the studio becomes a Widgetarium project (routes, widgets, logic) shipped as a built app.
+
 ## The studio wraps the app, it is not inside it
 
-The engine's shell (band, app switcher, AI button, canvas; assistant later) is `widgetarium/studio`,
+The engine's shell (band, app switcher, AI button, canvas; assistant later) is `@widgetarium/studio` (`apps/studio`),
 itself built from `@studio` widgets and a pack. Replaced: `@chrome` widgets in the registry, a
 `@chrome` pack, and corner boards an Obsidian note laid over itself.
 
@@ -191,7 +207,7 @@ itself built from `@studio` widgets and a pack. Replaced: `@chrome` widgets in t
   would all change, and the studio would no longer show the app the app mode shows. Measured instead:
   the outlet's DOM equals app mode's.
 - **App mode ships no shell code.** The mode is picked by the Vite plugin per `--mode`, so an app
-  build never imports `widgetarium/studio`.
+  build never imports `@widgetarium/studio`.
 - **The host says where its window buttons are**; the shell never guesses a platform. A browser tab
   reports nothing, an installed PWA reads the Window Controls Overlay.
 - **The studio's state is one per page.** `STUDIO_STATE` is a module singleton, so two studios on
@@ -207,15 +223,15 @@ itself built from `@studio` widgets and a pack. Replaced: `@chrome` widgets in t
 - **One composition.** `startOpenedStudio` takes routes and a built registry, so the Vite build and
   the vault's in-memory compile reach the same studio; only how a project is opened differs.
 - **The canvas draws the running project, not a copy of it.** "Edit in canvas" swaps the outlet for
-  `ProjectCanvas` (`packages/widgetarium/src/studio/canvas`): one frame per route drawn by the
+  `ProjectCanvas` (`apps/studio/src/canvas`): one frame per route drawn by the
   `routeElementOf` the app uses, each over a memory router of its own whose page params are keyed per
   frame, so a frame never navigates the studio; and a Components page drawing every widget's
   `defineStates`. Pan, zoom and the camera latch live there once, and the Obsidian design view
-  imports them through `widgetarium/studio`.
+  imports them through `@widgetarium/studio`.
 - **The catalogue is the engine's, behind one right panel.** `STUDIO_STATE.panel` is `none |
 assistant | catalogue`: the band's Widgets and AI buttons toggle it, so two panels never stand side
   by side and the outlet narrows by one column. The `@catalogue` widgets moved from the registry into
-  `widgetarium/studio` as static widgets and their two boards became typed constants; Obsidian's
+  `@widgetarium/studio` as static widgets and their two boards became typed constants; Obsidian's
   sidebar views draw the same `CatalogueBoard` over the plugin's port. Replaced: a read-only system
   scope (`widgetarium-plugin/widgets`) compiled at runtime from files bundled into the plugin, with
   the second widget root, the shadowing and the snapshot re-read it needed. A browser host lists the
