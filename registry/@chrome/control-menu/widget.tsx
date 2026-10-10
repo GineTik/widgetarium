@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, defineStates, useData } from "widgetarium";
 import { z } from "zod";
 import { Button, Popover } from "widgetarium/kit";
-import { AppSchema, READING_APP, SAMPLE_APPS, WIDGETARIUM_APP } from "@chrome/lib";
+import { AppSchema, DRAFT_APP, READING_APP, SAMPLE_APPS, WIDGETARIUM_APP } from "@chrome/lib";
 import { AppList } from "./app-list";
 import { AppRail } from "./app-rail";
 import { AppMark, MARK_PX } from "./app-mark";
@@ -15,6 +15,8 @@ type Variant = (typeof VARIANTS)[number];
 
 const APPS_AT_MOST = 50;
 
+const DRAFT_ROW = { ...DRAFT_APP, ref: DRAFT_APP.id };
+
 const ControlMenu = createWidget({
 	inject: {
 		getCurrentApp: IQuery.output(AppSchema.default(WIDGETARIUM_APP)),
@@ -25,9 +27,11 @@ const ControlMenu = createWidget({
 		createApp: ICommand,
 		editInCanvas: ICommand,
 	},
-	draw: ({ getCurrentApp: current, getApps, getVariant: variant, getIsOpen, openApp, createApp, editInCanvas }) => {
+	draw: ({ getCurrentApp, getApps, getVariant: variant, getIsOpen, openApp, createApp, editInCanvas }) => {
 		const [isOpen, setOpen] = useState<boolean | null>(null);
 		const { data: apps } = useData(getApps, { limit: APPS_AT_MOST });
+		const isDraft = apps.length === 0;
+		const current = isDraft ? DRAFT_APP : getCurrentApp;
 		const shown = isOpen ?? getIsOpen;
 		const closedAfter =
 			<Answer,>(run: () => Promise<Answer>) =>
@@ -36,7 +40,7 @@ const ControlMenu = createWidget({
 				await run();
 			};
 		const listed = {
-			apps,
+			apps: isDraft ? [DRAFT_ROW] : apps,
 			currentId: current.id,
 			onOpen: (id: string) => void closedAfter(() => openApp({ id }))(),
 			onCreate: () => void closedAfter(createApp)(),
@@ -120,7 +124,7 @@ export const states = defineStates(ControlMenu, {
 	Mirrored: { ...OPEN, getVariant: "mirrored" },
 	Stacked: { ...OPEN, getVariant: "stacked" },
 	Rail: { ...OPEN, getVariant: "rail" },
-	Empty: { getApps: [], getIsOpen: true },
+	"No apps": { getApps: [], getIsOpen: true },
 });
 
 export default ControlMenu;

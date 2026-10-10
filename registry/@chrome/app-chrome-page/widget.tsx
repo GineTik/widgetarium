@@ -1,6 +1,6 @@
 import { ISlot, createWidget, defineLayout, defineMetadata, defineStates } from "widgetarium";
 import { Container } from "widgetarium/kit";
-import { READING_APP, SAMPLE_APPS, WIDGETARIUM_APP } from "@chrome/lib";
+import { READING_APP, SAMPLE_APPS } from "@chrome/lib";
 import type { App } from "@chrome/lib";
 import { Slots } from "./slots";
 
@@ -138,7 +138,7 @@ export const states = defineStates(AppChromePage, {
 	"C stacked": windowOf("macos", opened("stacked")),
 	"D rail": windowOf("macos", opened("rail")),
 	"A on Windows": windowOf("windows", opened("two-columns")),
-	"First app": windowOf("macos", { getIsOpen: true, getCurrentApp: WIDGETARIUM_APP, getApps: [] }),
+	"No apps": { ...windowOf("macos", { getIsOpen: true, getApps: [] }), app: [] },
 	Empty: { start: [], end: [], app: [] },
 });
 

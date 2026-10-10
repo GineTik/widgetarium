@@ -31,6 +31,13 @@ export const WIDGETARIUM_APP: App = {
 	line: "Your apps, built from widgets",
 };
 
+export const DRAFT_APP: App = {
+	id: "new-app",
+	name: "Untitled app",
+	shape: "clover4-leaf",
+	line: "Not created yet",
+};
+
 export const READING_APP: App = {
 	id: "reading-list",
 	name: "Reading list",
