@@ -7903,6 +7903,59 @@ body.wg-tree-carrying .wg-tile-body {
 	gap: 8px;
 }
 
+.wg-app-window > .view-header {
+	display: none;
+}
+
+.wg-app-window > .view-content {
+	padding-top: var(--wg-window-band);
+}
+
+.wg-app-window,
+.wg-design-topbar {
+	--wg-window-band: 50px;
+}
+
+.wg-window-corners {
+	position: absolute;
+	inset-inline: 0;
+	top: 0;
+	z-index: 3;
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	pointer-events: none;
+}
+
+.wg-window-corner {
+	display: flex;
+	flex: none;
+	--wg-board-pad: 0px;
+	--wg-root-head: 0px;
+	--wg-corner-board: 200px;
+	pointer-events: none;
+}
+
+.wg-window-corner.is-right {
+	justify-content: flex-end;
+}
+
+.wg-window-corner > .wg-root {
+	flex: none;
+	width: var(--wg-corner-board);
+	min-height: 0;
+	padding: 0;
+	background: transparent;
+}
+
+.wg-window-corner .wg-slot {
+	pointer-events: auto;
+}
+
+.wg-window-corner .wg-tree-region {
+	padding: 0;
+}
+
 .wg-design-topbar {
 	position: absolute;
 	top: 0;
@@ -7913,7 +7966,7 @@ body.wg-tree-carrying .wg-tile-body {
 	align-items: center;
 	justify-content: space-between;
 	gap: 16px;
-	padding: 16px 16px 40px;
+	padding: 0 0 40px;
 	pointer-events: none;
 }
 
@@ -7930,7 +7983,13 @@ body.wg-tree-carrying .wg-tile-body {
 	pointer-events: auto;
 }
 
-.wg-design-topbar > .wg-design-head {
+.wg-design-top-start {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.wg-design-top-start > .wg-design-head {
 	position: relative;
 	top: auto;
 	left: auto;
