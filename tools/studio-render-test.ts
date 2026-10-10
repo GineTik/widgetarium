@@ -53,13 +53,12 @@ interface Seen extends CatalogueSeen {
 	readonly taskGoneInCanvas?: boolean;
 	readonly frames?: readonly string[];
 	readonly frameDrawsRoute?: boolean;
-	readonly needsSaid?: string | null;
+	readonly topBar?: string | null;
 	readonly transformBefore?: string;
 	readonly transformZoomed?: string;
 	readonly transformPanned?: string;
 	readonly locationInCanvas?: string;
 	readonly cards?: readonly string[];
-	readonly transformBackOnPages?: string;
 	readonly routeTriggerHit?: boolean | null;
 	readonly frameTriggerHit?: boolean | null;
 	readonly frameTriggerFocused?: boolean | null;
@@ -157,7 +156,7 @@ async function seenIn(mode: Mode): Promise<{ readonly seen: Seen; readonly repor
 	served.page = pageOf(mode);
 	writeFileSync(path.join(shotsAt, `${mode}.html`), served.page);
 	await chromeAt([`--screenshot=${path.join(shotsAt, `${mode}.png`)}`]);
-	const dom = await chromeAt(["--dump-dom"]);
+	const dom = await chromeAt(["--dump-dom", "--force-prefers-reduced-motion"]);
 	const parsed: unknown = JSON.parse(textOfPre(dom, "seen") || "{}");
 	return { seen: parsed !== null && typeof parsed === "object" ? parsed : {}, reported: textOfPre(dom, "boom") };
 }
@@ -292,13 +291,13 @@ check(
 checkCataloguePanel(studio.seen, check);
 check("Edit in canvas swaps the route for the canvas", studio.seen.canvasShown === true, studio.seen.canvasShown);
 check("and the route leaves the outlet", studio.seen.taskGoneInCanvas === true, studio.seen.taskGoneInCanvas);
-check("the canvas holds one frame per route", sameList(studio.seen.frames, ["/", "/done/:id"]), studio.seen.frames);
-check("a frame draws its route's content", studio.seen.frameDrawsRoute === true, studio.seen.frameDrawsRoute);
 check(
-	"a route with a param and no sample says what it needs",
-	studio.seen.needsSaid === "needs :id",
-	studio.seen.needsSaid,
+	"the canvas is the design canvas: its top bar names the app, the routes as screens, and Components",
+	["Farm", "2 screens", "Pages", "Components", "Back to view"].every((said) => studio.seen.topBar?.includes(said)),
+	studio.seen.topBar,
 );
+check("the first route is the shown page's frame", sameList(studio.seen.frames, ["/"]), studio.seen.frames);
+check("a frame draws its route's content", studio.seen.frameDrawsRoute === true, studio.seen.frameDrawsRoute);
 check("a zoom changes the field's scale", scaleOf(studio.seen.transformZoomed) > scaleOf(studio.seen.transformBefore), [
 	studio.seen.transformBefore,
 	studio.seen.transformZoomed,
@@ -315,15 +314,10 @@ check(
 );
 check(
 	"the Components page holds a card per widget state",
-	sameList(studio.seen.cards, ["task-list · Full", "task-list · Empty"]),
+	sameList(studio.seen.cards, ["Full", "Empty"]),
 	studio.seen.cards,
 );
 check("a state card draws the state's props", studio.seen.cardDrawsState === true, studio.seen.cardDrawsState);
-check(
-	"back on Pages, the camera stands where it was left",
-	(studio.seen.transformBackOnPages ?? "") !== "" && studio.seen.transformBackOnPages === studio.seen.transformPanned,
-	[studio.seen.transformPanned, studio.seen.transformBackOnPages],
-);
 check(
 	"a press on the route's popover trigger reaches it",
 	studio.seen.routeTriggerHit === true,

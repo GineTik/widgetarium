@@ -15,6 +15,8 @@ import { browserCataloguePort } from "./catalogue/browser-catalogue-port.js";
 import { STUDIO_PACKS } from "./logic/studio-pack.js";
 import { StudioBand } from "./studio-band.js";
 import { StudioOutlet } from "./studio-outlet.js";
+import type { StudioDesign } from "./studio-canvas.js";
+import { projectDesignPort } from "./design/project-design-port.js";
 import { useTakesCatalogueAsks } from "./studio-on-screen.js";
 import { StudioSidebar } from "./studio-sidebar.js";
 import { createStudioState } from "./studio-state.js";
@@ -29,6 +31,7 @@ export interface StartedStudio {
 	readonly appId: string;
 	readonly shellRegistry: ModuleRegistry;
 	readonly state: StudioState;
+	readonly design: StudioDesign;
 }
 
 export interface StudioStart extends ProjectStart {
@@ -37,6 +40,7 @@ export interface StudioStart extends ProjectStart {
 	readonly catalogue?: CataloguePort;
 	readonly appId?: string;
 	readonly state?: StudioState;
+	readonly design?: StudioDesign;
 }
 
 export interface WidgetariumStudioProps {
@@ -49,19 +53,21 @@ export function startStudio(project: WidgetariumProject, start: StudioStart = {}
 }
 
 export function startOpenedStudio(opened: OpenedApp, start: StudioStart): StartedStudio {
+	const project = startOpenedProject(opened, start);
 	return {
-		project: startOpenedProject(opened, start),
+		project,
 		studio: start.studio ?? browserStudioHost(opened.app, opened.routes),
 		assistant: start.assistant ?? NO_ASSISTANT,
 		catalogue: start.catalogue ?? browserCataloguePort(opened.registry),
 		appId: start.appId ?? opened.app.name,
 		shellRegistry: new ModuleRegistry(STUDIO_WIDGETS),
 		state: start.state ?? createStudioState(),
+		design: start.design ?? { port: projectDesignPort(project), app: opened.app.name },
 	};
 }
 
 export function WidgetariumStudio({ started }: WidgetariumStudioProps): ReactElement {
-	const { project, studio, assistant, catalogue, appId, shellRegistry, state } = started;
+	const { project, studio, assistant, catalogue, appId, shellRegistry, state, design } = started;
 	const pathname = useSyncExternalStore(project.router.subscribe, project.router.pathname);
 	const { view, panel } = useSyncExternalStore(state.subscribe, state.now);
 	const host = useMemo(() => project.hostOf(pathname), [project, pathname]);
@@ -77,7 +83,7 @@ export function WidgetariumStudio({ started }: WidgetariumStudioProps): ReactEle
 			studio,
 			state,
 		}),
-		h(StudioOutlet, { key: "outlet", project, pathname, view }),
+		h(StudioOutlet, { key: "outlet", project, pathname, view, design, state }),
 		panel === "none" ? null : h(StudioSidebar, { key: "sidebar", panel, assistant, catalogue, host, catalogueAsk }),
 	]);
 }

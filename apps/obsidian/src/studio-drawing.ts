@@ -8,7 +8,7 @@ import type { StudioHostPort } from "@widgetarium/core/engine/studio-host.js";
 import type { SurfaceHost } from "@widgetarium/core/surface/use-surface-shared.js";
 import { hostOverRouter } from "widgetarium/app";
 import { WidgetariumStudio, createStudioState, startOpenedStudio } from "widgetarium/studio";
-import type { StartedStudio, StudioState } from "widgetarium/studio";
+import type { StartedStudio, StudioDesign, StudioState } from "widgetarium/studio";
 import type { AppOpening, AppProjects } from "./app-projects.js";
 import { refusalOf, reportNotDrawn, reportRefused } from "./app-refusal.js";
 import { obsidianStudioHost } from "./studio-host-obsidian.js";
@@ -23,6 +23,7 @@ export interface StudioPlace {
 	readonly assistant: AssistantPort;
 	readonly catalogue: CataloguePort;
 	hostOf(notePath: string): SurfaceHost;
+	designFor(app: string, leaf: WorkspaceLeaf): Promise<StudioDesign | undefined>;
 	openAsMarkdown(leaf: WorkspaceLeaf, file: TFile): Promise<void>;
 	showAsMarkdown(leaf: WorkspaceLeaf, file: TFile): Promise<void>;
 }
@@ -80,25 +81,35 @@ async function drawOpening(drawing: StudioDrawing, isCurrent: () => boolean): Pr
 	const { folder } = drawing.note;
 	try {
 		const opening = await drawing.place.projects.open(folder);
-		if (isCurrent()) render(openingElementOf(drawing, opening), drawing.shown.node);
+		const design = opening.ok ? await drawing.place.designFor(opening.app.name, drawing.shown.leaf) : undefined;
+		if (isCurrent()) render(openingElementOf(drawing, opening, design), drawing.shown.node);
 	} catch (failure) {
 		const said = reportNotDrawn(folder, failure);
 		if (isCurrent()) render(refusalOf(said), drawing.shown.node);
 	}
 }
 
-function openingElementOf(drawing: StudioDrawing, opening: AppOpening): ReactElement {
+function openingElementOf(drawing: StudioDrawing, opening: AppOpening, design: StudioDesign | undefined): ReactElement {
 	if (!opening.ok) return refusalOf(reportRefused(drawing.note.folder, opening.findings));
-	return h(WidgetariumStudio, { key: opening.version, started: startStudioOver(drawing, opening) });
+	return h(WidgetariumStudio, { key: opening.version, started: startStudioOver(drawing, opening, design) });
 }
 
-function startStudioOver(drawing: StudioDrawing, opening: OpenedApp): StartedStudio {
+function startStudioOver(drawing: StudioDrawing, opening: OpenedApp, design: StudioDesign | undefined): StartedStudio {
 	const { place, shown, note, studio, state } = drawing;
 	const notePath = shown.file.path;
 	const router = drawing.routing.routerFor(note, opening.routes);
 	const hostOf = hostOverRouter(() => place.hostOf(notePath), router);
 	return startOpenedStudio(
 		{ app: opening.app, routes: opening.routes, registry: opening.registry },
-		{ router, hostOf, studio, state, assistant: place.assistant, catalogue: place.catalogue, appId: note.folder },
+		{
+			router,
+			hostOf,
+			studio,
+			state,
+			assistant: place.assistant,
+			catalogue: place.catalogue,
+			appId: note.folder,
+			...(design ? { design } : {}),
+		},
 	);
 }

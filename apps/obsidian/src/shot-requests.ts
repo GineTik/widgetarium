@@ -6,18 +6,23 @@ import { measuredFindingsIn } from "@widgetarium/core/page-measure.js";
 import type { MeasuredFinding } from "@widgetarium/core/page-measure.js";
 import type WidgetariumPlugin from "./main.js";
 import { boardIn } from "./board-in-note.js";
-import { DESKTOP_FRAME } from "widgetarium/studio";
-import type { DrawnScreen } from "./design-canvas-shapes.js";
-import { whileAgentLooks } from "./design-agent-look.js";
-import type { AgentLook } from "./design-agent-look.js";
-import { pageOfScreen, screensOfPage } from "./design-variants.js";
-import { DRAWS_AT_ONCE } from "./design-drawn-when-seen.js";
-import { PagesRegion, frameLabelOf } from "./design-pages.js";
-import { ReferencesRegion, widgetOpenerOf } from "./design-references.js";
-import { WidgetsRegion } from "./design-widgets.js";
+import type { DrawnScreen } from "@widgetarium/core/engine/design-port.js";
+import {
+	DESKTOP_FRAME,
+	DRAWS_AT_ONCE,
+	PagesRegion,
+	ReferencesRegion,
+	ScreenBoard,
+	WidgetsRegion,
+	frameLabelOf,
+	pageOfScreen,
+	screensOfPage,
+	whileAgentLooks,
+	widgetOpenerOf,
+} from "widgetarium/studio";
+import type { AgentLook } from "widgetarium/studio";
 import { withBlocks } from "./design-block-registry.js";
-import { ScreenBoard } from "./design-screen-board.js";
-import { designOf } from "./design-view.js";
+import { designOf } from "./design-port-obsidian.js";
 import { canvasOf, drawnOffScreen, pngOf, stackedPngOf } from "./off-screen.js";
 
 export const SHOTS_DIR = `${ROOT}/shots`;

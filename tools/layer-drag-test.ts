@@ -1,5 +1,5 @@
-import { projectedDrop } from "../apps/obsidian/src/layer-drag.ts";
-import type { DragRow } from "../apps/obsidian/src/layer-drag.ts";
+import { projectedDrop } from "../packages/widgetarium/src/studio/design/layer-drag.ts";
+import type { DragRow } from "../packages/widgetarium/src/studio/design/layer-drag.ts";
 
 let failed = 0;
 function check(what: string, got: unknown, wanted: unknown): void {

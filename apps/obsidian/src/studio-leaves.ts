@@ -5,6 +5,7 @@ import { STUDIO_PACKS } from "widgetarium/studio";
 import type WidgetariumPlugin from "./main.js";
 import type { AppProjects } from "./app-projects.js";
 import { bindNote } from "./host.js";
+import { studioDesignOf } from "./design-port-obsidian.js";
 import { studioNoteOfFile } from "./studio-drawing.js";
 import type { StudioPlace } from "./studio-drawing.js";
 import { STUDIO_VIEW_TYPE, StudioView } from "./studio-view.js";
@@ -33,6 +34,7 @@ export function registerStudioView(plugin: WidgetariumPlugin, projects: AppProje
 		assistant,
 		catalogue: plugin.cataloguePort,
 		hostOf: (notePath) => bindNote(plugin.host, notePath),
+		designFor: (app, leaf) => studioDesignOf(plugin, app, leaf),
 		openAsMarkdown: (leaf, file) => {
 			choices.choose(leaf, file.path);
 			return leaf.setViewState(markdownStateOf(leaf, { file: file.path, [AS_MARKDOWN]: true }));

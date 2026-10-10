@@ -8,8 +8,8 @@ interface Block {
 	readonly body: string | null;
 }
 
-const STUDIO_CLASS = /\.wg-studio/;
-const STUDIO_KEYFRAMES = /^@keyframes\s+wg-studio/;
+const STUDIO_CLASS = /\.wg-(?:studio|design-)/;
+const STUDIO_KEYFRAMES = /^@keyframes\s+wg-(?:studio|design-)/;
 const NESTING_AT_RULE = /^@(?:media|supports|container|layer)\b/;
 const COMMENT = /\/\*[\s\S]*?\*\//g;
 const QUOTES = new Set(['"', "'"]);

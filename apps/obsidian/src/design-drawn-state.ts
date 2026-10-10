@@ -6,7 +6,7 @@ import type { ScreenState } from "@widgetarium/core/app-design.js";
 import type { WidgetStates } from "@widgetarium/core/registry-scope.js";
 import { statePropsOf } from "widgetarium/studio";
 import type { StatePicture } from "widgetarium/studio";
-import type { DrawnState } from "./design-canvas-shapes.js";
+import type { DrawnState } from "@widgetarium/core/engine/design-port.js";
 
 export interface DrawnStateSource {
 	readonly adapter: Pick<DataAdapter, "read">;

@@ -1,5 +1,5 @@
-import { placedNotes } from "../apps/obsidian/src/note-layout.ts";
-import type { NoteBox, PlacedNote } from "../apps/obsidian/src/note-layout.ts";
+import { placedNotes } from "../packages/widgetarium/src/studio/design/note-layout.ts";
+import type { NoteBox, PlacedNote } from "../packages/widgetarium/src/studio/design/note-layout.ts";
 
 let failed = 0;
 function check(what: string, got: unknown, wanted: unknown): void {

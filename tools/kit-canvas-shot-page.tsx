@@ -1,7 +1,7 @@
 import { createElement as h } from "react";
 import { createRoot } from "react-dom/client";
-import { regionsOfPage } from "../apps/obsidian/src/design-canvas-page.ts";
-import type { CanvasPageProps } from "../apps/obsidian/src/design-canvas-page.ts";
+import { regionsOfPage } from "../packages/widgetarium/src/studio/design/design-canvas-page.ts";
+import type { CanvasPageProps } from "../packages/widgetarium/src/studio/design/design-canvas-page.ts";
 import { createProbeHost, createRowSlot } from "./vault-fixture.ts";
 
 const CANVAS_ZOOM = 0.3;

@@ -10,12 +10,7 @@ import { JOB_ENV } from "./job-command.js";
 import type { JobFiles } from "./job-store.js";
 import { askedSaid, endingOf, promptOf } from "./job-endings.js";
 import type { EndedBy } from "./job-endings.js";
-
-export interface LiveJob {
-	readonly activity: string | null;
-	readonly lines: readonly string[];
-	readonly spent: number;
-}
+import type { LiveJob } from "@widgetarium/core/engine/design-port.js";
 
 export interface Jobs {
 	watch(onChange: () => void): () => void;

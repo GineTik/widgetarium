@@ -1,7 +1,7 @@
 import { layJsdomGlobals } from "./jsdom-globals.ts";
 
 layJsdomGlobals();
-const { layersIn } = await import("../apps/obsidian/src/layer-tree.ts");
+const { layersIn } = await import("../packages/widgetarium/src/studio/design/layer-tree.ts");
 
 let failed = 0;
 function check(what: string, got: unknown, wanted: unknown): void {

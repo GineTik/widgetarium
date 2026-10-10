@@ -7,13 +7,11 @@ import { mountSpecsOf } from "@widgetarium/core/manifest-holds.js";
 import type { MountEntry } from "@widgetarium/core/gateway/host.js";
 import type { SlotState } from "@widgetarium/core/gateway/declared-types.js";
 import type { WidgetSurfaceProps } from "@widgetarium/core/surface/widget-surface.js";
+import type { StatePicture } from "@widgetarium/core/engine/design-port.js";
+
+export type { StatePicture };
 
 type Registry = WidgetSurfaceProps["registry"];
-
-export interface StatePicture {
-	readonly widget: string;
-	readonly props: Readonly<Record<string, unknown>>;
-}
 
 export interface StateDrawingProps {
 	readonly registry: Registry;

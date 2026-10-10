@@ -286,7 +286,7 @@ function fakePluginOver(leaves: readonly FakeLeaf[]) {
 				on: (_name: string, run: (file: NoteFile) => void) => metadataChanged.push(run),
 				getFileCache: frontMatterOf,
 			},
-			vault: { getFiles: () => [], adapter },
+			vault: { getFiles: () => [], adapter: { ...adapter, exists: async () => false } },
 		},
 	};
 	registerStudioView(
@@ -445,8 +445,9 @@ const place = standIn<StudioPlace>(
 		hostOf: () => host,
 		openAsMarkdown: async () => undefined,
 		showAsMarkdown: async () => undefined,
+		designFor: async () => undefined,
 	},
-	["app", "projects", "viewType", "assistant", "catalogue", "hostOf", "openAsMarkdown", "showAsMarkdown"],
+	["app", "projects", "viewType", "assistant", "catalogue", "hostOf", "openAsMarkdown", "showAsMarkdown", "designFor"],
 	"place",
 );
 async function drawnFor(file: NoteFile): Promise<HTMLElement> {
@@ -505,12 +506,12 @@ await settledUntil(() => document.querySelector(".wg-studio-action-said") !== nu
 	.find((said) => said.textContent === "Edit in canvas")
 	?.closest<HTMLElement>('[role="button"]')
 	?.click();
-await settledUntil(() => studioNode.querySelector(".wg-studio-canvas") !== null);
+await settledUntil(() => studioNode.querySelector(".wg-design-view") !== null);
 check(
 	"Edit in canvas in one studio shows its canvas and leaves the studio beside it on its route",
 	[
-		studioNode.querySelector(".wg-studio-canvas") !== null,
-		besideNode.querySelector(".wg-studio-canvas") !== null,
+		studioNode.querySelector(".wg-design-view") !== null,
+		besideNode.querySelector(".wg-design-view") !== null,
 		besideNode.querySelector(".wg-studio-outlet .wg-root") !== null,
 	],
 	[true, false, true],

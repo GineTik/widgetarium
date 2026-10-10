@@ -695,6 +695,28 @@ stylesheet reads the same tokens directly, and its four text sizes — `--wg-kit
 and the host's three UI steps — are what both sides now name: the five hand-written sizes that
 answered to nothing, three 11px and one 9px among them, are on the scale.
 
+## Design systems from references
+
+When the person sends pictures and describes a design, write it as a system in
+`design-catalogue/systems/<id>/` — `system.md` plus the pictures under `references/` — by the format
+in `design-catalogue/README.md`. What cost the most to learn:
+
+- **A system is not the product it came from.** The domain, data and screens stay behind; a build
+  that reuses them is a copy and is rejected.
+- **Colour is an algorithm**: steps, their jobs, lightness and chroma ranges, a free tint and fixed
+  status meanings, written for **light and dark** themes. Never only hex values.
+- **Images have a role and a kind**, and the system says where to find that kind for another domain.
+- **Look, structure and behaviour are three layers**; the source's business features are not written.
+- **The source's screens are not templates.** A build designs its structure from its own tasks; a
+  screen that reads as a reference with the nouns changed is a copy. A system describes layout as
+  principles, never as one screen's panel list — that list was copied 1:1 on 2026-10-10.
+- **Pictures are found, never drawn.** No hand-made SVG art, maps, bodies or objects, no edge-detected
+  photos: measured, both came out amateur. Code draws only charts and interface geometry; everything
+  else is a sourced file or a labelled placeholder.
+- **No borders on plates** in a blur system: separation is blur and fill.
+- **A design book or a test product obeys the system it shows**: a no-plates system has no plates in
+  its book. Test builds run on Opus at low effort: on 2026-10-10 it took 7 minutes against 17–21 at default effort, with ideas as strong and less detail.
+
 ## Next tasks
 
 Remind the person of this list at the end of every finished task, until each is done.
