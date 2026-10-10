@@ -5,6 +5,8 @@ export type ShapeName = keyof typeof SHAPE_TABLE;
 
 export type ShapeLook = "flat" | "3d";
 
+export type ShapeTone = BadgeColor | "ink";
+
 export const SHAPE_NAMES = Object.keys(SHAPE_TABLE) as readonly ShapeName[];
 
 export const SHAPE_TONES: readonly BadgeColor[] = [

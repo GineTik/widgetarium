@@ -2673,6 +2673,10 @@ body {
 	line-height: 1;
 }
 
+:is(.wg-root, .wg-portal) .wg-kit-shape.is-ink .wg-kit-shape-mark {
+	color: var(--wg-kit-page);
+}
+
 :is(.wg-root, .wg-portal) .wg-kit-command-overlay {
 	position: fixed;
 	inset: 0;
