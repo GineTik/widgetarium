@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { JSDOM } from "jsdom";
 import { fakeVault, type FakeVault } from "./fake-vault.ts";
 import { isObject } from "../packages/core/src/engine/is-object.js";
@@ -15,6 +18,7 @@ Object.assign(globalThis, {
 
 const { declarationIn, dependenciesFrom, packageNames, publishWidget, widgetDependenciesIn, PUBLISHED_SHEET } =
 	await import("./publish.ts");
+const { writeEveryCard } = await import("./manifest.ts");
 const { ANSWERED_BY_THE_ENGINE } = await import("../packages/core/src/engine/modules.js");
 const { createInstaller } = await import("../packages/core/src/installer.js");
 const { WidgetRegistry } = await import("../packages/core/src/registry.js");
@@ -362,6 +366,43 @@ check(
 	[queried.props["getTitles"]?.kind, Object.keys(queried["commands"] ?? {})],
 	["collection", ["press"]],
 );
+
+const ZOD_WIDGET = `import { IValueGateway, createWidget } from "widgetarium";
+import { z } from "zod";
+const Titled = createWidget({
+	inject: { title: IValueGateway.of(z.string().default("Hi")).pick("get") },
+	draw: () => null,
+});
+export const metadata = { title: "Titled", description: "Imports zod on its own." };
+export const layout = { role: "content", size: { preferredWidth: 320, preferredHeight: "auto" } };
+export default Titled;`;
+check(
+	"a widget importing zod itself is run with the real zod",
+	declarationIn(compileWidget(ZOD_WIDGET, `${FOLDER}/widget.tsx`)).manifest.props["title"]?.default,
+	{ value: "Hi" },
+);
+
+const cardsRoot = fs.mkdtempSync(path.join(os.tmpdir(), "wg-cards-"));
+const widgetAt = (name: string, source: string): string => {
+	const folder = path.join(cardsRoot, "@demo", name);
+	fs.mkdirSync(folder, { recursive: true });
+	fs.writeFileSync(path.join(folder, "widget.tsx"), source);
+	return folder;
+};
+widgetAt("titled", ZOD_WIDGET);
+const broken = widgetAt(
+	"broken",
+	`import { createWidget } from "widgetarium";\nthrow new Error("broken on purpose");\nexport default createWidget({ draw: () => null });`,
+);
+check("writing every card names each widget that could not be read, and only those", await writeEveryCard(cardsRoot), [
+	broken,
+]);
+check(
+	"and the readable one still gets its card",
+	fs.existsSync(path.join(cardsRoot, "@demo", "titled", RECORD_FILE)),
+	true,
+);
+fs.rmSync(cardsRoot, { recursive: true, force: true });
 
 console.log(`\n${failed === 0 ? `publish: clean (${checks} checks)` : `publish: ${failed} failed`}`);
 process.exit(failed === 0 ? 0 : 1);

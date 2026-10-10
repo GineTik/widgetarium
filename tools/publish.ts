@@ -2,6 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import * as prettier from "prettier";
+import * as react from "react";
+import * as reactDom from "react-dom";
+import * as zod from "zod";
 import { RECORD_FILE, RECORD_FILES, cardOf } from "../packages/core/src/engine/catalogue-index.ts";
 import { WIDGET_API } from "../packages/core/src/version.ts";
 import {
@@ -73,6 +76,8 @@ const ANYTHING: object = new Proxy(function anything() {}, {
 	construct: () => ANYTHING,
 });
 
+const REAL_IN_RUN: Readonly<Record<string, unknown>> = { zod, react, "react-dom": reactDom };
+
 const NOT_DECLARED_PROPS = "the widget does not export createWidget({ inject: { ... }, draw })";
 
 const WIDGET_GLOBALS = {
@@ -113,7 +118,8 @@ export function dependenciesFrom(names: readonly string[], lockfile: Lockfile | 
 export function declarationIn(code: string, lib: ScopeLib | null = null): { manifest: ModuleManifest } {
 	const widgetarium = widgetariumInRun();
 	const libs = new Map<string, unknown>();
-	const require: RequireInWidget = (name) => (name === "widgetarium" ? widgetarium : (libs.get(name) ?? ANYTHING));
+	const require: RequireInWidget = (name) =>
+		name === "widgetarium" ? widgetarium : (REAL_IN_RUN[name] ?? libs.get(name) ?? ANYTHING);
 	if (lib) libs.set(lib.name, exportsOfRun(compileWidget(lib.source, lib.path), require));
 	const manifest = declaredBuilders.manifestOfModule(exportsOfRun(code, require));
 	if (!manifest) throw new Error(NOT_DECLARED_PROPS);
@@ -195,16 +201,16 @@ export function widgetFolders(root: string): string[] {
 		.filter((folder) => EVERY_SOURCE_FILE.some((name) => fs.existsSync(path.join(folder, name))));
 }
 
-export async function writeCardBeside(folder: string): Promise<void> {
+export async function writeCardBeside(folder: string): Promise<string | null> {
 	const done = await cardMadeFrom(folder);
 	if (!done.ok) {
 		console.error(`!!  ${folder}: ${done.failure}`);
-		process.exitCode = 1;
-		return;
+		return done.failure;
 	}
 	const cardAt = path.join(folder, RECORD_FILE);
 	fs.writeFileSync(cardAt, await cardText(done.record, cardAt));
 	console.log(`OK  ${folder}/${RECORD_FILE}`);
+	return null;
 }
 
 function firstSheetName(): string {
