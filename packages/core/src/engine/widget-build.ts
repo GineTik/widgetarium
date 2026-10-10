@@ -11,6 +11,14 @@ export interface FolderListing {
 
 type ListFolder = (at: string) => Promise<FolderListing>;
 
+export type CompiledModules = Readonly<Record<string, string>>;
+export type ResolvedImports = Readonly<Record<string, Readonly<Record<string, string>>>>;
+
+interface LoaderShape {
+	readonly resolved: ResolvedImports;
+	readonly exported: string;
+}
+
 const BUILD_DIR = "build";
 export const BUILD_FILE = "widget.js";
 const BUILT_SHEET = "widget.css";
@@ -23,6 +31,7 @@ export const LIB_FILES: readonly string[] = ["lib.ts", "lib.tsx", "lib.js"];
 const NEVER_WALKED: readonly string[] = [BUILD_DIR, "node_modules"];
 const TYPED_TRANSFORMS: Transform[] = ["typescript", "jsx", "imports"];
 const UNTYPED_TRANSFORMS: Transform[] = ["jsx", "imports"];
+const REQUIRE_CALL = /\brequire\((["'])([^"']+)\1\)/g;
 
 const JAVASCRIPT_REFUSED =
 	'{folder}/{file} is JavaScript, and a widget is written in TypeScript. Rename it to widget.tsx — JavaScript is valid TypeScript, so the rename alone is enough to build it: mv "{folder}/{file}" "{folder}/widget.tsx"';
@@ -105,20 +114,41 @@ export function compileWidgetFolder(files: FolderFiles, folder: string): string 
 	const sourceToCompile = (name: string): string =>
 		isPageFolder(folder) ? withNodeMarks(sourceOf(files, name), name) : sourceOf(files, name);
 	if (modules.length <= 1) return compileWidget(sourceToCompile(entry), `${folder}/${entry}`);
-	const compiled = modules.map(
-		(name) =>
-			`${JSON.stringify(name)}: function (require, module, exports) {\n${compileWidget(sourceToCompile(name), `${folder}/${name}`)}\n}`,
+	const compiled = Object.fromEntries(
+		modules.map((name) => [name, compileWidget(sourceToCompile(name), `${folder}/${name}`)]),
 	);
-	return FOLDER_LOADER.replace("{entry}", JSON.stringify(entry)).replace("{modules}", () => compiled.join(",\n"));
+	return loaderProgramOf(compiled, { resolved: {}, exported: `widgetLoad(${JSON.stringify(entry)})` });
+}
+
+export function moduleLoaderProgramOf(compiled: CompiledModules, resolved: ResolvedImports): string {
+	return loaderProgramOf(compiled, { resolved, exported: "widgetLoad" });
+}
+
+export function moduleCandidatesOf(path: string): string[] {
+	return [path, `${path}.ts`, `${path}.tsx`, `${path}/index.ts`, `${path}/index.tsx`];
+}
+
+export function requiredIn(compiled: string): string[] {
+	return [...new Set([...compiled.matchAll(REQUIRE_CALL)].map((found) => found[2] ?? ""))];
+}
+
+function loaderProgramOf(compiled: CompiledModules, { resolved, exported }: LoaderShape): string {
+	const modules = Object.entries(compiled).map(
+		([name, code]) => `${JSON.stringify(name)}: function (require, module, exports) {\n${code}\n}`,
+	);
+	return MODULE_LOADER.replace("{exported}", () => exported)
+		.replace("{resolved}", () => JSON.stringify(resolved))
+		.replace("{modules}", () => modules.join(",\n"));
 }
 
 function sourceOf(files: FolderFiles, name: string): string {
 	return files[name] ?? "";
 }
 
-const FOLDER_LOADER = `const widgetModules = {
+const MODULE_LOADER = `const widgetModules = {
 {modules}
 };
+const widgetResolutions = {resolved};
 const widgetOuterRequire = require;
 const widgetLoaded = {};
 function widgetResolved(from, spec) {
@@ -132,12 +162,17 @@ function widgetResolved(from, spec) {
 	if (!found) throw new Error("cannot import " + JSON.stringify(spec) + " from " + from);
 	return found;
 }
+function widgetRequired(from, spec) {
+	const resolved = (widgetResolutions[from] || {})[spec];
+	if (resolved !== undefined) return widgetLoad(resolved);
+	if (spec.startsWith(".")) return widgetLoad(widgetResolved(from, spec));
+	return widgetOuterRequire(spec);
+}
 function widgetLoad(name) {
 	if (widgetLoaded[name]) return widgetLoaded[name].exports;
 	const held = { exports: {} };
 	widgetLoaded[name] = held;
-	const localRequire = (spec) => (spec.startsWith(".") ? widgetLoad(widgetResolved(name, spec)) : widgetOuterRequire(spec));
-	widgetModules[name](localRequire, held, held.exports);
+	widgetModules[name]((spec) => widgetRequired(name, spec), held, held.exports);
 	return held.exports;
 }
-module.exports = widgetLoad({entry});`;
+module.exports = {exported};`;

@@ -41,6 +41,7 @@
 		"test:surface": "node --single-threaded --import ./tools/loader/register.mts tools/api-surface-test.ts",
 		"test:engine-surface": "node --single-threaded --import ./tools/loader/register.mts tools/engine-surface-test.ts",
 		"test:project": "node --single-threaded --import ./tools/loader/register.mts tools/project-discovery-test.ts",
+		"test:app-block": "node --single-threaded --import ./tools/loader/register.mts tools/app-block-test.ts",
 		"test:codemod-zod": "node --single-threaded --import ./tools/loader/register.mts tools/codemod-zod-import-test.ts",
 		"test:props": "node --single-threaded --import ./tools/loader/register.mts tools/props-test.ts",
 		"test:host-gateways": "node --single-threaded --import ./tools/loader/register.mts tools/host-gateways-test.ts",

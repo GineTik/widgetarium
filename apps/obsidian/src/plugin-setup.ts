@@ -35,6 +35,8 @@ import { indexedDbSnapshotStore } from "./startup-snapshot-store.js";
 import { answerShotRequests } from "./shot-requests.js";
 import { openDesignInLeaf, registerDesignView } from "./design-view.js";
 import { appScreenOfNote } from "./app-of-note.js";
+import { APP_BLOCK_LANGUAGE, drawAppBlock } from "./app-block.js";
+import { createAppProjects, type AppProjects } from "./app-projects.js";
 import type WidgetariumPlugin from "./main.js";
 import type { WantedWidgets } from "./main.js";
 
@@ -197,6 +199,31 @@ function registerRenderersBeforeFirstNote(plugin: WidgetariumPlugin): void {
 		);
 	plugin.registerMarkdownPostProcessor(substituteSection);
 	traceSub("post-processor registered", { rules: plugin.rules.length });
+	registerAppBlocks(plugin);
+}
+
+function registerAppBlocks(plugin: WidgetariumPlugin): void {
+	const projects = createAppProjects(plugin.app.vault.adapter);
+	plugin.register(() => projects.close());
+	const place = { projects, hostOf: (notePath: string) => bindNote(plugin.host, notePath) };
+	plugin.registerMarkdownCodeBlockProcessor(APP_BLOCK_LANGUAGE, (source, element, context) =>
+		drawAppBlock(place, source, element, context),
+	);
+	reportVaultChangesTo(plugin, projects);
+}
+
+function reportVaultChangesTo(plugin: WidgetariumPlugin, projects: AppProjects): void {
+	if (typeof plugin.app.vault?.on !== "function") return;
+	const changed = (file: TAbstractFile): void => projects.changed(file.path);
+	plugin.registerEvent(plugin.app.vault.on("modify", changed));
+	plugin.registerEvent(plugin.app.vault.on("create", changed));
+	plugin.registerEvent(plugin.app.vault.on("delete", changed));
+	plugin.registerEvent(
+		plugin.app.vault.on("rename", (file: TAbstractFile, was: string) => {
+			projects.changed(was);
+			changed(file);
+		}),
+	);
 }
 
 function wantedWidgetsOf(plugin: WidgetariumPlugin): WantedWidgets {

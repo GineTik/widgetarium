@@ -23,4 +23,5 @@ export {
 } from "./project-files.js";
 export { nodeProjectFiles, type NodeDirent, type NodeEntryKind, type NodeFileSystem } from "./project-files-node.js";
 export { KIT_HELPER_FOLDERS, isKitItem } from "./project-kit.js";
+export { matchProjectRoute, type RouteMatch, type RoutePattern } from "./project-route-match.js";
 export { LAYOUT_FILE, ROUTE_FILE, routePathOf } from "./project-routes.js";

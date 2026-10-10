@@ -4,7 +4,8 @@ import { corePack } from "@widgetarium/pack-core";
 import { ModuleRegistry } from "@widgetarium/core/engine/module-registry.js";
 import { registerPacks } from "@widgetarium/core/engine/packs.js";
 import { projectPackOf } from "@widgetarium/core/engine/project-pack.js";
-import { createBrowserRouter, matchRoute } from "./browser-router.js";
+import { matchProjectRoute } from "@widgetarium/core/project/index.js";
+import { createBrowserRouter } from "./browser-router.js";
 import type { BrowserRouter } from "./browser-router.js";
 import { NoRoute } from "./no-route.js";
 import { RouteBoard } from "./route-board.js";
@@ -31,7 +32,7 @@ export function startProject(project: WidgetariumProject): StartedProject {
 
 export function WidgetariumApp({ project }: WidgetariumAppProps): ReactElement {
 	const pathname = useSyncExternalStore(project.router.subscribe, project.router.pathname);
-	const matched = matchRoute(project.routes, pathname);
+	const matched = matchProjectRoute(project.routes, pathname);
 	if (!matched) return h(NoRoute, { pathname });
 	return h(RouteBoard, {
 		key: pathname,
