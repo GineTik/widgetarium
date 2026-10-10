@@ -308,10 +308,6 @@ body {
 	--wg-page-layer: 50;
 }
 
-.wg-app-window .wg-page {
-	top: var(--wg-window-band);
-}
-
 .view-content:has(.wg-root.is-screen),
 .view-content:has(.wg-root.is-screen) :is(.markdown-preview-view, .cm-scroller) {
 	background: var(--wg-kit-page);
@@ -7908,59 +7904,6 @@ body.wg-tree-carrying .wg-tile-body {
 	gap: 8px;
 }
 
-.wg-app-window > .view-header {
-	display: none;
-}
-
-.wg-app-window > .view-content {
-	padding-top: var(--wg-window-band);
-}
-
-.wg-app-window,
-.wg-design-topbar {
-	--wg-window-band: 50px;
-}
-
-.wg-window-corners {
-	position: absolute;
-	inset-inline: 0;
-	top: 0;
-	z-index: calc(var(--wg-page-layer) + 1);
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	pointer-events: none;
-}
-
-.wg-window-corner {
-	display: flex;
-	flex: none;
-	--wg-board-pad: 0px;
-	--wg-root-head: 0px;
-	--wg-corner-board: 200px;
-	pointer-events: none;
-}
-
-.wg-window-corner.is-right {
-	justify-content: flex-end;
-}
-
-.wg-window-corner > .wg-root {
-	flex: none;
-	width: var(--wg-corner-board);
-	min-height: 0;
-	padding: 0;
-	background: transparent;
-}
-
-.wg-window-corner .wg-slot {
-	pointer-events: auto;
-}
-
-.wg-window-corner .wg-tree-region {
-	padding: 0;
-}
-
 .wg-design-topbar {
 	position: absolute;
 	top: 0;
@@ -7971,7 +7914,7 @@ body.wg-tree-carrying .wg-tile-body {
 	align-items: center;
 	justify-content: space-between;
 	gap: 16px;
-	padding: 0 0 40px;
+	padding: 16px 16px 40px;
 	pointer-events: none;
 }
 
@@ -7988,13 +7931,7 @@ body.wg-tree-carrying .wg-tile-body {
 	pointer-events: auto;
 }
 
-.wg-design-top-start {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.wg-design-top-start > .wg-design-head {
+.wg-design-topbar > .wg-design-head {
 	position: relative;
 	top: auto;
 	left: auto;
@@ -11935,4 +11872,160 @@ body.wg-tree-carrying .wg-tile-body {
 	:is(.wg-root, .wg-portal) .wg-kit-nav-viewport {
 		transition: none;
 	}
+}
+
+.wg-studio {
+	--wg-studio-band: 50px;
+	--wg-studio-edge: 8px;
+	--wg-studio-inset-left: 0px;
+	--wg-studio-inset-right: 0px;
+	display: grid;
+	grid-template-rows: var(--wg-studio-band) minmax(0, 1fr);
+	height: 100vh;
+	background: var(--wg-kit-page);
+}
+
+.wg-studio-band {
+	--wg-board-pad: 0px;
+	--wg-root-head: 0px;
+	min-width: 0;
+	height: var(--wg-studio-band);
+}
+
+.wg-studio-band > .wg-root {
+	min-height: 0;
+	padding: 0;
+	background: transparent;
+}
+
+.wg-studio-band .wg-tree-region {
+	padding: 0;
+}
+
+.wg-studio-outlet {
+	position: relative;
+	min-width: 0;
+	overflow: auto;
+}
+
+.wg-studio-band-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	height: var(--wg-studio-band);
+}
+
+.wg-studio-corner {
+	display: flex;
+	align-items: center;
+	gap: var(--wg-gap-parts);
+}
+
+.wg-studio-safe-area {
+	display: block;
+	flex: none;
+	height: var(--wg-studio-band);
+}
+
+.wg-studio-safe-area.is-left {
+	width: max(var(--wg-studio-inset-left), calc(var(--wg-studio-edge) - var(--wg-gap-parts)));
+}
+
+.wg-studio-safe-area.is-right {
+	width: max(var(--wg-studio-inset-right), calc(var(--wg-studio-edge) - var(--wg-gap-parts)));
+}
+
+.wg-studio-mark-letter {
+	font-size: var(--wg-kit-text-s);
+	font-weight: var(--font-medium, 500);
+}
+
+.wg-studio-mark-letter.is-s {
+	font-size: var(--wg-kit-text-xs);
+	font-weight: var(--font-semibold, 600);
+}
+
+.wg-studio-menu {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-gap-parts);
+	width: 280px;
+}
+
+.wg-studio-profile,
+.wg-studio-app-row,
+.wg-studio-action {
+	display: flex;
+	min-width: 0;
+	align-items: center;
+	gap: var(--wg-gap-items);
+}
+
+.wg-studio-profile-text,
+.wg-studio-app-list,
+.wg-studio-apps {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.wg-studio-app-list {
+	flex: 1;
+	gap: var(--wg-gap-parts);
+}
+
+.wg-studio-profile-name,
+.wg-studio-profile-line,
+.wg-studio-action-said,
+.wg-studio-app-name {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.wg-studio-profile-name {
+	font-size: var(--wg-kit-text-m);
+	font-weight: var(--font-medium, 500);
+}
+
+.wg-studio-profile-line,
+.wg-studio-list-label,
+.wg-studio-soon {
+	font-size: var(--wg-kit-text-xs);
+}
+
+.wg-studio-profile-line,
+.wg-studio-list-label,
+.wg-studio-action.is-soon,
+.wg-studio-no-match,
+.wg-studio-refusal {
+	color: var(--wg-kit-text-muted);
+}
+
+.wg-studio-action-said {
+	flex: 1;
+	min-width: 0;
+	font-size: var(--wg-kit-text-s);
+}
+
+.wg-studio-list-label {
+	padding: 12px 12px 0;
+}
+
+.wg-studio-search {
+	padding-inline: 4px;
+}
+
+.wg-studio-apps-scroll {
+	max-height: 228px;
+}
+
+.wg-studio-no-match,
+.wg-studio-refusal {
+	padding: 8px 12px;
+	font-size: var(--wg-kit-text-s);
+}
+
+.wg-studio-canvas-placeholder {
+	padding: var(--size-4-6, 24px);
 }

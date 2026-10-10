@@ -13,7 +13,6 @@ import { gitPack } from "@widgetarium/pack-git";
 import { obsidianPack } from "@widgetarium/pack-obsidian";
 import { statsPack } from "@widgetarium/pack-stats";
 import { cataloguePack } from "@widgetarium/pack-catalogue";
-import { chromePack } from "@widgetarium/pack-chrome";
 import { REACT_SURFACE_SOURCE } from "widgetarium:surface";
 import { BUILD_STAMP } from "widgetarium:build-stamp";
 import { createHeaderActions } from "./header-actions.js";
@@ -25,8 +24,6 @@ import { WidgetariumSettingTab } from "./ai/settings-tab.js";
 import { createAssistant } from "./ai/assistant.js";
 import { layAgentFiles } from "./ai/agent-files.js";
 import { addCommandsAndRibbon } from "./plugin-commands.js";
-import { createAppsPort } from "./apps-port.js";
-import { keepAppWindows } from "./app-windows.js";
 import { createCataloguePort } from "./catalogue-port.js";
 import { registerBoardViews } from "./catalogue-views.js";
 import { removeLaidCatalogue, withSystemWidgets } from "./system-widgets.js";
@@ -49,7 +46,7 @@ const AFTER_FIRST_DRAW_MS = 3000;
 
 export function startPlugin(plugin: WidgetariumPlugin): void {
 	const startedAt = performance.now();
-	registerPacks(corePack, obsidianPack, statsPack, gitPack, cataloguePack, chromePack);
+	registerPacks(corePack, obsidianPack, statsPack, gitPack, cataloguePack);
 	plugin.editing = false;
 	plugin.mounts = new Map();
 	plugin.header = headerActionsOf(plugin);
@@ -62,7 +59,6 @@ export function startPlugin(plugin: WidgetariumPlugin): void {
 	plugin.shapeAnswers = {};
 	plugin.shapes = shapeStoreFollowingRenames(plugin);
 	plugin.cataloguePort = createCataloguePort(plugin);
-	plugin.appsPort = createAppsPort(plugin);
 	plugin.host = createHost(plugin.app, plugin);
 	plugin.rules = [];
 	registerRenderersBeforeFirstNote(plugin);
@@ -73,7 +69,6 @@ export function startPlugin(plugin: WidgetariumPlugin): void {
 		.catch((failure: unknown) => console.error("[widgetarium] the widgets could not be read", failure));
 	startAssistant(plugin);
 	registerBoardViews(plugin);
-	keepAppWindows(plugin);
 	registerDesignView(plugin);
 	receiveDropsInNotes(plugin);
 	addCommandsAndRibbon(plugin);

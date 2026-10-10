@@ -5,7 +5,9 @@
 		"moduleResolution": "bundler",
 		"customConditions": ["source"],
 		"lib": ["ES2022", "DOM"],
-		"jsx": "preserve",
+		"jsx": "react",
+		"jsxFactory": "h",
+		"jsxFragmentFactory": "Fragment",
 		"strict": true,
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
@@ -20,5 +22,5 @@
 		"types": ["node"]
 	},
 	"references": [{ "path": "../kit" }, { "path": "../core" }],
-	"include": ["src/**/*.ts", "../core/src/*.d.ts"]
+	"include": ["src/**/*.ts", "src/**/*.tsx", "../core/src/*.d.ts", "../kit/src/jsx-namespace.d.ts"]
 }

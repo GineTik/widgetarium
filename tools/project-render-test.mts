@@ -22,6 +22,8 @@ const BOARD_FILE = "src/app/routes/board.json";
 const ERRORS_ATTRIBUTE = "data-wg-console-errors";
 const ERRORS_HELD = new RegExp(`${ERRORS_ATTRIBUTE}="([^"]*)"`);
 const RENDER_BUDGET_MS = 9000;
+const STUDIO_MARK = "wg-studio-band";
+const STUDIO_OUT = "dist-studio";
 
 const SCHEMA = `import { z } from "zod";
 
@@ -173,7 +175,25 @@ async function drawnAt(url: string): Promise<Drawn> {
 async function builtAndDrawn(app: string): Promise<Drawn> {
 	const build = ran(app, "npm", ["run", "build"]);
 	if (!build.ok) throw new Error(`npm run build failed:\n${build.said}`);
-	const server = await serve(path.join(app, "dist"));
+	return drawnFrom(path.join(app, "dist"));
+}
+
+async function studioBuiltAndDrawn(app: string): Promise<Drawn> {
+	const build = ran(app, "npx", ["vite", "build", "--mode", "studio", "--outDir", STUDIO_OUT]);
+	if (!build.ok) throw new Error(`vite build --mode studio failed:\n${build.said}`);
+	return drawnFrom(path.join(app, STUDIO_OUT));
+}
+
+function scriptsUnder(dist: string): string {
+	return fs
+		.readdirSync(dist, { recursive: true, withFileTypes: true })
+		.filter((entry) => entry.isFile() && entry.name.endsWith(".js"))
+		.map((entry) => fs.readFileSync(path.join(entry.parentPath, entry.name), "utf8"))
+		.join("\n");
+}
+
+async function drawnFrom(dist: string): Promise<Drawn> {
+	const server = await serve(dist);
 	try {
 		return await drawnAt(`http://127.0.0.1:${portOf(server.address())}/`);
 	} finally {
@@ -234,6 +254,13 @@ try {
 	const drawn = await builtAndDrawn(app);
 	check("the route's board draws both task titles the handler answered", titlesDrawnInBoard(drawn), true);
 	check("and the page logs no console error", drawn.errors.join("\n"), "");
+	check("app mode ships no studio code", scriptsUnder(path.join(app, "dist")).includes(STUDIO_MARK), false);
+
+	const studio = await studioBuiltAndDrawn(app);
+	check("studio mode ships the studio", scriptsUnder(path.join(app, STUDIO_OUT)).includes(STUDIO_MARK), true);
+	check("and draws its band", studio.dom.includes(`class="${STUDIO_MARK}"`), true);
+	check("with the route's tasks below it", titlesDrawnInBoard(studio), true);
+	check("and logs no console error", studio.errors.join("\n"), "");
 
 	writeBoard(app, BOARD_UNBOUND);
 	const unbound = await builtAndDrawn(app);

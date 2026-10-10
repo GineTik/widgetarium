@@ -23,7 +23,6 @@ export const ENGINE_PACKAGES: readonly string[] = [
 	"packages/packs/stats",
 	"packages/packs/git",
 	"packages/packs/catalogue",
-	"packages/packs/chrome",
 	"packages/widgetarium",
 ];
 

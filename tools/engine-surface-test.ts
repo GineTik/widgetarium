@@ -14,7 +14,7 @@ const ENGINE = path.join(REPO, "packages/widgetarium");
 const KIT = path.join(REPO, "packages/kit");
 const SDK_SURFACE = path.join(REPO, "packages/sdk/types/widgetarium.d.ts");
 const KIT_SUBPATH = "./kit";
-const HOST_ENTRIES: readonly string[] = ["./app"];
+const HOST_ENTRIES: readonly string[] = ["./app", "./studio"];
 const PROBE = "probe.ts";
 const PROBE_OPTIONS = {
 	target: "ES2022",

@@ -5,10 +5,10 @@ import type { FileHost, FolderHost, VaultSlot } from "../gateway/obsidian.js";
 import type { NeedOfField } from "../gateway/props.js";
 import type { RefDescription, ViewCell } from "../gateway/refs.js";
 import type { CommandInputDeclared, commandInput, commandOutput } from "../gateway/declared-types.js";
-import { NO_APPS_PORT } from "./apps-port.js";
-import type { AppsPort } from "./apps-port.js";
 import { NO_CATALOGUE_PORT } from "./catalogue-port.js";
 import type { CataloguePort } from "./catalogue-port.js";
+import { NO_STUDIO_HOST } from "./studio-host.js";
+import type { StudioHostPort } from "./studio-host.js";
 import type { z } from "zod";
 
 export type PackCommandClass<Input extends z.ZodType, Fields, Command> = (new (
@@ -72,7 +72,7 @@ export interface ImplementationPorts extends HandlerHost {
 	readonly vault: VaultPort;
 	readonly refs: RefsPort;
 	readonly catalogue: CataloguePort;
-	readonly apps: AppsPort;
+	readonly studio: StudioHostPort;
 }
 
 export interface PropPort {
@@ -128,7 +128,7 @@ export interface PortsHost {
 	readonly network?: NetworkPort | undefined;
 	readonly vault?: VaultPort | undefined;
 	readonly catalogue?: CataloguePort | undefined;
-	readonly apps?: AppsPort | undefined;
+	readonly studio?: StudioHostPort | undefined;
 	readonly confirm?: ((said: string) => Promise<boolean>) | undefined;
 	readonly notePath?: string | undefined;
 }
@@ -205,7 +205,7 @@ export function portsOf(host: PortsHost, refs: RefsPort, self: string): Implemen
 		vault: host.vault ?? SHUT_VAULT,
 		refs,
 		catalogue: host.catalogue ?? NO_CATALOGUE_PORT,
-		apps: host.apps ?? NO_APPS_PORT,
+		studio: host.studio ?? NO_STUDIO_HOST,
 		confirm: host.confirm ?? (async () => false),
 	};
 }

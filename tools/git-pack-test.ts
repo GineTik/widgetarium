@@ -1,4 +1,4 @@
-import { NO_APPS_PORT } from "../packages/core/src/engine/apps-port.ts";
+import { NO_STUDIO_HOST } from "../packages/core/src/engine/studio-host.ts";
 import { NO_CATALOGUE_PORT } from "../packages/core/src/engine/catalogue-port.ts";
 import { execFile } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -50,7 +50,7 @@ const ports: ImplementationPorts = {
 	workingDirectory: repository,
 	self: "t1/git",
 	catalogue: NO_CATALOGUE_PORT,
-	apps: NO_APPS_PORT,
+	studio: NO_STUDIO_HOST,
 	network: { can: false, request: () => Promise.reject(new Error("no network")) },
 	vault: {
 		can: false,

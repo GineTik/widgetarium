@@ -9,11 +9,10 @@
 		"packages/packs/*"
 	],
 	"scripts": {
-		"system-sheets": "node --single-threaded --import ./tools/loader/register.mts tools/system-sheets.ts",
-		"build": "npm run system-sheets && node apps/obsidian/build.mts",
-		"prod": "npm run system-sheets && node apps/obsidian/build.mts --prod",
-		"install-vault": "npm run system-sheets && node apps/obsidian/build.mts --prod && node apps/obsidian/install.mts",
-		"dev": "npm run system-sheets && node apps/obsidian/build.mts && node apps/obsidian/install.mts",
+		"build": "node apps/obsidian/build.mts",
+		"prod": "node apps/obsidian/build.mts --prod",
+		"install-vault": "node apps/obsidian/build.mts --prod && node apps/obsidian/install.mts",
+		"dev": "node apps/obsidian/build.mts && node apps/obsidian/install.mts",
 		"pack:engine": "node tools/pack-engine.mts",
 		"test:engine-package": "node tools/engine-package-test.mts",
 		"widgetarium": "node --import ./tools/loader/register.mts packages/widgetarium/src/cli.ts",
@@ -37,7 +36,7 @@
 		"test:dialog-fit": "node --single-threaded --import ./tools/loader/register.mts tools/dialog-fit-test.ts",
 		"test:write": "node --single-threaded --import ./tools/loader/register.mts tools/write-test.ts",
 		"test:editor-write": "node --single-threaded --import ./tools/loader/register.mts tools/editor-write-test.ts",
-		"test:types": "tsc -b packages/kit packages/core packages/packs/core packages/packs/obsidian packages/packs/stats packages/packs/git packages/packs/catalogue packages/packs/chrome packages/widgetarium apps/obsidian tools && node tools/lint-code.mts --rule=double-cast --errors packages/core/src packages/kit/src",
+		"test:types": "tsc -b packages/kit packages/core packages/packs/core packages/packs/obsidian packages/packs/stats packages/packs/git packages/packs/catalogue packages/widgetarium apps/obsidian tools && node tools/lint-code.mts --rule=double-cast --errors packages/core/src packages/kit/src",
 		"test:needs": "tsc -b packages/kit packages/core && tsc -p packages/sdk/tsconfig.widgets.json --noEmit",
 		"test:surface": "node --single-threaded --import ./tools/loader/register.mts tools/api-surface-test.ts",
 		"test:engine-surface": "node --single-threaded --import ./tools/loader/register.mts tools/engine-surface-test.ts",
@@ -59,7 +58,8 @@
 		"test:catalogue-pack": "node --single-threaded --import ./tools/loader/register.mts tools/catalogue-pack-test.ts",
 		"test:catalogue-widgets": "node --single-threaded --import ./tools/loader/register.mts tools/catalogue-widgets-test.ts",
 		"test:catalogue-board": "node --single-threaded --import ./tools/loader/register.mts tools/catalogue-board-test.ts",
-		"test:window-corner": "node --single-threaded --import ./tools/loader/register.mts tools/window-corner-test.ts",
+		"test:studio-render": "node --single-threaded --import ./tools/loader/register.mts tools/studio-render-test.ts",
+		"test:studio-host": "node --single-threaded --import ./tools/loader/register.mts tools/studio-host-test.ts",
 		"test:catalogue-paint": "node --single-threaded --import ./tools/loader/register.mts tools/catalogue-board-shot.ts",
 		"test:visibility": "node --single-threaded --import ./tools/loader/register.mts tools/visibility-test.ts",
 		"test:section": "node --single-threaded --import ./tools/loader/register.mts tools/section-test.ts",
@@ -181,7 +181,6 @@
 		"esbuild": "^0.23.0",
 		"jsdom": "^29.1.1",
 		"prettier": "^3.9.6",
-		"tailwindcss": "^4.3.3",
 		"typescript": "^7.0.2"
 	},
 	"dependencies": {

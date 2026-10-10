@@ -53,6 +53,7 @@ A command written `node {tool} …` in the handbook belongs to the Obsidian plug
 ## Commands
 
 - `npm run dev`: the app on a local server.
+- `npm run studio`: the same app inside the engine's studio: its band with the app switcher and the AI button above every route.
 - `npm run typecheck`: TypeScript over `src` and `vite.config.ts`.
 - `npm run check`: `widgetarium check`, every layer against `widgetarium.json`; exits 1 on findings.
 - `npx widgetarium catalogue list | search <words> | show <id>`: the widgets the registries offer.

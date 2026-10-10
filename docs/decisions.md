@@ -179,3 +179,20 @@ The decisions, each with what it replaced:
   editor sorts them. The layer order is a rule about imports, enforced by the layer lint and stated
   in `AGENTS.md`, not a display order; numbered prefixes would leak into every import, alias and
   prompt. FSD keeps its plain names for the same reason.
+
+## The studio wraps the app, it is not inside it
+
+The engine's shell (band, app switcher, AI button; canvas and assistant later) is `widgetarium/studio`,
+itself built from `@studio` widgets and a pack. Replaced: `@chrome` widgets in the registry, a
+`@chrome` pack, and corner boards an Obsidian note laid over itself.
+
+- **The route is a sibling of the band, not a node of its tree.** Merging the route's root under a
+  shell box would turn its regions into nested boxes: spacing, region collapse and the screen's height
+  would all change, and the studio would no longer show the app the app mode shows. Measured instead:
+  the outlet's DOM equals app mode's.
+- **App mode ships no shell code.** The mode is picked by the Vite plugin per `--mode`, so an app
+  build never imports `widgetarium/studio`.
+- **The host says where its window buttons are**; the shell never guesses a platform. A browser tab
+  reports nothing, an installed PWA reads the Window Controls Overlay.
+- **The studio's state is one per page.** `STUDIO_STATE` is a module singleton, so two studios on
+  one page would share their view and sidebar; a page draws one studio.

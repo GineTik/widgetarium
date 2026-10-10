@@ -56,11 +56,6 @@
 		{ "id": "@media/album-grid" },
 		{ "id": "@media/player" },
 		{ "id": "@media/track-list" },
-		{ "id": "@media/track-row" },
-
-		{ "id": "@chrome/ai-button" },
-		{ "id": "@chrome/app-chrome-page" },
-		{ "id": "@chrome/control-menu" },
-		{ "id": "@chrome/safe-area" }
+		{ "id": "@media/track-row" }
 	]
 }

@@ -1,7 +1,7 @@
 import type { ImplementationPorts, NetworkAsk, VaultNote } from "../packages/core/src/engine/packs.ts";
 import { definePack, registeredCommands, registeredQueries, shutPortsOf } from "../packages/core/src/engine/packs.ts";
 import { handlerContextOf } from "../packages/core/src/gateway/handler-context.ts";
-import { NO_APPS_PORT } from "../packages/core/src/engine/apps-port.ts";
+import { NO_STUDIO_HOST } from "../packages/core/src/engine/studio-host.ts";
 import { NO_CATALOGUE_PORT } from "../packages/core/src/engine/catalogue-port.ts";
 import { sourcesFor } from "../packages/core/src/engine/host-gateways.ts";
 import { arrayGateway } from "../packages/core/src/gateway/create.ts";
@@ -77,7 +77,7 @@ let isConfirmed = false;
 const portsOf = (answer: string, status = 200): ImplementationPorts => ({
 	self: "t1/probe",
 	catalogue: NO_CATALOGUE_PORT,
-	apps: NO_APPS_PORT,
+	studio: NO_STUDIO_HOST,
 	commandLine: { can: false, run: async () => ({ ok: false, output: "", failure: "none" }) },
 	workingDirectory: undefined,
 	network: {

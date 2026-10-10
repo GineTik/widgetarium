@@ -41,6 +41,11 @@
 			"types": "./dist/app.d.ts",
 			"default": "./dist/app.js"
 		},
+		"./studio": {
+			"source": "./src/studio.ts",
+			"types": "./dist/studio.d.ts",
+			"default": "./dist/studio.js"
+		},
 		"./project-module": {
 			"types": "./dist/project-module.d.ts"
 		},

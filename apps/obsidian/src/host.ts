@@ -1,4 +1,3 @@
-import type { AppsPort } from "@widgetarium/core/engine/apps-port.js";
 import type { CataloguePort } from "@widgetarium/core/engine/catalogue-port.js";
 import { TFile, Notice, MarkdownRenderer, MarkdownRenderChild, Platform } from "obsidian";
 import type { App, Component } from "obsidian";
@@ -22,7 +21,6 @@ export interface HostPlugin extends Pick<Component, "addChild" | "removeChild"> 
 	readonly shapes?: ShapeReader | null;
 	readonly installAt?: ((ref: string) => unknown) | null;
 	readonly cataloguePort?: CataloguePort | undefined;
-	readonly appsPort?: AppsPort | undefined;
 }
 
 export interface NoteHere {
@@ -53,7 +51,6 @@ export interface ObsidianHost {
 	readonly network: NetworkPort;
 	readonly vault: VaultPort;
 	readonly catalogue: CataloguePort | undefined;
-	readonly apps: AppsPort | undefined;
 	confirm(said: string): Promise<boolean>;
 	resourcePathOf(path: string): string | null;
 	slot(binding: SlotBinding | null | undefined): FolderSlot;
@@ -120,7 +117,6 @@ export function createHost(app: App, plugin: HostPlugin | null | undefined, note
 
 		...packPortsOf(app),
 		catalogue: plugin?.cataloguePort,
-		apps: plugin?.appsPort,
 
 		resourcePathOf(path) {
 			return app.vault.adapter?.getResourcePath?.(path) ?? null;

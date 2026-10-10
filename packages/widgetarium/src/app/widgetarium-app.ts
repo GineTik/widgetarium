@@ -34,6 +34,10 @@ export function startProject(project: WidgetariumProject): StartedProject {
 
 export function WidgetariumApp({ project }: WidgetariumAppProps): ReactElement {
 	const pathname = useSyncExternalStore(project.router.subscribe, project.router.pathname);
+	return routeElementOf(project, pathname);
+}
+
+export function routeElementOf(project: StartedProject, pathname: string): ReactElement {
 	const matched = matchProjectRoute(project.routes, pathname);
 	if (!matched) return h(NoRoute, { pathname });
 	return h(RouteBoard, {

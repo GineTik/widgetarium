@@ -535,17 +535,21 @@ or into a note by `ICarrier`: every board registers a drop receiver
 the line. A widget placed before it is installed stands at once and draws the install ring, read from
 the one owner of install progress, `INSTALL_JOBS`.
 
-**An app window has no Obsidian header, and its two corners are widgets.** A note that is a page of an
-app (`appScreenOfNote`) loses `.view-header` and wears two corner boards (`app-windows.ts`), and the
-canvas top bar wears the same two (`window-corner.ts`): left the system's safe area and
-`@chrome/control-menu`, right `@chrome/ai-button` and the other safe area, each a `@chrome/corner`
-board built by `corner-board.ts`. Their logic is the `@chrome` pack over the host's `AppsPort`
-(`packages/core/src/engine/apps-port.ts`); the apps are the folders under `.widgetarium/apps`. A board
-draws nothing under 120px, so a corner box is sized to what it holds and its board overflows it.
-**`@catalogue` and `@chrome` ship inside the plugin** (`tools/system-widget-files.mts`), read-only,
-so a Tailwind sheet among them cannot be built in the vault: `npm run system-sheets` compiles each one
-at plugin build time and the bundle carries the compiled `build/widget.css`. `npm run test:window-corner`
-measures the corners in real Chrome.
+**Two modes, one app.** `widgetarium/app` runs a project alone and imports nothing of the studio;
+`widgetarium/studio` (`startStudio`, `WidgetariumStudio`) wraps the same route board in the engine's
+shell. A project's `main.tsx` starts through `virtual:widgetarium/start`, which the Vite plugin answers
+per `--mode` (`start-module-source.ts`): `npm run dev` and `build` are the app, `npm run studio` the
+studio. `test:studio-render` measures both in Chrome and proves the app entry bundles no studio module;
+`test:project-render` builds a created app both ways.
+
+**The studio is a Widgetarium app.** Its band is a board of `@studio/*` widgets
+(`packages/widgetarium/src/studio/widgets`) over the `@studio` pack; the route is drawn below it by the
+same `routeElementOf` app mode calls, never merged into the band's tree, because a route nested one
+level down stops being regions and changes its spacing. The outlet's view and whether the AI sidebar is
+open live in `STUDIO_STATE`, written only by `@studio` commands. What the host can do is its
+`StudioHostPort` (`packages/core/src/engine/studio-host.ts`): window-button insets, which the safe areas
+read as `--wg-studio-inset-left|right`, and the apps; a host without them answers "not available" and
+the shell stays. `@catalogue` ships inside the plugin (`tools/system-widget-files.mts`), read-only.
 
 **A tile is carried to a path, and the drop says what it means.** A carry measures every box and leaf
 on the board, takes the deepest one under the pointer, and reads the pointer against it: along the

@@ -36,6 +36,8 @@ const UNFILLED = /\{(?:name|handbook|paths\.[a-z]+)\}/;
 const RecordSchema = z.record(z.string(), z.unknown()).catch({});
 const ICON = "public/icon.svg";
 const DUPLICATE_WIDGET = 'widget id "tasks" is declared 2 times';
+const SHELL_FILE = /chrome|corner|studio/i;
+const WIDGETARIUM_IMPORT = /import\s+(?:[^";]*?from\s+)?"((?:virtual:)?widgetarium[^"]*)"/g;
 
 const EXPECTED_FILES = [
 	".gitignore",
@@ -70,6 +72,10 @@ function check(name: string, held: unknown, wanted: unknown): void {
 	console.log(
 		`${same ? "ok  " : "not ok"} ${name}${same ? "" : `\n      held   ${JSON.stringify(held)}\n      wanted ${JSON.stringify(wanted)}`}`,
 	);
+}
+
+function widgetariumImportsIn(source: string): string[] {
+	return [...source.matchAll(WIDGETARIUM_IMPORT)].map(([, specifier]) => specifier ?? "").sort();
 }
 
 async function cli(argv: readonly string[]): Promise<CliRun> {
@@ -122,6 +128,16 @@ try {
 	const files = filesIn(project);
 	const outsideCopies = files.filter((at) => !at.startsWith(`${KIT_FOLDER}/`) && !at.startsWith(`${HANDBOOK_FOLDER}/`));
 	check("create writes exactly the expected files beside the kit and the handbook", outsideCopies, EXPECTED_FILES);
+	check(
+		"a created project lays no chrome, corner or studio widget",
+		files.filter((at) => SHELL_FILE.test(at)),
+		[],
+	);
+	check(
+		"main.tsx starts through virtual:widgetarium/start alone",
+		widgetariumImportsIn(fs.readFileSync(path.join(project, "src/main.tsx"), "utf8")),
+		["virtual:widgetarium/project", "virtual:widgetarium/start"],
+	);
 	const kitFiles = kitFilesIn(project);
 	const components = componentNamesIn(kitFiles);
 	const repoComponents = componentNamesIn(kitModulesInRepo());
