@@ -1,5 +1,6 @@
 import type { ImplementationPorts } from "../packages/core/src/engine/packs.ts";
 import type { CataloguePort } from "../packages/core/src/engine/catalogue-port.ts";
+import { NO_CATALOGUE_PORT } from "../packages/core/src/engine/catalogue-port.ts";
 import { NO_STUDIO_HOST } from "../packages/core/src/engine/studio-host.ts";
 import type { MergedEntry } from "../packages/core/src/catalogue-entries.ts";
 import { createInstallJobs, INSTALL_JOBS } from "../packages/core/src/engine/install-jobs.ts";
@@ -22,6 +23,7 @@ import {
 	PacksQuery,
 	PickCommand,
 	PlaceCommand,
+	NoTemplatesSaidQuery,
 	SaidQuery,
 	ShowingQuery,
 	TemplatesQuery,
@@ -92,6 +94,7 @@ const port: CataloguePort = {
 	requests: CATALOGUE_REQUESTS,
 	previewRegistry: null,
 	previewHost: null,
+	says: NO_CATALOGUE_PORT.says,
 };
 
 const values = new Map<string, unknown>();
@@ -238,6 +241,25 @@ check("and leaves the widgets whole", (await ids()).length, 3);
 
 console.log("\n— what the catalogue is asked for —");
 check("browsing, it says so", (await new SaidQuery({}, ports).get()).title, "Widgets");
+const hostWithoutFiles = {
+	...ports,
+	catalogue: { ...port, templates: () => [], says: { ...port.says, browseLead: "Said by the host" } },
+};
+check(
+	"and the line under it is the host's",
+	(await new SaidQuery({}, hostWithoutFiles).get()).lead,
+	"Said by the host",
+);
+check(
+	"a host with no templates says why the templates view is empty",
+	await new NoTemplatesSaidQuery({}, hostWithoutFiles).get(),
+	"Templates come with a host that can write files.",
+);
+check(
+	"while a host with templates says the search found none",
+	await new NoTemplatesSaidQuery({}, ports).get(),
+	"No template answers to that.",
+);
 const asked = CATALOGUE_REQUESTS.ask({ mode: "place" });
 const said = await new SaidQuery({}, ports).get();
 check("asked by a board's add, it says where the pick lands", [said.title, said.isAsking], ["Add a widget", true]);

@@ -38,6 +38,10 @@ class PluginCatalogue implements PluginCataloguePort {
 	readonly requests = CATALOGUE_REQUESTS;
 	readonly place = placeWidget;
 	readonly templates = (): readonly Template[] => TEMPLATES;
+	readonly says = {
+		browseLead: "Every widget this vault can draw, shown as it really looks",
+		noTemplates: "This vault offers no templates.",
+	};
 	private readonly listeners = new Set<() => void>();
 	private held: CatalogueSnapshot | null = null;
 	private pendingRefresh: Promise<CatalogueSnapshot> | null = null;

@@ -1,6 +1,8 @@
 import { z } from "zod";
-import { fingerprintNow, onlyUnderRoot, pathsChanged, readVault, withRootRead } from "./registry-reading.js";
+import { fingerprintNow, pathsChanged } from "./registry-reading.js";
+import { ROOT } from "./paths.js";
 import type {
+	Fingerprint,
 	HeldWidget,
 	OwnedSheet,
 	PackageSource,
@@ -31,7 +33,6 @@ interface StartupCacheDoors {
 	readonly adapter: RegistryAdapter;
 	readonly store: StartupSnapshotStore;
 	readonly stamp: string;
-	readonly systemRoot?: string | undefined;
 }
 
 const LOG = "[widgetarium] startup:";
@@ -91,15 +92,11 @@ export class StartupCache {
 		if (snapshot === null) return { from: "vault", widgets: (await registry.load()).size };
 		if (snapshot.stamp !== stamp)
 			console.info(`${LOG} snapshot from plugin ${snapshot.stamp}, running ${stamp} → mounted`);
-		const read = await this.withSystemNow(snapshot.read);
-		this.current = { ...snapshot, stamp, read };
+		const read = readUnderRoot(snapshot.read);
+		const next = { ...snapshot, stamp, read };
+		if (read === snapshot.read) this.current = next;
+		else this.keep(next);
 		return { from: "snapshot", widgets: registry.mount(read).size };
-	}
-
-	private async withSystemNow(read: VaultRead): Promise<VaultRead> {
-		const { adapter, systemRoot } = this.doors;
-		if (systemRoot === undefined) return read;
-		return withRootRead(read, await readVault(onlyUnderRoot(adapter, systemRoot), null, [systemRoot]), systemRoot);
 	}
 
 	async filesChanged(): Promise<readonly string[] | null> {
@@ -127,6 +124,50 @@ export class StartupCache {
 			.write(next)
 			.catch((failure: unknown) => console.error(`${LOG} the snapshot was not written`, failure));
 	}
+}
+
+function readUnderRoot(read: VaultRead): VaultRead {
+	const packagePaths = new Set(read.packages.map((each) => each.path));
+	const isKept = (path: string): boolean => path.startsWith(`${ROOT}/`) || packagePaths.has(path);
+	const fingerprint = read.fingerprint === null ? null : keysWhere(read.fingerprint, isKept);
+	const dropped = Object.keys(read.fingerprint ?? {}).length - Object.keys(fingerprint ?? {}).length;
+	const widgets = widgetsWhere(read.widgets, isKept);
+	if (dropped === 0 && widgets.folders.length === read.widgets.folders.length) return read;
+	console.info(
+		`${LOG} snapshot held ${read.widgets.folders.length} widgets, ${dropped} stamps outside ${ROOT} → kept ${widgets.folders.length} widgets`,
+	);
+	return { ...read, widgets, fingerprint };
+}
+
+function widgetsWhere(widgets: VaultWidgets, isKept: (path: string) => boolean): VaultWidgets {
+	const scopesAt = indexesWhere(widgets.scopes, isKept);
+	const sheetsAt = indexesWhere(
+		widgets.sheets.map((sheet) => sheet.path),
+		isKept,
+	);
+	const foldersAt = indexesWhere(widgets.folders, isKept);
+	return {
+		...widgets,
+		scopes: pick(widgets.scopes, scopesAt),
+		libPaths: pick(widgets.libPaths, scopesAt),
+		libSources: pick(widgets.libSources, scopesAt),
+		sheets: pick(widgets.sheets, sheetsAt),
+		sheetSources: pick(widgets.sheetSources, sheetsAt),
+		folders: pick(widgets.folders, foldersAt),
+		widgetSources: pick(widgets.widgetSources, foldersAt),
+	};
+}
+
+function keysWhere(stamps: Fingerprint, isKept: (path: string) => boolean): Fingerprint {
+	return Object.fromEntries(Object.entries(stamps).filter(([path]) => isKept(path)));
+}
+
+function indexesWhere(paths: readonly string[], isKept: (path: string) => boolean): ReadonlySet<number> {
+	return new Set(paths.flatMap((path, at) => (isKept(path) ? [at] : [])));
+}
+
+function pick<T>(items: readonly T[], indexes: ReadonlySet<number>): T[] {
+	return items.filter((_, at) => indexes.has(at));
 }
 
 function areReadsAligned(widgets: VaultWidgets): boolean {

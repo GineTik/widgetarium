@@ -168,6 +168,7 @@ const { createStudioRouting } = await import("../apps/obsidian/src/studio-routin
 const { STUDIO_VIEW_TYPE, StudioView } = await import("../apps/obsidian/src/studio-view.js");
 const { checkedAssistantPort } = await import("./obsidian-assistant-port-checks.ts");
 const { NO_ASSISTANT } = await import("../packages/core/src/engine/assistant-port.js");
+const { NO_CATALOGUE_PORT } = await import("../packages/core/src/engine/catalogue-port.js");
 const { STUDIO_STATE } = await import("../packages/widgetarium/src/studio/studio-state.js");
 registerPacks(corePack);
 
@@ -255,6 +256,7 @@ function fakePluginOver(leaves: readonly FakeLeaf[]) {
 	const views: Array<(leaf: unknown) => unknown> = [];
 	const plugin = {
 		host,
+		cataloguePort: NO_CATALOGUE_PORT,
 		registerEvent: () => undefined,
 		registerView: (_type: string, make: (leaf: unknown) => unknown) => views.push(make),
 		app: {
@@ -270,7 +272,7 @@ function fakePluginOver(leaves: readonly FakeLeaf[]) {
 		},
 	};
 	registerStudioView(
-		standIn<WidgetariumPlugin>(plugin, ["app", "host", "registerView", "registerEvent"], "plugin"),
+		standIn<WidgetariumPlugin>(plugin, ["app", "host", "cataloguePort", "registerView", "registerEvent"], "plugin"),
 		countedProjects,
 		NO_ASSISTANT,
 	);
@@ -418,11 +420,12 @@ const place = standIn<StudioPlace>(
 		projects: createAppProjects(adapter),
 		viewType: STUDIO_VIEW_TYPE,
 		assistant: checkedAssistant.port,
+		catalogue: NO_CATALOGUE_PORT,
 		hostOf: () => host,
 		openAsMarkdown: async () => undefined,
 		showAsMarkdown: async () => undefined,
 	},
-	["app", "projects", "viewType", "assistant", "hostOf", "openAsMarkdown", "showAsMarkdown"],
+	["app", "projects", "viewType", "assistant", "catalogue", "hostOf", "openAsMarkdown", "showAsMarkdown"],
 	"place",
 );
 async function drawnFor(file: NoteFile): Promise<HTMLElement> {
@@ -448,7 +451,7 @@ check(
 	[true, true],
 );
 check("and no refusal", studioNode.querySelector(".wg-app-refusal")?.textContent ?? null, null);
-STUDIO_STATE.toggleAssistant();
+STUDIO_STATE.togglePanel("assistant");
 await settle();
 check(
 	"the studio's sidebar draws the chat over the assistant the plugin lends",
@@ -458,7 +461,18 @@ check(
 	],
 	[checkedAssistant.providerLabel, checkedAssistant.asked],
 );
-STUDIO_STATE.toggleAssistant();
+STUDIO_STATE.togglePanel("catalogue");
+await settle();
+check(
+	"the Widgets panel takes the assistant's place and draws the catalogue board",
+	[
+		studioNode.querySelectorAll(".wg-studio-sidebar").length,
+		studioNode.querySelector('.wg-studio-sidebar[data-panel="catalogue"] .wg-studio-catalogue-host .wg-board') !== null,
+		studioNode.querySelector(".wg-studio-sidebar .wg-studio-ai-who") === null,
+	],
+	[1, true, true],
+);
+STUDIO_STATE.togglePanel("catalogue");
 await settle();
 const plainNode = await drawnFor(PLAIN_NOTE);
 check(

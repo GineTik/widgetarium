@@ -1,6 +1,6 @@
 import { apiRefusal } from "./version.js";
 import type { VersionedManifest } from "./version.js";
-import { SYSTEM_WIDGETS_DIR } from "./paths.js";
+import { CATALOGUE_COPY_DIR } from "./paths.js";
 import { EMPTY_LOCK, INSTALL_PENDING, modulesByWidget, buildMatchesSources, commitsOf } from "./engine/widget-lock.js";
 import type { WidgetLock } from "./engine/widget-lock.js";
 import { generationOf, widgetKeyOf, widgetRef } from "./engine/widget-ref.js";
@@ -90,18 +90,12 @@ export function buildWidget({ manifest, code, path, sources, lib, libPath, scope
 	return componentIn(runCode(compiled, libs), path);
 }
 
-// TRADE-OFF: a function over the list, not a method on the registry — every stand-in registry
-// TRADE-OFF: in the tests would otherwise have to grow a second method to say the same thing
-export function isSystemDefinition(entry: { readonly folder?: string | null | undefined } | null | undefined): boolean {
-	return entry?.folder?.startsWith(`${SYSTEM_WIDGETS_DIR}/`) === true;
-}
-
 export function boardWidgets<Entry extends ManifestHolder>(entries: readonly Entry[]): Entry[] {
-	return entries.filter((entry) => !isInlineOnly(entry) && !isSystemDefinition(entry));
+	return entries.filter((entry) => !isInlineOnly(entry) && !isCatalogueCopy(entry));
 }
 
 export function inlineWidgets<Entry extends ManifestHolder>(entries: readonly Entry[]): Entry[] {
-	return entries.filter((entry) => entry.manifest?.["inline"] === true && !isSystemDefinition(entry));
+	return entries.filter((entry) => entry.manifest?.["inline"] === true && !isCatalogueCopy(entry));
 }
 
 export function declaredName(registry: WidgetLookup | null | undefined, id: string): unknown {
@@ -164,10 +158,6 @@ export class WidgetRegistry implements WidgetLookup {
 
 	list(): WidgetDefinition[] {
 		return [...this.widgets.values()];
-	}
-
-	isSystemWidget(id: string): boolean {
-		return isSystemDefinition(this.get(id));
 	}
 
 	get(id: string | null | undefined): WidgetDefinition | null {
@@ -390,4 +380,8 @@ function stateOf(entry: unknown): unknown {
 function namesItWas(record: WidgetRecord): readonly unknown[] {
 	const was = record["was"] ?? [];
 	return Array.isArray(was) ? was : [was];
+}
+
+function isCatalogueCopy(entry: ManifestHolder): boolean {
+	return entry.folder?.startsWith(`${CATALOGUE_COPY_DIR}/`) === true;
 }

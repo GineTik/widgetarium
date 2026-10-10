@@ -4,7 +4,6 @@ import { receiveDrops } from "@widgetarium/core/surface/drop-receivers.js";
 import type { DropReceiver, PlaceAt } from "@widgetarium/core/surface/drop-receivers.js";
 import type { PointerAt } from "@widgetarium/core/surface/carry.js";
 import { boardInsertAt } from "./board-note.js";
-import { placedWidgetBoard } from "./catalogue-boards.js";
 import type WidgetariumPlugin from "./main.js";
 
 const AIMED_CLASS = "wg-note-drop";
@@ -88,4 +87,12 @@ function tellEditorViewMissing(last: number): number {
 	if (!isEditorViewMissingTold) console.warn(NO_EDITOR_VIEW);
 	isEditorViewMissingTold = true;
 	return last;
+}
+
+function placedWidgetBoard(widget: string): Record<string, unknown> {
+	return {
+		v: 2,
+		tiles: [{ id: "placed", widget, props: {} }],
+		layout: { dir: "row", of: [{ dir: "column", keep: true, of: [{ id: "placed", surface: "group" }] }] },
+	};
 }

@@ -10,6 +10,11 @@ import type { PlaceAt, ViewHost } from "../gateway/host.js";
 
 export type CatalogueViewName = "catalogue" | "docs";
 
+export interface CatalogueSays {
+	readonly browseLead: string;
+	readonly noTemplates: string;
+}
+
 export interface CataloguePort {
 	readonly can: boolean;
 	entries(kind: CatalogueKind): Promise<readonly MergedEntry[]>;
@@ -25,9 +30,15 @@ export interface CataloguePort {
 	readonly requests: CatalogueRequests;
 	readonly previewRegistry: PreviewRegistry | null;
 	readonly previewHost: (ViewHost & ShotHost) | null;
+	readonly says: CatalogueSays;
 }
 
 const NO_CATALOGUE_MESSAGE = "no widget catalogue on this host";
+
+const SAID_BY_A_HOST_WITHOUT_FILES: CatalogueSays = {
+	browseLead: "Every widget this app can draw, shown as it really looks",
+	noTemplates: "Templates come with a host that can write files.",
+};
 
 export const NO_CATALOGUE_PORT: CataloguePort = {
 	can: false,
@@ -44,4 +55,5 @@ export const NO_CATALOGUE_PORT: CataloguePort = {
 	requests: CATALOGUE_REQUESTS,
 	previewRegistry: null,
 	previewHost: null,
+	says: SAID_BY_A_HOST_WITHOUT_FILES,
 };

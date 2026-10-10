@@ -2,8 +2,6 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { bundleOf, shoot, THEMES } from "./harness.ts";
-import { systemWidgetFiles } from "./system-widget-files.mts";
-import { CATALOGUE_BOARD } from "../apps/obsidian/src/catalogue-boards.ts";
 
 interface Rect {
 	readonly x: number;
@@ -24,31 +22,28 @@ const SIDEBAR_PX = 342;
 const ROW_PX = 900;
 const WIDE_PX = 1400;
 const MEASURED = [
-	".wg-catalogue-head",
-	".wg-catalogue-views",
+	".wg-studio-catalogue-head",
+	".wg-studio-catalogue-views",
 	".wg-kit-field",
-	".wg-catalogue-bar",
-	".wg-catalogue-bar-filters",
-	".wg-catalogue-bar-count",
-	".wg-catalogue-card",
-	".wg-catalogue-card-stage",
-	".wg-catalogue-card-go",
+	".wg-studio-catalogue-bar",
+	".wg-studio-catalogue-bar-filters",
+	".wg-studio-catalogue-bar-count",
+	".wg-studio-catalogue-card",
+	".wg-studio-catalogue-card-stage",
+	".wg-studio-catalogue-card-go",
 ];
 const LABELLED = [
-	".wg-catalogue-views",
-	".wg-catalogue-search",
-	".wg-catalogue-bar-filters",
-	".wg-catalogue-card",
-	".wg-catalogue-card-stage",
-	".wg-catalogue-card-go",
+	".wg-studio-catalogue-views",
+	".wg-studio-catalogue-search",
+	".wg-studio-catalogue-bar-filters",
+	".wg-studio-catalogue-card",
+	".wg-studio-catalogue-card-stage",
+	".wg-studio-catalogue-card-go",
 ];
 const NOWHERE: Rect = { x: Number.NaN, y: Number.NaN, w: Number.NaN, h: Number.NaN, r: Number.NaN, pad: Number.NaN };
 const shotsAt = path.resolve(process.argv[2] ?? path.join(tmpdir(), "wg-catalogue-board"));
 mkdirSync(shotsAt, { recursive: true });
 
-const files = Object.fromEntries(
-	Object.entries(systemWidgetFiles()).map(([name, text]) => [`.widgetarium/widgets/${name}`, text]),
-);
 const bundle = await bundleOf("tools/catalogue-board-page.tsx");
 
 const MEASURE_SCRIPT = `
@@ -84,30 +79,30 @@ const gapLabel = (upper, lower) => {
 	else labelAt("↕" + Math.round(below.top - above.bottom), above.left + above.width / 2, above.bottom - 4, "#c2410c");
 };
 const measureOnceDrawn = () => {
-	if (document.querySelectorAll(".wg-catalogue-card").length < 2) return setTimeout(measureOnceDrawn, 100);
+	if (document.querySelectorAll(".wg-studio-catalogue-card").length < 2) return setTimeout(measureOnceDrawn, 100);
 	const leaf = document.querySelector(".workspace-leaf-content");
 	const base = leaf.getBoundingClientRect();
 	const seen = Object.fromEntries(${JSON.stringify(MEASURED)}.map((selector) => [
 		selector,
 		[...document.querySelectorAll(selector)].slice(0, 2).map((element) => boxOf(element, base)),
 	]));
-	const cardsFirst = document.querySelectorAll(".wg-catalogue-card").length;
-	const cardColumns = new Set([...document.querySelectorAll(".wg-catalogue-card")].map((one) => Math.round(one.getBoundingClientRect().left))).size;
+	const cardsFirst = document.querySelectorAll(".wg-studio-catalogue-card").length;
+	const cardColumns = new Set([...document.querySelectorAll(".wg-studio-catalogue-card")].map((one) => Math.round(one.getBoundingClientRect().left))).size;
 	leaf.scrollTop = leaf.scrollHeight;
 	setTimeout(() => {
-		const cardsScrolled = document.querySelectorAll(".wg-catalogue-card").length;
+		const cardsScrolled = document.querySelectorAll(".wg-studio-catalogue-card").length;
 		leaf.scrollTop = 0;
 		document.getElementById("rects").textContent = JSON.stringify({ ...seen, cardsFirst, cardsScrolled, cardColumns });
 		if (!window.__ANNOTATE__) return;
 		labelAt("pane " + Math.round(base.width) + "px", base.right - 90, 4, "#111");
 		${JSON.stringify(LABELLED)}.forEach((selector, at) => {
 			const tone = ["#2563eb", "#7c3aed", "#0891b2", "#16a34a", "#db2777", "#ca8a04"][at];
-			[...document.querySelectorAll(selector)].slice(0, 2).forEach((element) => outline(element, tone, selector === ".wg-catalogue-card-stage" ? 18 : 0));
+			[...document.querySelectorAll(selector)].slice(0, 2).forEach((element) => outline(element, tone, selector === ".wg-studio-catalogue-card-stage" ? 18 : 0));
 		});
-		const order = [".wg-catalogue-head", ".wg-catalogue-views", ".wg-kit-field", ".wg-catalogue-bar"].map((selector) => document.querySelector(selector));
+		const order = [".wg-studio-catalogue-head", ".wg-studio-catalogue-views", ".wg-kit-field", ".wg-studio-catalogue-bar"].map((selector) => document.querySelector(selector));
 		order.forEach((element, at) => gapLabel(element, order[at + 1]));
-		const cards = [...document.querySelectorAll(".wg-catalogue-card")];
-		gapLabel(document.querySelector(".wg-catalogue-bar"), cards[0]);
+		const cards = [...document.querySelectorAll(".wg-studio-catalogue-card")];
+		gapLabel(document.querySelector(".wg-studio-catalogue-bar"), cards[0]);
 		gapLabel(cards[0], cards[1]);
 		labelAt("side " + Math.round(cards[0].getBoundingClientRect().left - base.left), base.left + 2, cards[0].getBoundingClientRect().top + 40, "#111");
 	}, 1500);
@@ -126,7 +121,7 @@ body { margin: 0; ${THEMES.light} background: var(--background-secondary); color
 </style></head><body>
 <div class="workspace-leaf-content"><div class="view-content wg-sidebar-board"><div id="host" class="wg-mount"></div></div></div>
 <pre id="boom"></pre><pre id="rects"></pre>
-<script>window.__FILES__=${JSON.stringify(files)};window.__BOARD__=${JSON.stringify(CATALOGUE_BOARD)};window.__ANNOTATE__=${String(isAnnotated)};</script>
+<script>window.__ANNOTATE__=${String(isAnnotated)};</script>
 <script>${bundle}</script>
 <script>${MEASURE_SCRIPT}</script>
 </body></html>`;
@@ -191,19 +186,23 @@ console.log(`— a ${SIDEBAR_PX}px sidebar —`);
 const narrow = drawnAt(SIDEBAR_PX);
 checkReported(narrow);
 printSizes(narrow);
-const views = narrow.rectOf(".wg-catalogue-views");
+const views = narrow.rectOf(".wg-studio-catalogue-views");
 const search = narrow.rectOf(".wg-kit-field");
-const filters = narrow.rectOf(".wg-catalogue-bar-filters");
-const count = narrow.rectOf(".wg-catalogue-bar-count");
-const card = narrow.rectOf(".wg-catalogue-card");
-const nextCard = narrow.rectOf(".wg-catalogue-card", 1);
-const stage = narrow.rectOf(".wg-catalogue-card-stage");
+const filters = narrow.rectOf(".wg-studio-catalogue-bar-filters");
+const count = narrow.rectOf(".wg-studio-catalogue-bar-count");
+const card = narrow.rectOf(".wg-studio-catalogue-card");
+const nextCard = narrow.rectOf(".wg-studio-catalogue-card", 1);
+const stage = narrow.rectOf(".wg-studio-catalogue-card-stage");
 check("the sidebar keeps 12px at its side", views.x, 12);
 check("the view switch spans the sidebar", views.w, SIDEBAR_PX - 24);
 check("and stands 39px tall", views.h, 39);
 check("the search stands 8px under it, one box down", search.y - (views.y + views.h), 8);
 check("and is 37px tall", search.h, 37);
-check("the Filters line stands 8px under the search", narrow.rectOf(".wg-catalogue-bar").y - (search.y + search.h), 8);
+check(
+	"the Filters line stands 8px under the search",
+	narrow.rectOf(".wg-studio-catalogue-bar").y - (search.y + search.h),
+	8,
+);
 check("the count shares the Filters line", count.y + count.h / 2, filters.y + filters.h / 2);
 check("a card's plate holds its stage 5px in", stage.x - card.x, 5);
 check("the card keeps its 14px corner", card.r, 14);
@@ -218,9 +217,9 @@ console.log(`\n— a ${ROW_PX}px pane —`);
 const middle = drawnAt(ROW_PX);
 checkReported(middle);
 printSizes(middle);
-const rowViews = middle.rectOf(".wg-catalogue-views");
+const rowViews = middle.rectOf(".wg-studio-catalogue-views");
 const rowSearch = middle.rectOf(".wg-kit-field");
-const rowBar = middle.rectOf(".wg-catalogue-bar");
+const rowBar = middle.rectOf(".wg-studio-catalogue-bar");
 check("the search stands on the switch's line", rowSearch.y + rowSearch.h / 2, rowViews.y + rowViews.h / 2);
 check("and Filters on it too", rowBar.y + rowBar.h / 2, rowViews.y + rowViews.h / 2);
 check("cards flow into two columns", middle.countOf("cardColumns"), 2);
@@ -229,8 +228,8 @@ console.log(`\n— a ${WIDE_PX}px pane —`);
 const wide = drawnAt(WIDE_PX);
 checkReported(wide);
 printSizes(wide);
-const wideCard = wide.rectOf(".wg-catalogue-card");
-const wideNext = wide.rectOf(".wg-catalogue-card", 1);
+const wideCard = wide.rectOf(".wg-studio-catalogue-card");
+const wideNext = wide.rectOf(".wg-studio-catalogue-card", 1);
 check("cards flow into four columns", wide.countOf("cardColumns"), 4);
 check("a card follows the one above it in its column 8px down", wideNext.y - (wideCard.y + wideCard.h), 8);
 checkAtLeast("each at least 300px wide", wideCard.w, 300);

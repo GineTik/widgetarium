@@ -212,6 +212,15 @@ itself built from `@studio` widgets and a pack. Replaced: `@chrome` widgets in t
   frame, so a frame never navigates the studio; and a Components page drawing every widget's
   `defineStates`. Pan, zoom and the camera latch live there once, and the Obsidian design view
   imports them through `widgetarium/studio`.
+- **The catalogue is the engine's, behind one right panel.** `STUDIO_STATE.panel` is `none |
+assistant | catalogue`: the band's Widgets and AI buttons toggle it, so two panels never stand side
+  by side and the outlet narrows by one column. The `@catalogue` widgets moved from the registry into
+  `widgetarium/studio` as static widgets and their two boards became typed constants; Obsidian's
+  sidebar views draw the same `CatalogueBoard` over the plugin's port. Replaced: a read-only system
+  scope (`widgetarium-plugin/widgets`) compiled at runtime from files bundled into the plugin, with
+  the second widget root, the shadowing and the snapshot re-read it needed. A browser host lists the
+  project's own widgets and answers "not available" to install and place; a vault-wide catalogue needs
+  a host that can write one.
 - TODO: migrate the design apps (`.widgetarium/apps/<app>/design`, the agent's design workflow) onto
   project canvases, then retire the Obsidian design view.
 - TODO: a route with params draws empty until a board or config can declare a sample.

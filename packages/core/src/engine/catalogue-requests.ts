@@ -12,12 +12,14 @@ export interface CatalogueRequest {
 	readonly mode: CatalogueMode;
 	readonly kind: CatalogueKind;
 	readonly rank: RankEntry | null;
+	readonly asker: Element | null;
 }
 
 export interface CatalogueAsk {
 	readonly mode: CatalogueMode;
 	readonly kind?: CatalogueKind | undefined;
 	readonly rank?: RankEntry | null | undefined;
+	readonly asker?: Element | null | undefined;
 }
 
 export interface CatalogueRequests {
@@ -26,7 +28,7 @@ export interface CatalogueRequests {
 	answer(widget: string | null): boolean;
 	dismiss(id: number): boolean;
 	subscribe(listener: () => void): () => void;
-	onAsked(reveal: () => void): () => void;
+	onAsked(reveal: (request: CatalogueRequest) => void): () => void;
 }
 
 const REQUEST_TRANSITION_LOG = "[widgetarium] catalogue request: {was} → {now} ({why})";
@@ -44,16 +46,17 @@ class CatalogueRequestStore implements CatalogueRequests {
 	private pending: PendingRequest | null = null;
 	private lastRequestId = 0;
 	private readonly listeners = new Set<() => void>();
-	private readonly revealers = new Set<() => void>();
+	private readonly revealers = new Set<(request: CatalogueRequest) => void>();
 
 	readonly current = (): CatalogueRequest | null => this.pending?.request ?? null;
 
-	readonly ask = ({ mode, kind = "board", rank = null }: CatalogueAsk): Promise<string | null> =>
+	readonly ask = ({ mode, kind = "board", rank = null, asker = null }: CatalogueAsk): Promise<string | null> =>
 		new Promise((settle) => {
 			this.pending?.settle(null);
 			this.lastRequestId += 1;
-			this.write({ request: { id: this.lastRequestId, mode, kind, rank }, settle }, "asked");
-			for (const reveal of [...this.revealers]) reveal();
+			const request: CatalogueRequest = { id: this.lastRequestId, mode, kind, rank, asker };
+			this.write({ request, settle }, "asked");
+			for (const reveal of [...this.revealers]) reveal(request);
 		});
 
 	readonly answer = (widget: string | null): boolean => {
@@ -73,7 +76,7 @@ class CatalogueRequestStore implements CatalogueRequests {
 		return () => this.listeners.delete(listener);
 	};
 
-	readonly onAsked = (reveal: () => void): (() => void) => {
+	readonly onAsked = (reveal: (request: CatalogueRequest) => void): (() => void) => {
 		this.revealers.add(reveal);
 		return () => this.revealers.delete(reveal);
 	};

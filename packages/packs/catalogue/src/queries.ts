@@ -43,8 +43,10 @@ const SHOWING: readonly { readonly name: Showing; readonly label: string; readon
 	{ name: "update", label: "Update ready", icon: "update" },
 ];
 
-const SAID: Readonly<Record<CatalogueMode, { readonly title: string; readonly lead: string }>> = {
-	browse: { title: "Widgets", lead: "Every widget this vault can draw, shown as it really looks" },
+const NO_TEMPLATE_MATCHES = "No template answers to that.";
+
+const SAID: Readonly<Record<CatalogueMode, { readonly title: string; readonly lead: string | null }>> = {
+	browse: { title: "Widgets", lead: null },
 	place: { title: "Add a widget", lead: "Pick one and it lands on this board" },
 	fill: { title: "Fill this slot", lead: "Pick the widget this slot draws for every row" },
 	text: { title: "Pick a widget", lead: "The widget this trigger draws, wherever the text appears" },
@@ -219,6 +221,24 @@ export class TemplatesQuery extends IQuery.output(z.array(TemplateRowSchema)) {
 	}
 }
 
+export class NoTemplatesSaidQuery extends IQuery.output(z.string()) {
+	constructor(
+		readonly fields: NoFields,
+		private readonly ports: ImplementationPorts,
+	) {
+		super();
+	}
+
+	async get(): Promise<string> {
+		if (this.ports.catalogue.templates().length === 0) return this.ports.catalogue.says.noTemplates;
+		return NO_TEMPLATE_MATCHES;
+	}
+
+	override subscribe(changed: OnChanged): () => void {
+		return watchCatalogue(this.ports, [], changed);
+	}
+}
+
 export class SaidQuery extends IQuery.output(SaidSchema) {
 	constructor(
 		readonly fields: NoFields,
@@ -230,7 +250,8 @@ export class SaidQuery extends IQuery.output(SaidSchema) {
 	async get(): Promise<Said> {
 		const request = this.ports.catalogue.requests.current();
 		const mode = request?.mode ?? "browse";
-		return { ...SAID[mode], mode, isAsking: request !== null };
+		const { title, lead } = SAID[mode];
+		return { title, lead: lead ?? this.ports.catalogue.says.browseLead, mode, isAsking: request !== null };
 	}
 
 	override subscribe(changed: OnChanged): () => void {

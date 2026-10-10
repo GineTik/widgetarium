@@ -1,18 +1,25 @@
 export type StudioView = "app" | "canvas";
 
+export const OPENABLE_PANELS = ["assistant", "catalogue"] as const;
+
+export type OpenablePanel = (typeof OPENABLE_PANELS)[number];
+
+export type StudioPanel = "none" | OpenablePanel;
+
 export interface StudioMoment {
 	readonly view: StudioView;
-	readonly isAssistantOpen: boolean;
+	readonly panel: StudioPanel;
 }
 
 export interface StudioState {
 	now(): StudioMoment;
 	subscribe(changed: () => void): () => void;
 	show(view: StudioView): void;
-	toggleAssistant(): void;
+	togglePanel(panel: OpenablePanel): void;
+	openPanel(panel: OpenablePanel): void;
 }
 
-const OPENED_ON: StudioMoment = { view: "app", isAssistantOpen: false };
+const OPENED_ON: StudioMoment = { view: "app", panel: "none" };
 
 // TRADE-OFF: one studio per page; two studios on a page would share it
 export const STUDIO_STATE = createStudioState();
@@ -34,6 +41,9 @@ function createStudioState(): StudioState {
 		show: (view) => {
 			if (moment.view !== view) become({ ...moment, view }, `show ${view}`);
 		},
-		toggleAssistant: () => become({ ...moment, isAssistantOpen: !moment.isAssistantOpen }, "toggle assistant"),
+		togglePanel: (panel) => become({ ...moment, panel: moment.panel === panel ? "none" : panel }, `toggle ${panel}`),
+		openPanel: (panel) => {
+			if (moment.panel !== panel) become({ ...moment, panel }, `open ${panel}`);
+		},
 	};
 }

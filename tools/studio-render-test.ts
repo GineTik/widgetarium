@@ -8,6 +8,13 @@ import esbuild from "esbuild";
 import { NOT_AVAILABLE_ON_HOST } from "../packages/core/src/engine/studio-host.ts";
 import { ASSISTANT_NOT_AVAILABLE } from "../packages/core/src/engine/assistant-port.ts";
 import { STUDIO_BAND_PX } from "../packages/widgetarium/src/studio/shared/studio-band-size.ts";
+import {
+	catalogueImportsIn,
+	checkCatalogueAbsentInApp,
+	checkCataloguePanel,
+	checkCatalogueSheetSplit,
+} from "./studio-render-catalogue.ts";
+import type { CatalogueSeen } from "./studio-render-catalogue.ts";
 import { bundleOf, findBrowser } from "./harness.ts";
 import { MEASURE_SCRIPT } from "./studio-render-measure.ts";
 
@@ -19,14 +26,13 @@ interface Box {
 	readonly right: number;
 }
 
-interface Seen {
+interface Seen extends CatalogueSeen {
 	readonly routeDom?: string | null;
 	readonly routeTop?: number | null;
 	readonly studioElements?: number;
 	readonly menu?: Box | null;
 	readonly ai?: Box | null;
 	readonly aiPressed?: string | null;
-	readonly outletBefore?: Box | null;
 	readonly outletOpen?: Box | null;
 	readonly sidebarOpen?: Box | null;
 	readonly bandOpen?: Box | null;
@@ -181,7 +187,8 @@ async function studioModulesInAppEntry(): Promise<string[]> {
 		packages: "external",
 		logLevel: "silent",
 	});
-	return Object.keys(built.metafile.inputs).filter((input) => input.includes(STUDIO_FOLDER));
+	const { inputs } = built.metafile;
+	return [...Object.keys(inputs).filter((input) => input.includes(STUDIO_FOLDER)), ...catalogueImportsIn(inputs)];
 }
 
 let failed = 0;
@@ -193,6 +200,7 @@ function check(what: string, isOk: boolean, got: unknown): void {
 const app = await seenIn("app");
 check("app mode drew without a failure", app.reported === "", app.reported);
 check("app mode draws no studio element", app.seen.studioElements === 0, app.seen.studioElements);
+checkCatalogueAbsentInApp(app.seen, check);
 check("app mode draws the route", (app.seen.routeDom ?? "").includes("Water the ferns"), app.seen.routeTop);
 
 const studio = await seenIn("studio");
@@ -281,6 +289,7 @@ check(
 	studio.seen.sidebarGone === true && outletClosed?.w === outletBefore?.w,
 	{ gone: studio.seen.sidebarGone, outletClosed },
 );
+checkCataloguePanel(studio.seen, check);
 check("Edit in canvas swaps the route for the canvas", studio.seen.canvasShown === true, studio.seen.canvasShown);
 check("and the route leaves the outlet", studio.seen.taskGoneInCanvas === true, studio.seen.taskGoneInCanvas);
 check("the canvas holds one frame per route", sameList(studio.seen.frames, ["/", "/done/:id"]), studio.seen.frames);
@@ -379,7 +388,8 @@ check(
 
 server.close();
 const leaked = await studioModulesInAppEntry();
-check("the app entry bundles no studio module", leaked.length === 0, leaked);
+check("the app entry bundles no studio module and no catalogue pack", leaked.length === 0, leaked);
+checkCatalogueSheetSplit(sheets, check);
 
 console.log(`shots in ${shotsAt}`);
 if (failed > 0) {

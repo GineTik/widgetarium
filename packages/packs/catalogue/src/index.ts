@@ -13,6 +13,7 @@ import {
 	CountQuery,
 	EntriesQuery,
 	InstallJobQuery,
+	NoTemplatesSaidQuery,
 	PacksQuery,
 	SaidQuery,
 	ShowingQuery,
@@ -82,6 +83,13 @@ export const cataloguePack = definePack({
 			resource: "Catalogue",
 			description: "The templates you can make a page from.",
 			fields: KeywordFieldsSchema,
+		}),
+		defineGatewayMetadata(NoTemplatesSaidQuery, {
+			id: "@catalogue/no-templates-said",
+			title: "No templates",
+			resource: "Catalogue",
+			description: "What the templates view says when it shows none.",
+			fields: NoFieldsSchema,
 		}),
 		defineGatewayMetadata(SaidQuery, {
 			id: "@catalogue/said",

@@ -4,6 +4,7 @@ import type { ReactElement } from "react";
 import { render } from "@widgetarium/core/engine/render.js";
 import { baseNameOf } from "@widgetarium/core/project/index.js";
 import type { AssistantPort } from "@widgetarium/core/engine/assistant-port.js";
+import type { CataloguePort } from "@widgetarium/core/engine/catalogue-port.js";
 import type { StudioHostPort } from "@widgetarium/core/engine/studio-host.js";
 import type { SurfaceHost } from "@widgetarium/core/surface/use-surface-shared.js";
 import { hostOverRouter } from "widgetarium/app";
@@ -21,6 +22,7 @@ export interface StudioPlace {
 	readonly projects: AppProjects;
 	readonly viewType: string;
 	readonly assistant: AssistantPort;
+	readonly catalogue: CataloguePort;
 	hostOf(notePath: string): SurfaceHost;
 	openAsMarkdown(leaf: WorkspaceLeaf, file: TFile): Promise<void>;
 	showAsMarkdown(leaf: WorkspaceLeaf, file: TFile): Promise<void>;
@@ -98,6 +100,6 @@ function startStudioOver(drawing: StudioDrawing, opening: OpenedApp): StartedStu
 	const app = { name: baseNameOf(note.folder), iconHref: "" };
 	return startOpenedStudio(
 		{ app, routes: opening.routes, registry: opening.registry },
-		{ router, hostOf, studio, assistant: place.assistant, appId: note.folder },
+		{ router, hostOf, studio, assistant: place.assistant, catalogue: place.catalogue, appId: note.folder },
 	);
 }

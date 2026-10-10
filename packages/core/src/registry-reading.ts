@@ -1,4 +1,4 @@
-import { LOCK_PATH, WIDGET_ROOTS } from "./paths.js";
+import { LOCK_PATH, WIDGETS_DIR } from "./paths.js";
 import { EMPTY_LOCK, readLock } from "./engine/widget-lock.js";
 import type { WidgetLock } from "./engine/widget-lock.js";
 import {
@@ -91,12 +91,8 @@ const NO_WIDGETS: VaultWidgets = {
 };
 
 // TRADE-OFF: every file is stamped before it is read, so a change landing mid-read leaves a stamp older than the text and the next look reads it again
-export async function readVault(
-	adapter: RegistryAdapter,
-	held: VaultRead | null = null,
-	roots: readonly string[] = WIDGET_ROOTS,
-): Promise<VaultRead> {
-	const listing = await listVault(adapter, roots);
+export async function readVault(adapter: RegistryAdapter, held: VaultRead | null = null): Promise<VaultRead> {
+	const listing = await listVault(adapter);
 	if (listing === null) return { widgets: NO_WIDGETS, packages: [], fingerprint: {} };
 	const listed = await stampsOf(adapter, [...listing.present, LOCK_PATH]);
 	const textsHeld = held === null ? new Map<string, string>() : textsHeldIn(held);
@@ -113,50 +109,6 @@ export async function readVault(
 export async function fingerprintNow(adapter: RegistryAdapter, known: Fingerprint): Promise<Fingerprint | null> {
 	const listing = await listVault(adapter);
 	return stampsOf(adapter, [...(listing?.present ?? []), ...Object.keys(known)]);
-}
-
-export function onlyUnderRoot(adapter: RegistryAdapter, root: string): RegistryAdapter {
-	const isUnder = (path: string): boolean => path === root || path.startsWith(`${root}/`);
-	return {
-		exists: (path) => (isUnder(path) ? adapter.exists(path) : Promise.resolve(false)),
-		read: (path) => (isUnder(path) ? adapter.read(path) : Promise.reject(new Error(`${path} is outside ${root}`))),
-		list: (path) => (isUnder(path) ? adapter.list(path) : Promise.resolve({ files: [], folders: [] })),
-		stat: (path) => (isUnder(path) ? (adapter.stat?.(path) ?? Promise.resolve(null)) : Promise.resolve(null)),
-	};
-}
-
-export function withRootRead(read: VaultRead, fresh: VaultRead, root: string): VaultRead {
-	const freshScopes = new Set(fresh.widgets.scopes.map(scopeNameOf));
-	const isKept = (path: string): boolean =>
-		!path.startsWith(`${root}/`) && !freshScopes.has(scopeNameOf(scopeOfPath(path, read.widgets.scopes)));
-	const kept = read.widgets;
-	const scopesAt = indexesWhere(kept.scopes, isKept);
-	const sheetsAt = indexesWhere(
-		kept.sheets.map((sheet) => sheet.path),
-		isKept,
-	);
-	const foldersAt = indexesWhere(kept.folders, isKept);
-	const got = fresh.widgets;
-	return {
-		...read,
-		widgets: {
-			...kept,
-			scopes: [...got.scopes, ...pick(kept.scopes, scopesAt)],
-			libPaths: [...got.libPaths, ...pick(kept.libPaths, scopesAt)],
-			libSources: [...got.libSources, ...pick(kept.libSources, scopesAt)],
-			sheets: [...got.sheets, ...pick(kept.sheets, sheetsAt)],
-			sheetSources: [...got.sheetSources, ...pick(kept.sheetSources, sheetsAt)],
-			folders: [...got.folders, ...pick(kept.folders, foldersAt)],
-			widgetSources: [...got.widgetSources, ...pick(kept.widgetSources, foldersAt)],
-		},
-		fingerprint:
-			read.fingerprint === null || fresh.fingerprint === null
-				? null
-				: {
-						...Object.fromEntries(Object.entries(read.fingerprint).filter(([path]) => isKept(path))),
-						...fresh.fingerprint,
-					},
-	};
 }
 
 export function pathsChanged(was: Fingerprint, now: Fingerprint): string[] {
@@ -185,35 +137,6 @@ export function parseLock(text: string | null): WidgetLock {
 	} catch {
 		return EMPTY_LOCK;
 	}
-}
-
-function withoutShadowedScopes(scopes: readonly string[]): string[] {
-	const named = new Set<string>();
-	return scopes.filter((scope) => {
-		const name = scopeNameOf(scope);
-		if (named.has(name)) return false;
-		named.add(name);
-		return true;
-	});
-}
-
-function indexesWhere(list: readonly string[], keep: (path: string) => boolean): number[] {
-	return list.flatMap((path, at) => (keep(path) ? [at] : []));
-}
-
-function pick<T>(list: readonly T[], indexes: readonly number[]): T[] {
-	return indexes.flatMap((at) => {
-		const item = list[at];
-		return item === undefined ? [] : [item];
-	});
-}
-
-function scopeNameOf(scope: string): string {
-	return scope.slice(scope.lastIndexOf("/") + 1);
-}
-
-function scopeOfPath(path: string, scopes: readonly string[]): string {
-	return scopes.find((scope) => path === scope || path.startsWith(`${scope}/`)) ?? "";
 }
 
 async function stampsOf(adapter: RegistryAdapter, paths: readonly string[]): Promise<Fingerprint | null> {
@@ -279,18 +202,9 @@ function keepWidgetTexts(
 }
 
 // TRADE-OFF: one listing per folder instead of one exists per file it might hold — on a vault iCloud serves, each question to the disk is what start-up spends
-async function listVault(
-	adapter: RegistryAdapter,
-	roots: readonly string[] = WIDGET_ROOTS,
-): Promise<VaultListing | null> {
-	const rootsThere = (
-		await Promise.all(roots.map(async (root) => ((await adapter.exists(root)) ? [root] : [])))
-	).flat();
-	if (rootsThere.length === 0) return null;
-	const scopesPerRoot = await Promise.all(
-		rootsThere.map(async (root) => (await adapter.list(root)).folders.filter(isScopeFolder)),
-	);
-	const scopes = withoutShadowedScopes(scopesPerRoot.flat());
+async function listVault(adapter: RegistryAdapter): Promise<VaultListing | null> {
+	if (!(await adapter.exists(WIDGETS_DIR))) return null;
+	const scopes = (await adapter.list(WIDGETS_DIR)).folders.filter(isScopeFolder);
 	const scopeListings = await Promise.all(scopes.map((scope) => adapter.list(scope)));
 	const folders = scopeListings.flatMap((held) => held.folders);
 	const folderFiles = await Promise.all(folders.map((folder) => filesIn(adapter, folder)));

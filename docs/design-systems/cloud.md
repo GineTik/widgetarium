@@ -1,62 +1,89 @@
-# Cloud
+# Cloud — traits
 
-Source: three phone screens of a finance app (home with balance, analytics, cards).
+Same ten categories as every system. The source app (personal finance) is **not** part of the system.
 
-## Idea
+Previous prose version: `archive/v1/cloud.md`.
 
-**Calm through a pastel sky.** Every screen stands on an abstract photo of soft clouds. That picture sets the colour of the whole app: pale blue, mist, a touch of warm pink. Numbers, charts and text sit **directly on the sky**, with no plates. Minimalism here exists so the sky stays visible. A screen gives a title, an icon, a number, and leads the person on to the next screen rather than explaining everything in cards.
+## Fit
 
-## Palette
+| Parameter         | Value                                                    |
+| ----------------- | -------------------------------------------------------- |
+| Centre of gravity | atmosphere over light information (numbers, short lists) |
+| Photogenic domain | no — the picture is abstract, chosen by the designer     |
+| Session           | glance                                                   |
+| Density           | low                                                      |
+| Tone              | calm                                                     |
+| Device            | phone first                                              |
 
-| Role                              | Approx.                                             |
-| --------------------------------- | --------------------------------------------------- |
-| Ground                            | cloud photo, pale blue → mist `#DCE8EE` → `#F3F6F7` |
-| Sheet (lists only)                | white `#FFFFFF`                                     |
-| Text                              | near-black `#0B0B0C`                                |
-| Secondary text, decimals          | grey `#8A9297`                                      |
-| Owned-object bloom                | blurred peach-pink, from the photo                  |
-| Value tag in charts               | black pill `#0B0B0C`, white text                    |
-| Primary action — one per app flow | black pill                                          |
-| Delta up / down                   | green `#1F7A4D` / red `#B4232C`, small text only    |
+Conditional traits (all others are portable to any product):
 
-- Calm comes from pastel tones of the photo, not from grey.
+| Trait                              | Needs                                                                                   |
+| ---------------------------------- | --------------------------------------------------------------------------------------- |
+| K-I2, K-M1, K-M3, K-L1, K-L2, K-X1 | tone = calm or atmosphere, density = low or medium, and a meaning the picture can carry |
+| K-S1, K-S2                         | at most one long list per screen                                                        |
+| K-C4                               | an object the person owns                                                               |
+| K-D1                               | density = low                                                                           |
 
-## Layout
+## 1. Idea
 
-- The sky photo is the background of the whole screen, always visible.
-- Titles, balances, charts, period selectors stand on it with **no card**.
-- **The only plates:**
-  1. the owned object (the bank card), which carries its own image and bloom;
-  2. a list that must be read, which comes as a **drawer**: a white sheet with a grab handle rising over the sky, expandable to full screen.
-- One sheet for a whole list, never one card per row.
+- **K-I1** Calm through pastel air: the screen breathes.
+- **K-I2** A background picture carries a **meaning** (air, lightness in the source; rain, smog, depth of water work the same way).
+- **K-I3** A screen gives a title, an icon, a number and leads on to the next screen instead of explaining everything in cards.
 
-## Controls
+## 2. Colour logic
 
-- Almost no accent buttons. Most actions are quiet: semi-transparent, sometimes blurred, small text with an arrow ("Send ↗", "Received ↙").
-- Round white action buttons with an icon and a label under them (Show PIN, Card Details, Freeze Card).
-- **One** black full-width pill only where a real action completes (Add to Wallet). A screen with no such action has no primary button.
-- Bottom tabs: plain icons with labels on white, current one dark, no pill behind.
+- **K-C1** The picture sets the colour direction; the UI stays neutral (black, greys, white). The picture never tints buttons.
+- **K-C2** The picture's colour is pastel and **cool** (high L, low chroma, cool hue). Cool is essential; the hue is free within cool (blue, teal, lilac, cool mint).
+- **K-C3** Steps and jobs:
 
-## Charts
+  | Step                                           | Job                                              |
+  | ---------------------------------------------- | ------------------------------------------------ |
+  | picture                                        | ground, sets the colour direction                |
+  | mist (L 0.94–0.97, picture hue, chroma ≤ 0.02) | ground where the picture fades out               |
+  | white                                          | sheet under a list, only for readability         |
+  | ink                                            | text, value tags, the one primary action         |
+  | grey                                           | secondary text, decimals                         |
+  | warm bloom                                     | small blurred warm spot, only on an owned object |
+  | up / down                                      | small delta text only                            |
 
-- Hairline grey bars or thin crossing lines straight on the sky.
-- One highlighted value: a solid black bar or a dot, with its value in a black pill.
+- **K-C4** A saturated plate (the bank card) is allowed as a single accent object, and it may be a picture itself.
 
-## Type
+## 3. Imagery
 
-Geometric sans, light. Big amounts in light weight; decimals grey (`$40,500.80` with `.80` grey). Small labels regular grey.
+- **K-M1** The picture **forms the design**: it is the ground of every screen.
+- **K-M2** The picture is part of the design and never replaced by users.
+- **K-M3** Image type: abstract, atmospheric, no subject, no people; one kind of picture across the app (all clouds, or all water, or all rain).
 
-## Signature components
+## 4. Layout
 
-- **Sky ground** fading to mist.
-- **Glass bank card** with a peach-pink bloom, stacked over ghost copies of the other cards.
-- **Hairline bar chart** with one black bar and a black value pill.
-- **Transactions drawer** with a handle.
+- **K-L1** The picture is the full background of every screen, always visible.
+- **K-L2** Titles, numbers, charts and selectors stand directly on it.
 
-## Density
+## 5. Surfaces and depth
 
-Low, but not empty: the space is there to show the sky.
+- **K-S1** Two plates only: the owned object, and one white sheet for a list that must be read.
+- **K-S2** The list sheet is a drawer with a handle, rising over the picture and expandable to full screen.
+- **K-S3** Never one card per row: one sheet holds the whole list.
 
-## The design book must
+## 6. Controls (kit)
 
-Stand on the cloud photo from top to bottom. Text, palette, type scale and charts sit on the sky without plates. Plates appear only for the owned object (card) and for a list in a drawer. No grid of white cards — that breaks this system.
+- **K-K1** Quiet by default: semi-transparent, blurred, or text with an arrow ("Send ↗").
+- **K-K2** Object actions are round white buttons with a label under them.
+- **K-K3** One black full-width pill only where a real action completes; a screen with no such action has no primary button.
+- **K-K4** Tabs are plain icons with labels, no pill behind.
+
+## 7. Functional blocks
+
+- **K-F1** Charts are hairlines on the ground; one value is solid black with its number in a black pill.
+
+## 8. Typography
+
+- **K-T1** Geometric sans, light; big amounts light with grey decimals.
+
+## 9. Space and density
+
+- **K-D1** Low density; the space exists to show the picture.
+
+## 10. Transitions
+
+- **K-X1** Smooth: the picture melts into mist; nothing has a hard edge except the drawer.

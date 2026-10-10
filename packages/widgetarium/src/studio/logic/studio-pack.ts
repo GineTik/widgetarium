@@ -1,4 +1,6 @@
 import { definePack } from "@widgetarium/core/engine/packs.js";
+import type { Pack } from "@widgetarium/core/engine/packs.js";
+import { cataloguePack } from "@widgetarium/pack-catalogue";
 import { defineCommandMetadata, defineGatewayMetadata } from "@widgetarium/core/gateway/implementation-metadata.js";
 import { AppsQuery, CurrentAppQuery } from "./apps-queries.js";
 import {
@@ -6,10 +8,10 @@ import {
 	CreateAppCommand,
 	EditInCanvasCommand,
 	OpenAppCommand,
-	ToggleAssistantCommand,
+	TogglePanelCommand,
 } from "./studio-commands.js";
-import { IsAssistantOpenQuery, IsInCanvasQuery } from "./studio-state-queries.js";
-import { AppFieldsSchema, NoFieldsSchema } from "./studio-fields.js";
+import { IsInCanvasQuery, IsPanelOpenQuery } from "./studio-state-queries.js";
+import { AppFieldsSchema, NoFieldsSchema, PanelFieldsSchema } from "./studio-fields.js";
 
 const RESOURCE = "Apps";
 
@@ -38,12 +40,12 @@ export const studioPack = definePack({
 			description: "Whether the studio shows the app's canvas instead of the app.",
 			fields: NoFieldsSchema,
 		}),
-		defineGatewayMetadata(IsAssistantOpenQuery, {
-			id: "@studio/is-assistant-open",
-			title: "AI sidebar open",
+		defineGatewayMetadata(IsPanelOpenQuery, {
+			id: "@studio/is-panel-open",
+			title: "Panel open",
 			resource: RESOURCE,
-			description: "Whether the AI sidebar stands beside the app.",
-			fields: NoFieldsSchema,
+			description: "Whether the panel, the AI assistant or the widget catalogue, stands beside the app.",
+			fields: PanelFieldsSchema,
 		}),
 	],
 	commands: [
@@ -79,13 +81,15 @@ export const studioPack = definePack({
 			fields: NoFieldsSchema,
 			consent: "free",
 		}),
-		defineCommandMetadata(ToggleAssistantCommand, {
-			id: "@studio/toggle-assistant",
-			title: "AI sidebar",
+		defineCommandMetadata(TogglePanelCommand, {
+			id: "@studio/toggle-panel",
+			title: "Side panel",
 			resource: RESOURCE,
-			description: "Opens or closes the AI sidebar.",
-			fields: NoFieldsSchema,
+			description: "Opens the panel beside the app, or closes it when it already stands there.",
+			fields: PanelFieldsSchema,
 			consent: "free",
 		}),
 	],
 });
+
+export const STUDIO_PACKS: readonly Pack[] = [studioPack, cataloguePack];

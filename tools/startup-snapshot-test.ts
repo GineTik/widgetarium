@@ -15,9 +15,8 @@ Object.assign(globalThis, {
 
 const { WidgetRegistry } = await import("../packages/core/src/registry.js");
 const { StartupCache } = await import("../packages/core/src/startup-snapshot.js");
-const { removeLaidCatalogue, withSystemWidgets } = await import("../apps/obsidian/src/system-widgets.js");
-const { boardWidgets, isSystemDefinition } = await import("../packages/core/src/registry.js");
-const { SYSTEM_WIDGETS_DIR } = await import("../packages/core/src/paths.js");
+const { removeLaidCatalogue } = await import("../apps/obsidian/src/laid-catalogue.js");
+const { boardWidgets, inlineWidgets } = await import("../packages/core/src/registry.js");
 
 const SOURCE = nodePath.resolve("registry");
 const FETCH_MS = Number(process.env["FETCH_MS"] ?? 20);
@@ -225,51 +224,63 @@ check(
 	"vault",
 );
 
-console.log("\n— (e) the plugin's own widgets come from the plugin, never from the vault —");
-const systemAdapter = withSystemWidgets(adapter);
-const withSystem = new WidgetRegistry({ vault: { adapter: systemAdapter } });
-await withSystem.load();
-const catalogueFolders = withSystem
-	.list()
-	.filter((entry) => String(entry.manifest?.["id"]).startsWith("@catalogue/"))
-	.map((entry) => entry.folder ?? "");
-check(
-	"every catalogue widget is read from the plugin",
-	catalogueFolders.length > 0 && catalogueFolders.every((folder) => isUnder(folder, SYSTEM_WIDGETS_DIR)),
-	true,
-);
-check(
-	"so the vault's copy of the scope is shadowed",
-	catalogueFolders.some((folder) => isUnder(folder, WIDGETS_DIR)),
-	false,
-);
-check("none of them is offered for a board", boardWidgets(withSystem.list()).some(isSystemDefinition), false);
-check(
-	"while the vault's own widgets still are",
-	boardWidgets(withSystem.list()).some((entry) => entry.manifest?.["id"] === "@default/chart"),
-	true,
-);
-
-console.log("\n— (f) a snapshot mounts the plugin's widgets as they are now —");
-const staleStore = memoryStore();
-await startOver(staleStore).cache.mount();
+console.log("\n— (d3) a snapshot laid before the catalogue moved into the engine mounts without its system widgets —");
+const OLD_SYSTEM_SCOPE = "widgetarium-plugin/widgets/@catalogue";
+const OLD_SYSTEM_FOLDERS = ["head", "chip"].map((name) => `${OLD_SYSTEM_SCOPE}/${name}`);
+const beforeEngineCatalogue = memoryStore();
+const older = structuredClone(store.held);
+if (isRecord(older) && isRecord(older["read"]) && isRecord(older["read"]["widgets"])) {
+	const widgets = older["read"]["widgets"];
+	const heldWidget = Array.isArray(widgets["widgetSources"]) ? widgets["widgetSources"][0] : null;
+	const appended = (key: string, extra: unknown[]): void => {
+		const list = widgets[key];
+		if (Array.isArray(list)) widgets[key] = [...extra, ...list];
+	};
+	appended("scopes", [OLD_SYSTEM_SCOPE]);
+	appended("libPaths", [null]);
+	appended("libSources", [null]);
+	appended("folders", OLD_SYSTEM_FOLDERS);
+	appended(
+		"widgetSources",
+		OLD_SYSTEM_FOLDERS.map(() => heldWidget),
+	);
+	if (isRecord(older["read"]["fingerprint"]))
+		for (const folder of OLD_SYSTEM_FOLDERS) older["read"]["fingerprint"][`${folder}/widget.tsx`] = "1:1";
+}
+beforeEngineCatalogue.held = older;
+forget();
+readPaths.length = 0;
+const fromOlder = startOver(beforeEngineCatalogue);
+const olderMounted = await fromOlder.cache.mount();
 await settled();
-const fresh = new WidgetRegistry({ vault: { adapter: systemAdapter } });
-const freshCache = new StartupCache({
-	registry: fresh,
-	adapter: systemAdapter,
-	store: staleStore,
-	stamp: STAMP,
-	systemRoot: SYSTEM_WIDGETS_DIR,
-});
-check("a snapshot holding the vault's old copy is mounted", (await freshCache.mount()).from, "snapshot");
+check("it is mounted from the snapshot", olderMounted.from, "snapshot");
+check("with no widget file read and no question asked of the vault", [readPaths, touches()], [[], 0]);
+check("with every widget the vault mounted", olderMounted.widgets, fromVault.answer.widgets);
 check(
-	"with the catalogue taken from the plugin instead",
-	isUnder(fresh.get("@catalogue/widget-list")?.folder ?? "", SYSTEM_WIDGETS_DIR),
-	true,
+	"and none of the system widgets it held is listed",
+	fromOlder.registry.list().filter((entry) => entry.folder?.startsWith("widgetarium-plugin/") === true).length,
+	0,
+);
+const rewritten = beforeEngineCatalogue.held;
+check(
+	"the snapshot is rewritten without a path outside .widgetarium",
+	isRecord(rewritten) && isRecord(rewritten["read"]) && isRecord(rewritten["read"]["fingerprint"])
+		? Object.keys(rewritten["read"]["fingerprint"]).filter((path) => !path.startsWith(".widgetarium/"))
+		: null,
+	[],
 );
 
-console.log("\n— (g) the copy an older plugin laid is removed, and only that copy —");
+console.log("\n— (e) the copy an older plugin laid is removed, and only that copy —");
+const leftovers = [
+	{ manifest: { id: "@catalogue/head" }, folder: `${WIDGETS_DIR}/@catalogue/head` },
+	{ manifest: { id: "@catalogue/chip", inline: true }, folder: `${WIDGETS_DIR}/@catalogue/chip` },
+	{ manifest: { id: "@default/chart" }, folder: `${WIDGETS_DIR}/@default/chart` },
+];
+check(
+	"a vault copy of the engine's catalogue widgets is never listed",
+	[boardWidgets(leftovers).map((one) => one.manifest.id), inlineWidgets(leftovers).map((one) => one.manifest.id)],
+	[["@default/chart"], []],
+);
 const laidPaths = new Set([`${WIDGETS_DIR}/@catalogue/.laid-by-plugin`, `${WIDGETS_DIR}/@catalogue/head/widget.tsx`]);
 const removed: string[] = [];
 const laidAdapter = standIn<AgentFilesAdapter>(

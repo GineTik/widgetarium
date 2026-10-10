@@ -2,7 +2,11 @@ export { WidgetariumStudio, startOpenedStudio, startStudio } from "./studio/widg
 export type { StartedStudio, StudioStart, WidgetariumStudioProps } from "./studio/widgetarium-studio.js";
 export type { OpenedApp } from "./app/widgetarium-app.js";
 export { browserStudioHost } from "./studio/browser-studio-host.js";
-export { studioPack } from "./studio/logic/studio-pack.js";
+export { STUDIO_PACKS } from "./studio/logic/studio-pack.js";
+export { CatalogueBoard } from "./studio/catalogue/catalogue-board.js";
+export type { CatalogueBoardProps } from "./studio/catalogue/catalogue-board.js";
+export type { CatalogueBoardName } from "./studio/catalogue/catalogue-boards.js";
+export { studioFrameOf } from "./studio/studio-on-screen.js";
 export type { ChromeInsets, HostApp, StudioHostPort } from "@widgetarium/core/engine/studio-host.js";
 export { AssistantChat } from "./studio/assistant/assistant-chat.js";
 export { foldOf } from "./studio/assistant/cards/spec-rows.js";

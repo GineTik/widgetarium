@@ -37,7 +37,7 @@ export function SubstitutionDialog(props: SubstitutionDialogProps): ReactElement
 	const [isSheetOpen, setSheetOpen] = useState(false);
 	const rootRef = useRef<HTMLDivElement>(null);
 	const phone = isPhone(useWidth(rootRef));
-	const pickWidget = (): void => pickInlineWidget(editing.patch);
+	const pickWidget = (): void => pickInlineWidget(editing.patch, rootRef.current);
 
 	return h(
 		DialogOverlay,
@@ -97,8 +97,8 @@ export function openSubstitutions(options: SubstitutionsAsk): () => void {
 	return close;
 }
 
-function pickInlineWidget(onPick: (patch: RulePatch) => void): void {
-	void CATALOGUE_REQUESTS.ask({ mode: "text", kind: "inline" }).then((widget) => {
+function pickInlineWidget(onPick: (patch: RulePatch) => void, asker: Element | null): void {
+	void CATALOGUE_REQUESTS.ask({ mode: "text", kind: "inline", asker }).then((widget) => {
 		if (widget) onPick({ widget });
 	});
 }

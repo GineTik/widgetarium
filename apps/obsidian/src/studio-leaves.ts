@@ -1,7 +1,7 @@
 import type { App, TFile, ViewState, WorkspaceLeaf } from "obsidian";
 import type { AssistantPort } from "@widgetarium/core/engine/assistant-port.js";
 import { registerPacks } from "@widgetarium/core/engine/packs.js";
-import { studioPack } from "widgetarium/studio";
+import { STUDIO_PACKS } from "widgetarium/studio";
 import type WidgetariumPlugin from "./main.js";
 import type { AppProjects } from "./app-projects.js";
 import { bindNote } from "./host.js";
@@ -24,13 +24,14 @@ const MARKDOWN_VIEW_TYPE = "markdown";
 const AS_MARKDOWN = "asMarkdown";
 
 export function registerStudioView(plugin: WidgetariumPlugin, projects: AppProjects, assistant: AssistantPort): void {
-	registerPacks(studioPack);
+	registerPacks(...STUDIO_PACKS);
 	const choices = createMarkdownChoices();
 	const place: StudioPlace = {
 		app: plugin.app,
 		projects,
 		viewType: STUDIO_VIEW_TYPE,
 		assistant,
+		catalogue: plugin.cataloguePort,
 		hostOf: (notePath) => bindNote(plugin.host, notePath),
 		openAsMarkdown: (leaf, file) => {
 			choices.choose(leaf, file.path);

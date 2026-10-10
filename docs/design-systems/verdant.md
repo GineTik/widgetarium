@@ -1,75 +1,96 @@
-# Verdant
+# Verdant — traits
 
-Source: one board of 9 phone screens, a green food-ordering app (restaurants, menu, bag, order tracking, rewards, gift cards).
+A design system is a set of traits, one sentence each, grouped in ten categories shared by every system so they can be merged trait by trait. The source app (food ordering) is **not** part of the system: only the traits are.
 
-## Idea
+Previous prose version: `archive/v1/verdant.md`.
 
-**Saturated and alive.** One green palette fills the whole screen at different tones, the way Material 3 Expressive uses tonal palettes: a light green for a card, a pastel green for a page, a deep saturated green for a button. Almost every screen gives 40–60% of its height to one **accent block** (a map, a photo, an unusual component) that is part of the page itself, not a picture inside it. White content then slides up over it like a sheet.
+## Fit
 
-## Palette
+| Parameter         | Value                                        |
+| ----------------- | -------------------------------------------- |
+| Centre of gravity | object (products, places, items with a look) |
+| Photogenic domain | yes                                          |
+| Session           | browse, glance                               |
+| Density           | high                                         |
+| Tone              | energetic                                    |
+| Device            | phone first                                  |
 
-Tonal steps of one green hue, never grey.
+Conditional traits (all others are portable to any product):
 
-| Role                                                   | Tone                    | Approx.               |
-| ------------------------------------------------------ | ----------------------- | --------------------- |
-| Accent block ground (map, hero)                        | deep forest             | `#2F5D16`             |
-| Primary button, active tab                             | forest, saturated       | `#3A6B1C`             |
-| Signal (one per screen: opening hours band, highlight) | lime                    | `#9BE15D`             |
-| Page under content                                     | pastel green            | `#E3ECD8`             |
-| Card                                                   | light green or white    | `#EEF4E7` / `#FFFFFF` |
-| Control on light ground                                | soft green, translucent | `#CFE0BC` at 70%      |
-| Text                                                   | green-black             | `#1C2914`             |
-| Secondary text                                         | green-grey              | `#5A6850`             |
+| Trait                  | Needs                                                           |
+| ---------------------- | --------------------------------------------------------------- |
+| V-I2, V-L1, V-L2, V-L3 | centre = object, photogenic = yes, or a map that is the subject |
+| V-M1, V-M2, V-M3       | photogenic = yes                                                |
+| V-S1                   | items with a picture or rich facts                              |
+| V-F2                   | a map or picture the person acts on                             |
+| V-D1                   | density = high                                                  |
 
-- Every photo is chosen to match the palette: greens, fresh food, restaurant interiors in green and wood. A photo that breaks the palette breaks the system.
-- Gradients are allowed and used well: transparent green over a photo, dark at the bottom so text reads.
+## 1. Idea
 
-## Layout
+- **V-I1** Saturated and alive: energy comes from one hue at full strength, used in many tones.
+- **V-I2** Every screen has one accent that takes over a large part of it; content follows on a calmer ground.
 
-- **Accent block first.** Map, hero photo or a hero component takes the top 40–60% of the screen, edge to edge, **no side padding, under the status bar and the header**. The header (back, tabs, settings) lies on the accent block.
-- **White sheet over it.** Content starts on a light sheet with large top corners that overlaps the bottom of the accent block.
-- Side padding of content is small (12–16 px on phone).
-- Nearly every screen has an accent; plain list screens (the bag) are the exception.
+## 2. Colour logic
 
-## Controls: two families
+- **V-C1** One hue family for the whole UI; never two hues side by side. The hue is free (green in the source; red, blue, ochre work the same way).
+- **V-C2** Colours are tonal steps of that hue, each with one job:
 
-| Where                       | Shape                              | Fill                                     |
-| --------------------------- | ---------------------------------- | ---------------------------------------- |
-| On white / light ground     | **pill** (fully round)             | saturated forest, or pastel green        |
-| On an image or accent block | **rounded square** (radius ~16–20) | translucent white with **backdrop blur** |
+  | Step      | Job                                    | Lightness (OKLCH L) | Chroma        |
+  | --------- | -------------------------------------- | ------------------- | ------------- |
+  | deep      | accent-block ground, dark gradient end | 0.38–0.45           | high          |
+  | strong    | primary button, current tab            | 0.45–0.52           | high          |
+  | signal    | one highlight per screen               | 0.82–0.88           | highest       |
+  | soft      | control on a light ground              | 0.86–0.90           | low-mid       |
+  | pastel    | page                                   | 0.92–0.94           | low           |
+  | light     | card                                   | 0.95–0.97           | very low      |
+  | ink       | text                                   | 0.22–0.28           | low, same hue |
+  | ink-quiet | secondary text                         | 0.50–0.56           | low, same hue |
 
-- Search fields and their submit buttons use the rounded-square family, even on light ground.
-- Counters, icon buttons, the AI sparkle button on a photo: blurred glass squares.
-- Bottom navigation: a pill holding round icon buttons; the current one filled deep forest.
+- **V-C3** No pure grey anywhere: even text and quiet surfaces carry the hue.
+- **V-C4** Gradients are only transparent fades of the deep step over a photo, dark at the bottom so text reads.
 
-## Cards
+## 3. Imagery
 
-Cards are the rule: every item gets its own card (image, icon, title, description, price, controls). Cards may be white or light green; there is no strict hierarchy between the two. Exception: a product description page is plain text on white, no cards.
+- **V-M1** Images **form the design**: they are the accent and carry the palette.
+- **V-M2** Every image is in the UI hue: the photo's dominant colour matches the hue family.
+- **V-M3** Image type: close-up, realistic, tactile subjects of the domain; filled frame, no empty sky.
+- **V-M4** Text on an image sits at the bottom on a deep-step fade, white, often italic.
+- **V-M5** User-supplied photos (unmatched colour) go into cards with the deep fade, which tints them toward the hue.
 
-## Imagery
+## 4. Layout
 
-- Rounded corners on every image (~20–24).
-- An image card carries its text at the bottom on a dark green gradient, white type, often italic.
-- Hero images run full bleed with the header on them.
+- **V-L1** The accent block takes 40–60% of the first view, full bleed: no side padding, under the status bar and the header.
+- **V-L2** The header lies on the accent block.
+- **V-L3** A light sheet with large top corners slides over the bottom of the accent; content lives on it.
+- **V-L4** Small side padding for content.
 
-## Type
+## 5. Surfaces and depth
 
-Geometric sans (Urbanist-like). Light/regular for big display lines ("Eat Fresh / Live Healthy"), medium for titles, regular grey-green for descriptions. Big numbers are light, not bold.
+- **V-S1** Cards are the rule: every item gets its own card (image, title, description, price, controls).
+- **V-S2** Cards are light or white with no strict hierarchy; depth comes from tone on tone, never shadow.
+- **V-S3** Plain description text is the one exception and stands without a card.
 
-## Signature components
+## 6. Controls (kit)
 
-Components you do not see elsewhere, each built from the system's own idea:
+- **V-K1** Two control families by ground: **pill** on a light ground; **rounded square (r 16–20) of translucent white with backdrop blur** on an image or accent block.
+- **V-K2** Search fields and their buttons use the rounded square even on a light ground.
+- **V-K3** Many saturated primary actions: one per card is fine.
+- **V-K4** Navigation is separate circles inside one pill; the current one filled with the deep step.
 
-- **Map header** with the road lines on deep green, a glass search square and a glass sparkle square.
-- **Opening-hours band**: a lime strip tucked behind the top of a white card.
-- **Points meter**: a row of thin vertical ticks filling left to right under a light "3500 PTS".
-- **Striped progress**: order tracking where the done part is diagonal forest stripes.
-- **Round-pill nav**: separate circles inside one pill.
+## 7. Functional blocks
 
-## Density
+- **V-F1** A function gets an unusual instrument built from simple marks: ticks for points, diagonal stripes for progress, a signal band tucked behind a card for status.
+- **V-F2** A map or a picture can be the control surface itself (search and actions float on it).
 
-Dense and rich: many cards, many accents, big type, big round blocks. Energy, not calm.
+## 8. Typography
 
-## The design book must
+- **V-T1** Geometric sans; display lines light, titles medium, body regular in ink-quiet.
+- **V-T2** Large numbers are light, never bold.
 
-Open with a full-bleed accent block (map or green photo) carrying the header in glass controls, and a white sheet sliding over it. Every section is a card or sits on a tonal green ground. All photos green.
+## 9. Space and density
+
+- **V-D1** Dense and rich: many cards, big type, big round blocks.
+
+## 10. Transitions
+
+- **V-X1** Edges between layers are hard: the sheet overlaps the accent with a clear corner.

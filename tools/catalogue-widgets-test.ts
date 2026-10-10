@@ -2,7 +2,6 @@ import { JSDOM } from "jsdom";
 import type { FunctionComponent } from "react";
 import type { Query } from "../packages/core/src/gateway/contract.ts";
 import { byId } from "./dom-find.ts";
-import { runWidgetSource } from "./run-widget-source.ts";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
 Object.assign(globalThis, {
@@ -25,32 +24,24 @@ Object.assign(globalThis, {
 });
 
 const react = await import("react");
-const { createElement: h, Fragment } = react;
+const { createElement: h } = react;
 const { render } = await import("../packages/core/src/engine/render.js");
-const { ENGINE_SCOPE } = await import("../packages/core/src/registry.js");
-const { api: widgetarium } = ENGINE_SCOPE;
-const kit = await import("../packages/kit/src/index.ts");
 const { collectionGateway, soloGateway } = await import("../packages/core/src/gateway/create.ts");
 
 type Props = Readonly<Record<string, unknown>>;
 
-const modules: Readonly<Record<string, unknown>> = {
-	widgetarium,
-	"widgetarium/kit": kit,
-	zod: ENGINE_SCOPE.zod,
-	react,
-};
+const WIDGETS = "../packages/widgetarium/src/studio/catalogue/widgets";
 
-function widgetAt(file: string): FunctionComponent<Props> {
-	const held = runWidgetSource(file, (name) => modules[name], h, Fragment)["default"];
-	if (typeof held !== "function") throw new Error(`${file} exports no component as its default`);
+async function widgetAt(folder: string): Promise<FunctionComponent<Props>> {
+	const held: unknown = (await import(`${WIDGETS}/${folder}/widget.tsx`)).default;
+	if (typeof held !== "function") throw new Error(`${folder} exports no component as its default`);
 	return held as FunctionComponent<Props>;
 }
 
-const WidgetList = widgetAt("registry/@catalogue/widget-list/widget.tsx");
-const FacetList = widgetAt("registry/@catalogue/facet-list/widget.tsx");
-const FilterBar = widgetAt("registry/@catalogue/filter-bar/widget.tsx");
-const Head = widgetAt("registry/@catalogue/head/widget.tsx");
+const WidgetList = await widgetAt("widget-list");
+const FacetList = await widgetAt("facet-list");
+const FilterBar = await widgetAt("filter-bar");
+const Head = await widgetAt("head");
 
 let failed = 0;
 let checks = 0;
@@ -161,11 +152,13 @@ const drawList = async (isAsking: boolean): Promise<void> => {
 };
 
 const card = (name: string): Element | undefined =>
-	all(".wg-catalogue-card").find((node) => node.querySelector(".wg-catalogue-card-name")?.textContent === name);
+	all(".wg-studio-catalogue-card").find(
+		(node) => node.querySelector(".wg-studio-catalogue-card-name")?.textContent === name,
+	);
 
 console.log("\n— every widget is a card drawn as it really looks —");
 await drawList(false);
-check("a card per widget", all(".wg-catalogue-card").length, 5);
+check("a card per widget", all(".wg-studio-catalogue-card").length, 5);
 check(
 	"each card holds the preview the host draws",
 	all(".pv").map((node) => node.textContent),
@@ -173,7 +166,7 @@ check(
 );
 check(
 	"each card says what pressing it does",
-	all(".wg-catalogue-card").map((node) => node.getAttribute("data-state")),
+	all(".wg-studio-catalogue-card").map((node) => node.getAttribute("data-state")),
 	["add", "busy", "install", "update", "add"],
 );
 check(
@@ -188,15 +181,15 @@ check(
 );
 check(
 	"and the card counts them",
-	card("Clock")?.querySelector(".wg-catalogue-card-step")?.textContent,
+	card("Clock")?.querySelector(".wg-studio-catalogue-card-step")?.textContent,
 	"Writing 1 of 3 files",
 );
 check(
 	"an update names both commits",
-	card("Habit streak")?.querySelector(".wg-catalogue-card-step")?.textContent,
+	card("Habit streak")?.querySelector(".wg-studio-catalogue-card-step")?.textContent,
 	"1111111 here · 2222222 out",
 );
-check("a widget that lacks something stands after the divider", all(".wg-catalogue-divide").length, 1);
+check("a widget that lacks something stands after the divider", all(".wg-studio-catalogue-divide").length, 1);
 
 console.log("\n— a press installs or picks —");
 await press(card("Timer"));
@@ -228,7 +221,7 @@ carriedTo = null;
 card("Clock")?.dispatchEvent(new dom.window.MouseEvent("pointerdown", { bubbles: true, button: 0 }));
 await settled();
 check("a drag that lands nowhere places nothing", sent, []);
-check("and the card stays in the list", all(".wg-catalogue-card").length, 5);
+check("and the card stays in the list", all(".wg-studio-catalogue-card").length, 5);
 
 console.log("\n— a facet picks and lets go —");
 sent.length = 0;
@@ -252,7 +245,7 @@ const drawFacets = async (picked: string | null): Promise<void> => {
 };
 await drawFacets(null);
 const rowNamed = (label: string): Element | undefined =>
-	all(".wg-catalogue-facet").find((node) => node.textContent?.includes(label));
+	all(".wg-studio-catalogue-facet").find((node) => node.textContent?.includes(label));
 await press(rowNamed("Installed"));
 check("pressing a row picks its name", sent, [["select", "installed"]]);
 await drawFacets("installed");
@@ -275,10 +268,10 @@ render(
 	host,
 );
 await settled();
-check("it says how many are shown", host.querySelector(".wg-catalogue-bar-count")?.textContent, "2 widgets");
-check("and how many filters are on", host.querySelector(".wg-catalogue-bar-badge")?.textContent, "2");
-await press(host.querySelector(".wg-catalogue-bar-filters"));
-await press(host.querySelector(".wg-catalogue-bar-clear"));
+check("it says how many are shown", host.querySelector(".wg-studio-catalogue-bar-count")?.textContent, "2 widgets");
+check("and how many filters are on", host.querySelector(".wg-studio-catalogue-bar-badge")?.textContent, "2");
+await press(host.querySelector(".wg-studio-catalogue-bar-filters"));
+await press(host.querySelector(".wg-studio-catalogue-bar-clear"));
 check("the button opens the filters and Clear all clears them", sent, [
 	["open", true],
 	["clear", null],
@@ -295,7 +288,7 @@ render(
 	host,
 );
 await settled();
-const tabs = all(".wg-catalogue-head-tab");
+const tabs = all(".wg-studio-catalogue-head-tab");
 check(
 	"this view is the one switched on",
 	tabs.map((tab) => tab.classList.contains("is-on")),

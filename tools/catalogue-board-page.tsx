@@ -2,17 +2,20 @@ import "./packs-registered.ts";
 import { createElement as h } from "react";
 import { render } from "../packages/core/src/engine/render.js";
 import { WidgetSurface } from "../packages/core/src/surface.js";
-import { WidgetRegistry } from "../packages/core/src/registry.js";
+import { ModuleRegistry } from "../packages/core/src/engine/module-registry.js";
 import { normalizeBoard } from "../packages/core/src/model.js";
 import type { Board } from "../packages/core/src/model.js";
 import type { MergedEntry } from "../packages/core/src/catalogue-entries.ts";
 import type { CataloguePort } from "../packages/core/src/engine/catalogue-port.ts";
+import { NO_CATALOGUE_PORT } from "../packages/core/src/engine/catalogue-port.ts";
 import { INSTALL_JOBS } from "../packages/core/src/engine/install-jobs.ts";
 import { CATALOGUE_REQUESTS } from "../packages/core/src/engine/catalogue-requests.ts";
 import { placeWidget } from "../packages/core/src/surface/drop-receivers.ts";
 import { TEMPLATES } from "../packages/core/src/templates.js";
+import { CATALOGUE_BOARDS } from "../packages/widgetarium/src/studio/catalogue/catalogue-boards.js";
+import { CATALOGUE_WIDGETS } from "../packages/widgetarium/src/studio/catalogue/catalogue-widgets.js";
 import { createProbeHost, createRowSlot } from "./vault-fixture.ts";
-import { boom, filesAdapter, pageFiles, pageGlobal, reportsFailures, stackOf } from "./page-harness.ts";
+import { reportsFailures } from "./page-harness.ts";
 
 reportsFailures();
 
@@ -55,11 +58,12 @@ const port: CataloguePort = {
 	requests: CATALOGUE_REQUESTS,
 	previewRegistry: null,
 	previewHost: null,
+	says: NO_CATALOGUE_PORT.says,
 };
 
 const node = document.getElementById("host");
-const registry = new WidgetRegistry({ vault: { adapter: filesAdapter(pageFiles()) } });
-let board: Board = normalizeBoard(pageGlobal("__BOARD__"));
+const registry = new ModuleRegistry(CATALOGUE_WIDGETS);
+let board: Board = normalizeBoard(CATALOGUE_BOARDS.catalogue);
 
 function draw(): void {
 	if (!node) return;
@@ -82,7 +86,4 @@ function draw(): void {
 	);
 }
 
-registry
-	.load()
-	.then(draw)
-	.catch((failure: unknown) => boom(`load: ${stackOf(failure)}`));
+draw();

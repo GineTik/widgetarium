@@ -1,4 +1,6 @@
+import { basename } from "node:path";
 import { isObject } from "@widgetarium/core/engine/is-object.js";
+import { CATALOGUE_SCOPE } from "@widgetarium/core/paths.js";
 import { SOURCE_FILES, javascriptSourceRefusal } from "@widgetarium/core/engine/widget-build.js";
 import { cardIn } from "./entries.js";
 import { foldersIn, readJson, widgetFilesIn } from "./vault-files.js";
@@ -13,6 +15,7 @@ const STEPS_OUT_OF_THE_REPOSITORY = /^\/|(^|\/)\.\.(\/|$)/;
 export async function installedWidgets(): Promise<WidgetEntry[]> {
 	const found: WidgetEntry[] = [];
 	for (const scope of await foldersIn(WIDGETS_DIR)) {
+		if (basename(scope) === CATALOGUE_SCOPE) continue;
 		for (const folder of await foldersIn(scope)) {
 			const files = await widgetFilesIn(folder);
 			sayJavascriptRefused(files, folder);

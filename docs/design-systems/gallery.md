@@ -1,66 +1,93 @@
-# Gallery
+# Gallery — traits
 
-Source: three phone screens of a real-estate app (home feed, property details, book a visit).
+Same ten categories as every system. The source app (property rental) is **not** part of the system.
 
-## Idea
+Previous prose version: `archive/v1/gallery.md`.
 
-**Calm through grey and fog.** The page is a quiet grey, not white, and that alone sets the direction. A photo is the card: it dissolves into the grey ground through a gradient, as if it appears out of fog. The same fog closes the bottom of the screen: content rises out of it as you scroll. One page, one task, one focus. Space is the luxury.
+## Fit
 
-## Palette
+| Parameter         | Value                 |
+| ----------------- | --------------------- |
+| Centre of gravity | object, one at a time |
+| Photogenic domain | user photos           |
+| Session           | browse                |
+| Density           | low                   |
+| Tone              | calm, premium         |
+| Device            | both                  |
 
-| Role                        | Approx.              |
-| --------------------------- | -------------------- |
-| Page                        | grey `#E9E9E8`       |
-| Raised control, segment     | light grey `#F2F2F1` |
-| Primary action, selected    | black `#0E0E0E`      |
-| Text                        | near-black `#1A1A1A` |
-| Secondary text — used a lot | grey `#6E6E6E`       |
-| Greeting / soft text        | light grey `#9C9C9C` |
-| Chip outline                | `#D6D6D4`            |
-| Rating star (only colour)   | orange `#E8601C`     |
+Conditional traits (all others are portable to any product):
 
-- Photos are calm and desaturated: whitewashed walls, stone, beige. They bring the only real colour.
-- Calm comes from grey, grey type and the fog, not from pastel colour.
+| Trait                  | Needs                                           |
+| ---------------------- | ----------------------------------------------- |
+| G-M1, G-M3, G-M4, G-S1 | photogenic = yes or user photos                 |
+| G-M2                   | designer photos exist (empty states, marketing) |
+| G-L3                   | a home screen that greets                       |
+| G-D1, G-I2             | density = low or medium                         |
 
-## Layout
+## 1. Idea
 
-- **The layout is strict and the photo stays inside it.** A photo never runs to the screen edge or under the header; it keeps the page's side padding. (Contrast: Verdant's hero takes over the layout.)
-- Header: a small round button left, a small round button right, a centred selector (city) or title. Nothing else.
-- A greeting block ("Hey Orbix / Welcome Here") gives a lot of air before the content.
-- Then one list of big photo cards, or one subject.
-- Screen-level actions (Book Now, Schedule, Continue, Cancel) are big pills fixed at the bottom: a light one and a wider black one. They control the screen.
+- **G-I1** Calm through grey and fog: nothing shouts, space is the luxury.
+- **G-I2** One page, one task, one focus.
 
-## Controls
+## 2. Colour logic
 
-- Small pills for filters and segments (Rent, Buy, Sell): selected is black, others light grey with no extra background around the group.
-- A button is text **or** icon, rarely both.
-- On a **key** photo (the details hero): round translucent buttons with blur. On a photo that is one of many in a feed: plain white circle plus a black circle arrow.
+- **G-C1** The UI is neutral: a grey with a faint tint (chroma ≤ 0.01; the source leans slightly cool). The tint hue is free.
+- **G-C2** Steps and jobs:
 
-## Cards
+  | Step       | Job                                          | Lightness (OKLCH L) |
+  | ---------- | -------------------------------------------- | ------------------- |
+  | ground     | page                                         | 0.92–0.94           |
+  | raised     | segment, tile, light button                  | 0.95–0.97           |
+  | white      | small chip, button that must pop on the grey | 1.0                 |
+  | ink        | primary action, selected, titles             | 0.12–0.20           |
+  | text-quiet | addresses, descriptions (used a lot)         | 0.50–0.58           |
+  | text-soft  | greeting, decimals                           | 0.68–0.74           |
+  | hairline   | outline chips                                | 0.85–0.88           |
 
-Almost none. The photo is the card. No plate behind a rating, a status ("• For Rent") or plain text. Property facts (1200 sq ft, 3 Beds) are thin outline chips, no fill. The visit page uses a few plates (the summary row, the calendar) as exceptions to mark the chosen object; the calendar would also work without a plate.
+- **G-C3** Black is the only strong UI colour; white buttons on grey look modern and clean.
+- **G-C4** One spot colour, used **only on one small icon** to pull the eye to a detail (the rating star). Never on a button, a dot or a ground.
+- **G-C5** Much of the text is grey, not black: calm comes partly from the type colour.
 
-## Imagery
+## 3. Imagery
 
-- Large radius (~26–30).
-- Bottom of the photo fades into the page grey; title and price stand on the fade.
-- Gallery strips of small photos with the same fade.
+- **G-M1** Images are **domain content**, not design: people upload them. They obey the design but do not form it.
+- **G-M2** Designer-chosen images: light, airy, daylight, desaturated, in the ground's tone; one subject per frame, no dark or loud photos.
+- **G-M3** Every image dissolves into the page grey at the bottom (fog); text stands on the fade.
+- **G-M4** The fog is what makes **any** user photo fit, even a loud one.
 
-## Type
+## 4. Layout
 
-Neo-grotesk sans, medium weight for titles and prices, regular grey for addresses and descriptions. The greeting's first line is lighter and grey.
+- **G-L1** Strict layout: an image keeps the page padding and never reaches the edge or goes under the header.
+- **G-L2** Header: small round button left, small round button right, a centred title or selector.
+- **G-L3** A greeting block opens the home screen and adds air (light grey first line, ink second).
+- **G-L4** Screen-level actions are big pills fixed at the bottom: a light one and a wider black one.
+- **G-L5** The bottom of the screen fades into fog too; content rises out of it while scrolling.
 
-## Signature components
+## 5. Surfaces and depth
 
-- **Fog card**: photo → grey gradient → title and price on the fade.
-- **Time scrubber with a lens**: times run sideways under a raised white lens; ticks below.
-- **Tile calendar**: soft grey day tiles, the chosen day solid black.
-- **Split screen action**: light "Schedule" + wide black "Book Now".
+- **G-S1** Almost no plates: the photo is the card.
+- **G-S2** No ground behind a rating, a status or plain text; property facts are outline chips with no fill.
+- **G-S3** A plate appears only to mark the chosen object (a summary row) — an exception, not a rule.
 
-## Density
+## 6. Controls (kit)
 
-Low. Few elements, big gaps, one focus per screen.
+- **G-K1** Small pills; selected is black, others raised grey; no ground around a group.
+- **G-K2** A button is text **or** icon, rarely both.
+- **G-K3** On a key photo: round translucent blurred buttons. On a photo among many: a plain white circle and a black circle arrow.
+- **G-K4** Big buttons only for screen-level actions; everything else small.
 
-## The design book must
+## 7. Functional blocks
 
-Stand on grey, never white. Use almost no plates: photos and text directly on the ground. Every photo fades into the grey. One black action per section at most. Text in greys.
+- **G-F1** A picker is physical: a lens slides over a hairline ruler; a calendar is soft tiles with the chosen one black.
+
+## 8. Typography
+
+- **G-T1** Neo-grotesk; titles and prices in the same medium weight; body regular in text-quiet.
+
+## 9. Space and density
+
+- **G-D1** Low density: few elements, big gaps.
+
+## 10. Transitions
+
+- **G-X1** Soft: image to ground, content to the screen bottom, always through a fade.

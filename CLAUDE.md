@@ -522,14 +522,15 @@ board is born with all three, and all three stand in reading mode too.
 a press that opens the catalogue and puts the pick at the end of **that** box. There is no board-wide
 add: a press that named no box left the person guessing where the widget went.
 
-**The catalogue is a board of widgets in the sidebar, and every pick is a request.** The catalogue
-and the docs are two `ItemView`s drawing boards of `@catalogue` widgets, and all their logic is the
-`@catalogue` pack's queries and commands. **Each board is a widgetarium block in the very format a
-note holds, shipped inside the plugin** (`apps/obsidian/boards/catalogue.md`, `docs.md`) and read by
-`catalogue-boards.ts`: never written to the vault, never editable, so a plugin update is what changes
-the sidebar. The old catalogue dialog (`packages/core/src/catalogue-dialog.ts` and its parts) is kept
+**The catalogue is an engine board of widgets, and every pick is a request.** `CatalogueBoard`
+(`packages/widgetarium/src/studio/catalogue`) draws the catalogue or the docs board
+(`catalogue-boards.ts`) of static `@catalogue` widgets (`catalogue/widgets`) over the `@catalogue`
+pack and a `CataloguePort`; it is the one owner of that UI. The studio draws it in its panel, and
+Obsidian's two sidebar `ItemView`s draw the same component over the plugin's port. Nothing of it is
+in the vault or the registry, so an engine update is what changes it. The old catalogue dialog (`packages/core/src/catalogue-dialog.ts` and its parts) is kept
 but hidden: nothing opens it. A box's add press, a slot, a view and a substitution each ask
-`CATALOGUE_REQUESTS` (`packages/core/src/engine/catalogue-requests.ts`), which reveals the sidebar and
+`CATALOGUE_REQUESTS` (`packages/core/src/engine/catalogue-requests.ts`), which opens the studio's
+catalogue panel while a studio is on screen (`isStudioOnScreen`), Obsidian's sidebar view otherwise, and
 answers the pick; a dialog that asked steps aside until it is answered. A card is carried onto a board
 or into a note by `ICarrier`: every board registers a drop receiver
 (`packages/core/src/surface/drop-receivers.ts`), and a drop on markdown writes a new board block under
@@ -546,13 +547,16 @@ studio. `test:studio-render` measures both in Chrome and proves the app entry bu
 **The studio is a Widgetarium app.** Its band is a board of `@studio/*` widgets
 (`packages/widgetarium/src/studio/widgets`) over the `@studio` pack; the route is drawn below it by the
 same `routeElementOf` app mode calls, never merged into the band's tree, because a route nested one
-level down stops being regions and changes its spacing. The outlet's view and whether the AI sidebar is
-open live in `STUDIO_STATE`, written only by `@studio` commands. The canvas view is the engine's `ProjectCanvas`
+level down stops being regions and changes its spacing. The outlet's view and the one right panel —
+`none | assistant | catalogue`, toggled by the band's Widgets and AI buttons — live in `STUDIO_STATE`,
+written only by `@studio` commands. The canvas view is the engine's `ProjectCanvas`
 (`packages/widgetarium/src/studio/canvas`): a frame per route on its own memory router and the
 widgets' `defineStates`, under the one pan-zoom the Obsidian design view imports too. What the host can do is its
 `StudioHostPort` (`packages/core/src/engine/studio-host.ts`): window-button insets, which the safe areas
 read as `--wg-studio-inset-left|right`, and the apps; a host without them answers "not available" and
-the shell stays. `@catalogue` ships inside the plugin (`tools/system-widget-files.mts`), read-only.
+the shell stays. The catalogue reaches the studio as a `CataloguePort` in `StudioStart`: Obsidian lends
+its own; a browser gets `browserCataloguePort`, the project's widgets as installed, every install and
+place answering "not available". App mode ships none of its code or CSS (`test:studio-render`).
 The AI sidebar is the engine's too: `studio/assistant` draws the chat, 380px beside the outlet, over
 `AssistantPort` (`packages/core/src/engine/assistant-port.ts`, `ports.assistant`). Obsidian lends its
 session through `ai/assistant-port-obsidian.ts` and its old AI view draws the same `AssistantChat`; a
@@ -657,7 +661,7 @@ packages, the plugin stamp, and each file's `mtime:size` taken **before** it was
 refuses is ignored and the vault is read; one from another plugin build mounts like any other, because
 it holds raw files and the fingerprint lists with the running build's own `listVault` — refusing it
 sent the first start after every install back to iCloud, 11 to 50 s measured. Laid files follow the
-same rule: `types/` and `@catalogue` carry a `.laid-by-plugin` mark with the bundle hash, so an
+same rule: `types/` carries a `.laid-by-plugin` mark with the bundle hash, so an
 unchanged lay is one read, not 433 downloads queued in front of the note being opened, and a changed
 one writes without reading first, removing each file before writing it, because writing over an
 evicted file downloads it first (35 ms against minutes, measured). Only a folder named `@…` is a scope

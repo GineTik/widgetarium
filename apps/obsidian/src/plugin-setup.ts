@@ -4,7 +4,6 @@ import { createShapeStore, shapesOf } from "@widgetarium/kit/shapes";
 import type { ShapeStore } from "@widgetarium/kit/shapes";
 import { createWantedWidgets } from "@widgetarium/core/engine/widgets-wanted.js";
 import { WidgetRegistry } from "@widgetarium/core/registry.js";
-import { SYSTEM_WIDGETS_DIR } from "@widgetarium/core/paths.js";
 import { StartupCache } from "@widgetarium/core/startup-snapshot.js";
 import { measure, trace, traceSub } from "@widgetarium/core/trace.js";
 import { registerPacks } from "@widgetarium/core/engine/packs.js";
@@ -28,7 +27,7 @@ import { layAgentFiles } from "./ai/agent-files.js";
 import { addCommandsAndRibbon } from "./plugin-commands.js";
 import { createCataloguePort } from "./catalogue-port.js";
 import { registerBoardViews } from "./catalogue-views.js";
-import { removeLaidCatalogue, withSystemWidgets } from "./system-widgets.js";
+import { removeLaidCatalogue } from "./laid-catalogue.js";
 import { receiveDropsInNotes } from "./note-drops.js";
 import { pluginInstaller } from "./widget-offers.js";
 import { activeRules, normalizeRules, ruleBlock } from "./substitution.js";
@@ -55,10 +54,7 @@ export function startPlugin(plugin: WidgetariumPlugin): void {
 	plugin.mounts = new Map();
 	plugin.header = headerActionsOf(plugin);
 	plugin.registerEvent(plugin.app.workspace.on("layout-change", () => plugin.header.sync()));
-	plugin.registry = new WidgetRegistry(
-		{ vault: { adapter: withSystemWidgets(plugin.app.vault.adapter) } },
-		REACT_SURFACE_SOURCE,
-	);
+	plugin.registry = new WidgetRegistry({ vault: { adapter: plugin.app.vault.adapter } }, REACT_SURFACE_SOURCE);
 	plugin.startupCache = startupCacheOf(plugin);
 	plugin.shapeAnswers = {};
 	plugin.shapes = shapeStoreFollowingRenames(plugin);
@@ -122,10 +118,9 @@ async function upkeepAfterFirstDraw(plugin: WidgetariumPlugin): Promise<void> {
 function startupCacheOf(plugin: WidgetariumPlugin): StartupCache {
 	return new StartupCache({
 		registry: plugin.registry,
-		adapter: withSystemWidgets(plugin.app.vault.adapter),
+		adapter: plugin.app.vault.adapter,
 		store: indexedDbSnapshotStore(plugin.app),
 		stamp: `${plugin.manifest.version}+${BUILD_STAMP}`,
-		systemRoot: SYSTEM_WIDGETS_DIR,
 	});
 }
 

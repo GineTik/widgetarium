@@ -3,7 +3,7 @@ import type { ImplementationPorts } from "@widgetarium/core/engine/packs.js";
 import { ICommand } from "@widgetarium/core/gateway/queries.js";
 import { AppAskedSchema } from "../shared/studio-app.js";
 import { STUDIO_STATE } from "../studio-state.js";
-import type { NoFields } from "./studio-fields.js";
+import type { NoFields, PanelFields } from "./studio-fields.js";
 
 export class OpenAppCommand extends ICommand.input(AppAskedSchema) {
 	constructor(
@@ -51,12 +51,12 @@ export class BackToViewCommand extends ICommand {
 	}
 }
 
-export class ToggleAssistantCommand extends ICommand {
-	constructor(readonly fields: NoFields) {
+export class TogglePanelCommand extends ICommand {
+	constructor(readonly fields: PanelFields) {
 		super();
 	}
 
 	async run(): Promise<void> {
-		STUDIO_STATE.toggleAssistant();
+		STUDIO_STATE.togglePanel(this.fields.panel);
 	}
 }

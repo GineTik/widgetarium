@@ -1,0 +1,44 @@
+import { createElement as h } from "react";
+import { ICommand, IQuery } from "@widgetarium/core/gateway/queries.js";
+import { createWidget } from "@widgetarium/core/widget-api.js";
+import { defineLayout, defineMetadata } from "@widgetarium/core/gateway/declared.js";
+import { z } from "zod";
+import { Button } from "@widgetarium/kit";
+
+const CLEAR_ALL = "Clear all";
+
+const SheetHead = createWidget({
+	inject: {
+		getTitle: IQuery.output(z.string().default("Filters")),
+		getNarrowed: IQuery.output(z.number().default(0)),
+		clearFilters: ICommand.input(z.unknown()),
+	},
+	draw: ({ getTitle: title, getNarrowed: narrowed, clearFilters }) => (
+		<div>
+			<div className="wg-studio-catalogue-sheet-head">
+				<h2 className="wg-studio-catalogue-sheet-title">{title}</h2>
+				{narrowed > 0 ? (
+					<Button size="s" variant="plain" onClick={() => void clearFilters(null)}>
+						{CLEAR_ALL}
+					</Button>
+				) : null}
+			</div>
+		</div>
+	),
+});
+
+export const metadata = defineMetadata(SheetHead, {
+	title: "Sheet head",
+	description: "The title above the filters, with Clear all while any filter is on.",
+	keywords: ["filters", "sheet", "title", "clear", "catalogue"],
+	preview: { size: { w: 4, h: 1 }, props: { getNarrowed: { value: 1 } } },
+	props: {
+		getTitle: { aka: ["title"], label: "Title" },
+		getNarrowed: { aka: ["getCounts"], label: "Filters on", hint: "How many filters are on." },
+		clearFilters: { label: "Clear the filters", hint: "Turns every filter off." },
+	},
+});
+
+export const layout = defineLayout({ role: "layout", size: { preferredWidth: "full", preferredHeight: "auto" } });
+
+export default SheetHead;

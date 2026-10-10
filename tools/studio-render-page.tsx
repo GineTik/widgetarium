@@ -27,7 +27,7 @@ import {
 	startStudio,
 } from "../packages/widgetarium/src/studio/widgetarium-studio.js";
 import type { StartedStudio, StudioStart } from "../packages/widgetarium/src/studio/widgetarium-studio.js";
-import { studioPack } from "../packages/widgetarium/src/studio/logic/studio-pack.js";
+import { STUDIO_PACKS } from "../packages/widgetarium/src/studio/logic/studio-pack.js";
 import * as taskList from "./studio-fixture-widget.tsx";
 import { FixtureTaskSchema } from "./studio-fixture-widget.tsx";
 import { boom, pageGlobal, reportsFailures, stackOf } from "./page-harness.ts";
@@ -187,7 +187,7 @@ function studioStartOf(mode: unknown): StudioStart {
 }
 
 function studioOverOpenedProject(): StartedStudio {
-	registerPacks(corePack, projectPackOf(PROJECT.handlers), studioPack);
+	registerPacks(corePack, projectPackOf(PROJECT.handlers), ...STUDIO_PACKS);
 	const router = createMemoryRouter(() => PROJECT.routes, {
 		at: "/",
 		paramsKeyOf: (pathname) => `${MEMORY_PARAMS_KEY}${pathname}`,
@@ -201,7 +201,9 @@ function studioOverOpenedProject(): StartedStudio {
 }
 
 function startedStudioOf(mode: unknown): StartedStudio {
-	return mode === "studio-memory" ? studioOverOpenedProject() : startStudio(PROJECT, studioStartOf(mode));
+	const started = mode === "studio-memory" ? studioOverOpenedProject() : startStudio(PROJECT, studioStartOf(mode));
+	Object.assign(window, { __CATALOGUE__: started.catalogue });
+	return started;
 }
 
 const mode = pageGlobal("__MODE__");

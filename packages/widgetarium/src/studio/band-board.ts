@@ -1,12 +1,21 @@
-type Binding = { readonly implementation: string; readonly fields: Readonly<Record<string, unknown>> };
+import { bound, keptValue } from "./shared/board-bindings.js";
+import type { Binding } from "./shared/board-bindings.js";
+import type { OpenablePanel } from "./studio-state.js";
 
 type Mounted = { readonly name: string; readonly widget: string; readonly props: Readonly<Record<string, Binding>> };
+
+type PanelButton = {
+	readonly name: string;
+	readonly label: string;
+	readonly icon: string;
+	readonly panel: OpenablePanel;
+};
 
 const BAND_TILE = "studio-band";
 
 export function bandBoardOf(app: string): Record<string, unknown> {
 	const start = [safeAreaAt("left"), controlMenuOf(app)];
-	const end = [AI_BUTTON, safeAreaAt("right")];
+	const end = [WIDGETS_BUTTON, AI_BUTTON, safeAreaAt("right")];
 	return {
 		v: 2,
 		tiles: [
@@ -22,11 +31,27 @@ export function bandBoardOf(app: string): Record<string, unknown> {
 	};
 }
 
-const AI_BUTTON: Mounted = {
-	name: "AI button",
-	widget: "@studio/ai-button",
-	props: { getIsOpen: bound("@studio/is-assistant-open"), toggleAssistant: bound("@studio/toggle-assistant") },
-};
+const WIDGETS_BUTTON = panelButtonOf({
+	name: "Widgets button",
+	label: "Widgets",
+	icon: "layout-grid",
+	panel: "catalogue",
+});
+
+const AI_BUTTON = panelButtonOf({ name: "AI button", label: "AI assistant", icon: "sparkles", panel: "assistant" });
+
+function panelButtonOf({ name, label, icon, panel }: PanelButton): Mounted {
+	return {
+		name,
+		widget: "@studio/panel-button",
+		props: {
+			getLabel: keptValue(label),
+			getIcon: keptValue(icon),
+			getIsOpen: bound("@studio/is-panel-open", { panel }),
+			togglePanel: bound("@studio/toggle-panel", { panel }),
+		},
+	};
+}
 
 function controlMenuOf(app: string): Mounted {
 	return {
@@ -48,14 +73,10 @@ function safeAreaAt(side: "left" | "right"): Mounted {
 	return {
 		name: `Safe area ${side}`,
 		widget: "@studio/safe-area",
-		props: { getSide: bound("@core/typed-value", { value: side }) },
+		props: { getSide: keptValue(side) },
 	};
 }
 
 function mountRowOf({ name, widget }: Mounted): { readonly name: string; readonly widget: string } {
 	return { name, widget };
-}
-
-function bound(implementation: string, fields: Readonly<Record<string, unknown>> = {}): Binding {
-	return { implementation, fields };
 }
