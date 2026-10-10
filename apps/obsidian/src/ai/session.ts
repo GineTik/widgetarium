@@ -4,10 +4,11 @@ import { withResult } from "./tools.js";
 import type { AiSettings, AiState } from "./settings.js";
 import type { ChatTurn, Run, Runner, RunAsk } from "./run.js";
 import type { Phase, StreamPart } from "./stream.js";
-import type { KeptCall, KeptTurn } from "./transcript.js";
+import type { AssistantCall, AssistantTurn } from "@widgetarium/core/engine/assistant-port.js";
+import { failureMessage } from "@widgetarium/core/engine/failure-message.js";
 
 export interface SessionState {
-	readonly turns: KeptTurn[];
+	readonly turns: AssistantTurn[];
 	readonly busy: boolean;
 	readonly failure: string | null;
 	readonly session: string | null;
@@ -43,6 +44,10 @@ export interface Session {
 const DRAW_EVERY_MS = 60;
 const STOPPED = "Stopped.";
 const RESUMES_ITS_OWN_LAST = "last";
+export const NOTHING_TO_SEND = "There is nothing to send.";
+export const STILL_ANSWERING = "The assistant is still answering. Wait for it, or stop it first.";
+const NOT_STARTED = "The answer could not be started: {why}";
+const NOT_KEPT = "The conversation could not be saved: {why}";
 
 export function createSession(doors: SessionDoors): Session {
 	const store: SessionStore = { state: emptyState(), activeRun: null, drawTimer: null, watchers: new Set() };
@@ -120,7 +125,7 @@ function patchState(store: SessionStore, patch: Partial<SessionState>): void {
 	store.state = { ...store.state, ...patch };
 }
 
-function intoLastTurn(store: SessionStore, step: (turn: KeptTurn) => KeptTurn): void {
+function intoLastTurn(store: SessionStore, step: (turn: AssistantTurn) => AssistantTurn): void {
 	const turns = store.state.turns.slice();
 	const last = turns[turns.length - 1];
 	if (!last) return;
@@ -148,7 +153,7 @@ function applyEvent(store: SessionStore, event: StreamPart): void {
 	if ("call" in event && event.call) {
 		const { call } = event;
 		patchState(store, { tool: call.name, phase: "tools" });
-		const fresh: KeptCall = { ...call, answered: false, output: "", failed: false, at: Date.now() };
+		const fresh: AssistantCall = { ...call, answered: false, output: "", failed: false, at: Date.now() };
 		intoLastTurn(store, (turn) => ({ ...turn, calls: [...turn.calls, fresh] }));
 	}
 	if ("result" in event && event.result) {
@@ -193,21 +198,39 @@ function startTurn(store: SessionStore, asked: string): void {
 	notifyWatchers(store);
 }
 
-async function sendThrough(doors: SessionDoors, store: SessionStore, said: unknown): Promise<void> {
+function sendThrough(doors: SessionDoors, store: SessionStore, said: unknown): Promise<void> {
 	const asked = String(said ?? "").trim();
-	if (asked === "" || store.state.busy) return;
-
+	const refusal = refuseSend(store.state, asked);
+	if (refusal !== null) return Promise.reject(new Error(refusal));
 	const history = historyForChat(store.state);
 	startTurn(store, asked);
+	void answerTurn(doors, store, asked, history).catch((failed: unknown) => failTurn(store, NOT_STARTED, failed));
+	return Promise.resolve();
+}
+
+function refuseSend(state: SessionState, asked: string): string | null {
+	if (asked === "") return NOTHING_TO_SEND;
+	return state.busy ? STILL_ANSWERING : null;
+}
+
+async function answerTurn(doors: SessionDoors, store: SessionStore, asked: string, history: ChatTurn[]): Promise<void> {
 	const held = await doors.settings.state();
 	const brief = await doors.briefNow();
 	const { provider } = held;
-	const ask = askOf(asked, history, held, brief, store.state.session);
-	const run = startRun(doors, store, provider, ask);
+	const run = startRun(doors, store, provider, askOf(asked, history, held, brief, store.state.session));
 	const done = await run.done;
 	if (store.activeRun !== run) return;
 	settleRun(store, provider, done.failure);
-	await keep(doors, store);
+	await keep(doors, store).catch((failed: unknown) => failTurn(store, NOT_KEPT, failed));
+}
+
+function failTurn(store: SessionStore, said: string, failed: unknown): void {
+	const failure = said.replace("{why}", failureMessage(failed));
+	console.error(`[widgetarium] ${failure}`, failed);
+	store.activeRun = null;
+	cancelDraw(store);
+	patchState(store, { busy: false, tool: null, phase: null, failure });
+	notifyWatchers(store);
 }
 
 function startRun(doors: SessionDoors, store: SessionStore, provider: Provider, ask: RunAsk): Run {

@@ -10,10 +10,10 @@ import { standIn } from "./stand-in.ts";
 import type { ArgsGiven } from "../apps/obsidian/src/ai/command.ts";
 import type { Provider } from "../apps/obsidian/src/ai/providers.ts";
 import type { Held, StreamPart, ToolCall, ToolResult } from "../apps/obsidian/src/ai/stream.ts";
-import type { KeptCall } from "../apps/obsidian/src/ai/transcript.ts";
+import type { AssistantCall } from "../packages/core/src/engine/assistant-port.ts";
 import type { RunAnswer } from "../apps/obsidian/src/ai/run.ts";
-import type { Build, StepStatus } from "../apps/obsidian/src/ai/builds.ts";
-import type { SaidProps } from "../apps/obsidian/src/ai/markdown.ts";
+import type { Build, StepStatus } from "../packages/core/src/engine/assistant-cards.ts";
+import type { SaidProps } from "../packages/widgetarium/src/studio/assistant/said.ts";
 import type { Spawn, SpawnAsk } from "../apps/obsidian/src/ai/run.ts";
 import type { AssistantPlugin } from "../apps/obsidian/src/ai/assistant.ts";
 import type { AgentFilesAdapter } from "../apps/obsidian/src/ai/agent-files.ts";
@@ -27,18 +27,21 @@ const { PRESETS, presetById, DEFAULT_PROVIDER } = await import("../apps/obsidian
 const { searchPath, whereCommandIs, environmentFor } = await import("../apps/obsidian/src/ai/path.js");
 const { briefFor, templatePlaceholders } = await import("../apps/obsidian/src/ai/brief.js");
 const { createRunner } = await import("../apps/obsidian/src/ai/run.js");
-const { createSession } = await import("../apps/obsidian/src/ai/session.js");
+const { createSession, STILL_ANSWERING } = await import("../apps/obsidian/src/ai/session.js");
 const { turnsToKeep } = await import("../apps/obsidian/src/ai/transcript.js");
 const { layAgentFiles, HANDBOOK_DIR, TOOL_PATH, HANDBOOK, WIDGETS_DIR } =
 	await import("../apps/obsidian/src/ai/agent-files.js");
-const { glyphForTool, glyphOf, glyphsOf, hintOf, titleOf, ourCallIn, withResult, failuresIn } =
+const { glyphForTool, glyphOf, hintOf, titleOf, ourCallIn, withResult } =
 	await import("../apps/obsidian/src/ai/tools.js");
-const { canRenderMarkdown, settledPart, Said } = await import("../apps/obsidian/src/ai/markdown.js");
-const { saidElapsed, saidTokens, saidPhase, saidProgress } = await import("../apps/obsidian/src/ai/spent.js");
+const { failuresIn, firstGlyphsOf } = await import("../packages/widgetarium/src/studio/assistant/tool-calls.js");
+const { canRenderMarkdown } = await import("../apps/obsidian/src/ai/assistant-port-obsidian.js");
+const { settledPart, Said } = await import("../packages/widgetarium/src/studio/assistant/said.js");
+const { saidElapsed, saidTokens, saidPhase, saidProgress } =
+	await import("../packages/widgetarium/src/studio/assistant/spent.js");
 const { createElement } = await import("react");
 const { renderToStaticMarkup } = await import("react-dom/server");
 const { briefGoesInTheMessage } = await import("../apps/obsidian/src/ai/providers.js");
-const { sendState } = await import("../apps/obsidian/src/ai/chat.js");
+const { sendState } = await import("../packages/widgetarium/src/studio/assistant/composer.js");
 const { buildsIn, startIn } = await import("../apps/obsidian/src/ai/builds.js");
 
 let failed = 0;
@@ -385,7 +388,7 @@ check(
 
 const BIN = "node /v/.widgetarium/bin/widgets.mjs";
 const FOLDER = "/v/.widgetarium/widgets/@mine/habit-streak";
-const callOf = (ref: string, name: string, input: Held, answer: Partial<KeptCall> = {}): KeptCall => ({
+const callOf = (ref: string, name: string, input: Held, answer: Partial<AssistantCall> = {}): AssistantCall => ({
 	ref,
 	name,
 	input,
@@ -543,6 +546,8 @@ const many = [
 	{ name: "Grep" },
 	{ name: "WebFetch" },
 ];
+const glyphsOf = (calls: readonly { readonly name: string }[], most: number): string[] =>
+	firstGlyphsOf(calls.map(glyphOf), most);
 check("the marks are one per kind, not one per call", glyphsOf(many, 10), [
 	"terminal",
 	"folder",
@@ -551,15 +556,7 @@ check("the marks are one per kind, not one per call", glyphsOf(many, 10), [
 	"link",
 ]);
 check("no more marks are drawn than there is room for", glyphsOf(many, 2), ["terminal", "folder"]);
-check(
-	"the failures are counted",
-	failuresIn([
-		{ ref: "", answered: true, failed: true },
-		{ ref: "", answered: true, failed: false },
-		{ ref: "", answered: true, failed: true },
-	]),
-	2,
-);
+check("the failures are counted", failuresIn([{ failed: true }, { failed: false }, { failed: true }]), 2);
 
 check(
 	"a host that renders markdown is used for it",
@@ -687,22 +684,22 @@ check(
 	false,
 );
 
-const RENDERING_HOST = { can: { renderMarkdown: true }, ui: { renderMarkdown: () => () => {} } };
+const RENDERS_MARKDOWN = (): (() => void) => () => {};
 const drawn = (props: SaidProps): string => renderToStaticMarkup(createElement(Said, props));
 
-const arriving = drawn({ text: "Placed the strip.\n\nNow the ta", host: RENDERING_HOST, live: true });
+const arriving = drawn({ text: "Placed the strip.\n\nNow the ta", render: RENDERS_MARKDOWN, live: true });
 check(
 	"while a turn arrives, the finished blocks are handed to the renderer",
 	arriving.includes("Placed the strip."),
 	false,
 );
 check("and the block still being written is shown as text meanwhile", arriving.includes("Now the ta"), true);
-check("the tail carries its own class, so it can be styled to match", arriving.includes("wg-ai-tail"), true);
+check("the tail carries its own class, so it can be styled to match", arriving.includes("wg-studio-ai-tail"), true);
 
-const done = drawn({ text: "Placed the strip.\n\nAnd the tabs.", host: RENDERING_HOST, live: false });
-check("a finished turn keeps no tail at all", done.includes("wg-ai-tail"), false);
+const done = drawn({ text: "Placed the strip.\n\nAnd the tabs.", render: RENDERS_MARKDOWN, live: false });
+check("a finished turn keeps no tail at all", done.includes("wg-studio-ai-tail"), false);
 
-const noHost = drawn({ text: "Placed the strip.", host: null, live: false });
+const noHost = drawn({ text: "Placed the strip.", render: null, live: false });
 check("without a host the turn is plain text, never markup", noHost.includes("Placed the strip."), true);
 
 const turns: StreamPart[] = [];
@@ -1294,8 +1291,15 @@ const session = createSession({
 	runner: sessionRunner,
 	briefNow: async () => ({ brief: "BRIEF", helpers: null }),
 });
+const nextTick = (): Promise<void> => new Promise((tick) => setTimeout(tick, 0));
+const RUN_TICKS = 500;
+async function runOver(running: { now(): { readonly busy: boolean } }): Promise<void> {
+	for (let tick = 0; tick < RUN_TICKS && running.now().busy; tick += 1) await nextTick();
+	await nextTick();
+}
 
 await session.send("build me a board");
+await runOver(session);
 check(
 	"a turn was kept for the person and one for the agent",
 	session.now().turns.map((turn) => turn.role),
@@ -1311,6 +1315,7 @@ check("the provider's session was captured for the next turn", session.now().ses
 check("the run is over", session.now().busy, false);
 
 await session.send("and another");
+await runOver(session);
 check("a second exchange is appended", session.now().turns.length, 4);
 
 const continuing = createAiSettings({ read: async () => ({ ai: { provider: "opencode" } }), write: async () => {} });
@@ -1321,8 +1326,10 @@ const opencodeSession = createSession({
 	briefNow: async () => ({ brief: "BRIEF", helpers: null }),
 });
 await opencodeSession.send("first");
+await runOver(opencodeSession);
 check("a CLI that names no session is still marked as resumable", opencodeSession.now().session, "last");
 await opencodeSession.send("second");
+await runOver(opencodeSession);
 const secondArgv = at(spawnedWith, spawnedWith.length - 1).argv;
 check("the second turn continues the same conversation", secondArgv.includes("--continue"), true);
 const firstOpencodeArgv = at(spawnedWith, spawnedWith.length - 2).argv;
@@ -1338,9 +1345,11 @@ check("clearing forgets the conversation", session.now().turns.length, 0);
 check("clearing forgets the provider's session", session.now().session, null);
 
 await session.send("first");
-await session.retry();
+await runOver(session);
+session.retry();
 check("retrying replaces the failed exchange rather than stacking one", session.now().turns.length, 2);
 check("retrying asks the same thing again", at(session.now().turns, 0).text, "first");
+await runOver(session);
 
 let stopHeld: unknown = { ai: { provider: "claude-code" } };
 const stopSettings = createAiSettings({
@@ -1363,8 +1372,16 @@ const stubbornSession = createSession({
 	},
 	briefNow: async () => ({ brief: "BRIEF", helpers: null }),
 });
-const stubbornSent = stubbornSession.send("build me a board");
-await new Promise((settled) => setTimeout(settled, 0));
+await stubbornSession.send("build me a board");
+const refusedWhileBusy = await stubbornSession.send("and this too").then(
+	() => null,
+	(refused: unknown) => (refused instanceof Error ? refused.message : String(refused)),
+);
+check(
+	"a send resolves once the message is taken, though the run goes on; one sent meanwhile is refused and changes nothing",
+	[stubbornSession.now().busy, refusedWhileBusy, stubbornSession.now().turns.map((turn) => turn.text)],
+	[true, STILL_ANSWERING, ["build me a board", ""]],
+);
 stubbornSession.stop();
 check(
 	"stop ends the run at once, though the process has not answered yet",
@@ -1373,11 +1390,31 @@ check(
 );
 stubborn.emit({ text: "still talking after the stop" });
 stubborn.finish({ failure: null });
-await stubbornSent;
+await nextTick();
 check(
 	"nothing a stopped run says afterwards reaches the chat",
 	[at(stubbornSession.now().turns, 1).text, stubbornSession.now().failure],
 	["", "Stopped."],
+);
+const unsaved = createSession({
+	settings: createAiSettings({
+		read: async () => ({ ai: { provider: "claude-code" } }),
+		write: async () => {
+			throw new Error("the disk is full");
+		},
+	}),
+	runner: sessionRunner,
+	briefNow: async () => ({ brief: "BRIEF", helpers: null }),
+});
+const unsavedSend = await unsaved.send("build me a board").then(
+	() => "taken",
+	() => "refused",
+);
+await runOver(unsaved);
+check(
+	"a save that fails after a good run is the run's own failure, never a refused send",
+	[unsavedSend, unsaved.now().busy, at(unsaved.now().turns, 1).text, unsaved.now().failure],
+	["taken", false, "placed one", "The conversation could not be saved: the disk is full"],
 );
 const idleSession = createSession({
 	settings: stopSettings,
@@ -1409,6 +1446,7 @@ const alreadyTalking = createSession({
 const midRun = alreadyTalking.send("mine");
 await alreadyTalking.restore();
 await midRun;
+await runOver(alreadyTalking);
 check(
 	"reading back never lands on top of a conversation already under way",
 	alreadyTalking.now().turns.map((turn) => turn.text),

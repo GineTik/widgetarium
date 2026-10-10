@@ -17,7 +17,6 @@ export class IsInCanvasQuery extends IQuery.output(z.boolean()) {
 	}
 }
 
-// TODO: draw the assistant sidebar
 export class IsAssistantOpenQuery extends IQuery.output(z.boolean()) {
 	constructor(readonly fields: NoFields) {
 		super();

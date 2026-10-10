@@ -5,7 +5,9 @@ import { bindNote } from "../host.js";
 import type { ObsidianHost } from "../host.js";
 import { WIDGETS_DIR } from "@widgetarium/core/paths.js";
 import { BLOCK_LANGUAGE, FENCE } from "@widgetarium/core/block-writer.js";
-import type { WidgetDefinition, WidgetLookup } from "@widgetarium/core/registry.js";
+import type { WidgetLookup } from "@widgetarium/core/registry.js";
+import { TASK_PROGRESS } from "@widgetarium/core/engine/assistant-cards.js";
+import type { ProgressWidget } from "@widgetarium/core/engine/assistant-port.js";
 import type { createWantedWidgets } from "@widgetarium/core/engine/widgets-wanted.js";
 import { createAiSettings } from "./settings.js";
 import type { AiSettings, AiState } from "./settings.js";
@@ -24,7 +26,6 @@ import { whereCommandIs } from "./path.js";
 import type { Environment } from "./path.js";
 import { HTTP } from "./providers.js";
 import type { Provider } from "./providers.js";
-import { TASK_PROGRESS } from "./builds.js";
 import { createSpecPort } from "./spec-port.js";
 import type { SpecPort } from "./spec-port.js";
 import { reportsBasePath } from "../desktop-adapter.js";
@@ -51,25 +52,19 @@ export interface OpenNote extends BriefNote {
 	readonly hasBoard: boolean;
 }
 
-export interface ProgressWidget {
-	readonly definition: WidgetDefinition | null;
-	readonly refusal: string | null;
-}
-
 export interface AssistantState extends AiState, Readiness {
 	readonly note: OpenNote | null;
 	readonly host: ObsidianHost;
-	readonly progress: ProgressWidget;
-	readonly specs: SpecPort;
-	readonly openDesign: (app: string) => void;
-	readonly jobs: Jobs;
 }
 
 export interface Assistant {
 	readonly session: Session;
 	readonly jobs: Jobs;
 	readonly settings: AiSettings;
+	readonly specs: SpecPort;
 	state(): Promise<AssistantState>;
+	progress(): ProgressWidget;
+	openDesign(app: string): Promise<void>;
 	restore(): Promise<void>;
 	forgetContext(): Promise<void>;
 	openProviders(): void;
@@ -131,7 +126,6 @@ export function createAssistant(app: App, plugin: AssistantPlugin): Assistant {
 		},
 	};
 	const hostFor = hostBinderFor(plugin);
-	const specs = createSpecPort(app);
 
 	async function state(): Promise<AssistantState> {
 		const held = await settings.state();
@@ -141,10 +135,6 @@ export function createAssistant(app: App, plugin: AssistantPlugin): Assistant {
 			...(await readinessOf(held.provider, doors)),
 			note,
 			host: hostFor(note?.path ?? ""),
-			progress: progressWidgetOf(plugin),
-			specs,
-			openDesign: (name: string) => void openDesign(app, name),
-			jobs,
 		};
 	}
 
@@ -154,7 +144,10 @@ export function createAssistant(app: App, plugin: AssistantPlugin): Assistant {
 		session,
 		jobs,
 		settings,
+		specs: createSpecPort(app),
 		state,
+		progress: () => progressWidgetOf(plugin),
+		openDesign: (name) => openDesign(app, name),
 		restore: () => session.restore(),
 		forgetContext: () => session.clear(),
 		openProviders: providerWindow.open,

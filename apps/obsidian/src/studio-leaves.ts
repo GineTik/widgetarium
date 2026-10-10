@@ -1,4 +1,5 @@
 import type { App, TFile, ViewState, WorkspaceLeaf } from "obsidian";
+import type { AssistantPort } from "@widgetarium/core/engine/assistant-port.js";
 import { registerPacks } from "@widgetarium/core/engine/packs.js";
 import { studioPack } from "widgetarium/studio";
 import type WidgetariumPlugin from "./main.js";
@@ -22,13 +23,14 @@ interface LeafSwitcher {
 const MARKDOWN_VIEW_TYPE = "markdown";
 const AS_MARKDOWN = "asMarkdown";
 
-export function registerStudioView(plugin: WidgetariumPlugin, projects: AppProjects): void {
+export function registerStudioView(plugin: WidgetariumPlugin, projects: AppProjects, assistant: AssistantPort): void {
 	registerPacks(studioPack);
 	const choices = createMarkdownChoices();
 	const place: StudioPlace = {
 		app: plugin.app,
 		projects,
 		viewType: STUDIO_VIEW_TYPE,
+		assistant,
 		hostOf: (notePath) => bindNote(plugin.host, notePath),
 		openAsMarkdown: (leaf, file) => {
 			choices.choose(leaf, file.path);

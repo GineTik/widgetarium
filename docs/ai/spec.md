@@ -145,13 +145,13 @@ A "no" is a decision: nothing on the board may offer it, and no command for it i
 
 ## After the yes
 
-The person presses Build it (the next message says "Build it"), or unticks features first. Read
-the spec again, build only what is kept, and say each stage as you finish it:
+The person presses Build it (the next message says "Build it: <app>"), or unticks features first.
+Read that app's spec again, build only what is kept, and say each stage as you finish it:
 
 ```bash
 node {tool} stage Vocabulary data --said "Words and reviews, 54 notes to try it with"
 node {tool} design Vocabulary
-# here you stop, until the next message is "Approve design"
+# here you stop, until the next message is "Approve design: Vocabulary"
 node {tool} stage Vocabulary design --said "Words beside the open word, Review as one card"
 node {tool} stage Vocabulary catalogue --said "List and Record installed, Search was here"
 node {tool} stage Vocabulary widgets --said "Flashcard written"

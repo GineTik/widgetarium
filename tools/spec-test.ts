@@ -30,17 +30,17 @@ const { readSpec, withFeatureToggled, withChoicePicked, specPathOf, BUILD_STAGES
 const { specAppIn, lastSpecAppIn, buildRunIn, buildStartedIn, installsIn } =
 	await import("../apps/obsidian/src/ai/spec-calls.js");
 const { buildsIn } = await import("../apps/obsidian/src/ai/builds.js");
-const { PinnedRun } = await import("../apps/obsidian/src/ai/pinned-run.js");
+const { PinnedRun, scrollToCard } = await import("../packages/widgetarium/src/studio/assistant/cards/pinned-run.js");
 const { argumentsIn } = await import("../apps/obsidian/src/ai/tools.js");
 const { specOfApp, stageOfApp } = await import("../apps/obsidian/src/ai/spec-command.js");
-const { SpecCard } = await import("../apps/obsidian/src/ai/spec-card.js");
-const { BuildRunCard } = await import("../apps/obsidian/src/ai/build-run-card.js");
+const { SpecCard } = await import("../packages/widgetarium/src/studio/assistant/cards/spec-card.js");
+const { BuildRunCard } = await import("../packages/widgetarium/src/studio/assistant/cards/build-run-card.js");
 const { briefFor } = await import("../apps/obsidian/src/ai/brief.js");
-const { noteNameOf } = await import("../apps/obsidian/src/ai/target-note.js");
+const { noteNameOf } = await import("../packages/widgetarium/src/studio/assistant/target-note.js");
 const { HANDBOOK } = await import("../apps/obsidian/src/ai/agent-files.js");
-import type { KeptCall } from "../apps/obsidian/src/ai/transcript.js";
-import type { SpecPort } from "../apps/obsidian/src/ai/spec-port.js";
-import type { Jobs } from "../apps/obsidian/src/ai/job-runner.js";
+import type { AssistantCall } from "../packages/core/src/engine/assistant-port.js";
+import type { AppFiles, JobsPort } from "../packages/widgetarium/src/studio/assistant/cards/card-ports.js";
+import type { Report } from "../packages/widgetarium/src/studio/assistant/failure-line.js";
 import type { Job } from "../packages/core/src/app-jobs.js";
 
 let failed = 0;
@@ -208,7 +208,7 @@ check(
 );
 
 const BIN = "node /v/.widgetarium/bin/widgets.mjs";
-const callOf = (ref: string, command: string, answer: Partial<KeptCall> = {}): KeptCall => ({
+const callOf = (ref: string, command: string, answer: Partial<AssistantCall> = {}): AssistantCall => ({
 	ref,
 	name: "Bash",
 	input: { command },
@@ -246,7 +246,7 @@ check(
 
 const data = callOf("d", `${BIN} stage Vocabulary data --said "Words and reviews, 54 notes"`);
 const design = callOf("e", `${BIN} stage Vocabulary design --said "Words beside the open word"`);
-const statusesOf = (calls: KeptCall[], isRunning: boolean): string[] =>
+const statusesOf = (calls: AssistantCall[], isRunning: boolean): string[] =>
 	buildRunIn(calls, isRunning)?.rows.map((row) => row.status) ?? [];
 check("a turn with no stage call has no build card", buildRunIn([callOf("a", `${BIN} spec Vocabulary`)], true), null);
 const builtTurns = [
@@ -261,6 +261,16 @@ check(
 	["active", "pending", "pending", "pending", "pending"],
 );
 check("and only that turn: one answering anything else has none", buildStartedIn(builtTurns, 1, "Build it"), null);
+const namedTurns = [
+	...builtTurns.slice(0, 2),
+	{ role: "user" as const, text: "Build it: Garden", calls: [] },
+	{ role: "agent" as const, text: "", calls: [] },
+];
+check(
+	"a Build it naming its app builds that app, not the last spec shown",
+	buildStartedIn(namedTurns, 3, "Build it"),
+	"Garden",
+);
 const { buildSpanOf } = await import("../apps/obsidian/src/ai/spec-calls.js");
 const approvedTurns = [
 	...builtTurns,
@@ -344,13 +354,13 @@ check(
 const written: string[] = [];
 let text = SPEC;
 const watchers = new Set<() => void>();
-const port: SpecPort = {
-	read: async (path) => (path === specPathOf("Vocabulary") ? text : null),
-	watch: (_path, onChange) => {
+const port: AppFiles = {
+	readAppFile: async (path) => (path === specPathOf("Vocabulary") ? text : null),
+	onAppFile: (_path, onChange) => {
 		watchers.add(onChange);
 		return () => watchers.delete(onChange);
 	},
-	change: async (_path, edit) => {
+	changeAppFile: async (_path, edit) => {
 		text = edit(text);
 		written.push(text);
 		watchers.forEach((onChange) => onChange());
@@ -363,7 +373,7 @@ const drawCard = (isAnswerable: boolean): void =>
 	render(
 		h(SpecCard, {
 			app: "Vocabulary",
-			port,
+			files: port,
 			isAnswerable,
 			onBuild: () => asked.push("build"),
 			onChange: () => asked.push("change"),
@@ -372,19 +382,20 @@ const drawCard = (isAnswerable: boolean): void =>
 	);
 drawCard(true);
 await settle();
-const names = (): string[] => [...host.querySelectorAll(".wg-ai-spec-name")].map((node) => node.textContent ?? "");
+const names = (): string[] =>
+	[...host.querySelectorAll(".wg-studio-ai-spec-name")].map((node) => node.textContent ?? "");
 const buttons = (): string[] =>
-	[...host.querySelectorAll(".wg-ai-spec-buttons button")].map((node) => node.textContent ?? "");
+	[...host.querySelectorAll(".wg-studio-ai-spec-buttons button")].map((node) => node.textContent ?? "");
 check(
 	"the card shows the app and its job",
-	host.querySelector(".wg-ai-spec-title")?.textContent,
+	host.querySelector(".wg-studio-ai-spec-title")?.textContent,
 	"VocabularyKeep the words you meet.",
 );
 check("every feature is a row with a check", host.querySelectorAll("button.wg-kit-row .wg-kit-check").length, 2);
 check("a feature the agent marked new says so", host.querySelector(".wg-kit-row .wg-kit-pill")?.textContent, "new");
 check(
 	"every kind of record follows the features, saying what it cannot do",
-	[names()[3], host.querySelector(".wg-ai-spec-record .wg-ai-spec-sub")?.textContent],
+	[names()[3], host.querySelector(".wg-studio-ai-spec-record .wg-studio-ai-spec-sub")?.textContent],
 	["Word", "Cannot delete"],
 );
 check("then a choice and the details", names().slice(4), ["Review", "Details"]);
@@ -392,14 +403,14 @@ check(
 	"the products looked at stand first, each with what it gave and a link to the page read",
 	[
 		names()[0],
-		host.querySelector(".wg-ai-spec-link")?.getAttribute("href"),
-		host.querySelector(".wg-ai-spec-link")?.getAttribute("target"),
+		host.querySelector(".wg-studio-ai-spec-link")?.getAttribute("href"),
+		host.querySelector(".wg-studio-ai-spec-link")?.getAttribute("target"),
 	],
 	["Anki", "https://apps.ankiweb.net", "_blank"],
 );
 check(
 	"every section of the card folds under its heading: references, features, records and choices",
-	[...host.querySelectorAll(".wg-ai-spec-label.is-fold")].map((label) => label.textContent),
+	[...host.querySelectorAll(".wg-studio-ai-spec-label.is-fold")].map((label) => label.textContent),
 	["References", "Features", "What you can do with them", "I chose for you"],
 );
 check(
@@ -407,28 +418,28 @@ check(
 	readSpec(SPEC.replace("    url: https://apps.ankiweb.net\n", "")).refusal?.startsWith("research.0.url"),
 	true,
 );
-host.querySelector<HTMLElement>(".wg-ai-spec-reference .wg-kit-check")?.click();
+host.querySelector<HTMLElement>(".wg-studio-ai-spec-reference .wg-kit-check")?.click();
 await settle();
 check(
 	"unticking a reference writes it through the one writer, and the row says it is not followed",
 	[
 		readSpec(written.at(-1) ?? "").spec?.research[0]?.kept,
-		host.querySelector(".wg-ai-spec-reference")?.classList.contains("is-off"),
+		host.querySelector(".wg-studio-ai-spec-reference")?.classList.contains("is-off"),
 	],
 	[false, true],
 );
-host.querySelector<HTMLElement>(".wg-ai-spec-reference .wg-kit-check")?.click();
+host.querySelector<HTMLElement>(".wg-studio-ai-spec-reference .wg-kit-check")?.click();
 await settle();
-host.querySelector<HTMLElement>(".wg-ai-spec-label.is-fold")?.click();
+host.querySelector<HTMLElement>(".wg-studio-ai-spec-label.is-fold")?.click();
 await settle();
 check(
 	"the products fold away under their heading, and come back",
-	host.querySelector(".wg-ai-spec-group .wg-ai-fold")?.classList.contains("is-shut"),
+	host.querySelector(".wg-studio-ai-spec-group .wg-studio-ai-fold")?.classList.contains("is-shut"),
 	true,
 );
-host.querySelector<HTMLElement>(".wg-ai-spec-label.is-fold")?.click();
+host.querySelector<HTMLElement>(".wg-studio-ai-spec-label.is-fold")?.click();
 await settle();
-const verbButtons = (): HTMLElement[] => [...host.querySelectorAll<HTMLElement>(".wg-ai-spec-verbs button")];
+const verbButtons = (): HTMLElement[] => [...host.querySelectorAll<HTMLElement>(".wg-studio-ai-spec-verbs button")];
 check(
 	"each verb is a button the person presses, pressed when the spec says yes",
 	verbButtons().map((button) => `${button.textContent}:${button.getAttribute("aria-pressed")}`),
@@ -455,7 +466,7 @@ check(
 check("the row shows it is left out", host.querySelector("button.wg-kit-row")?.classList.contains("is-off"), true);
 check("and Build says how many features it will build", buttons()[0], "Build 1 features");
 
-host.querySelectorAll<HTMLElement>("button.wg-kit-row .wg-ai-spec-name")[1]?.click();
+host.querySelectorAll<HTMLElement>("button.wg-kit-row .wg-studio-ai-spec-name")[1]?.click();
 await settle();
 check(
 	"pressing anywhere on a feature row toggles it, not only the box",
@@ -467,23 +478,23 @@ check(
 	host.querySelectorAll("button.wg-kit-row[aria-pressed]").length,
 	2,
 );
-host.querySelectorAll<HTMLElement>("button.wg-kit-row .wg-ai-spec-name")[1]?.click();
+host.querySelectorAll<HTMLElement>("button.wg-kit-row .wg-studio-ai-spec-name")[1]?.click();
 await settle();
-host.querySelectorAll<HTMLButtonElement>(".wg-ai-spec-buttons button")[0]?.click();
-host.querySelectorAll<HTMLButtonElement>(".wg-ai-spec-buttons button")[1]?.click();
+host.querySelectorAll<HTMLButtonElement>(".wg-studio-ai-spec-buttons button")[0]?.click();
+host.querySelectorAll<HTMLButtonElement>(".wg-studio-ai-spec-buttons button")[1]?.click();
 check("Build and Change answer the agent", asked, ["build", "change"]);
 
 host.querySelector<HTMLButtonElement>(".wg-kit-row.is-details")?.click();
 await settle();
 check(
 	"Details opens the pages, what is left out and the checks",
-	[...host.querySelectorAll(".wg-ai-spec-details .wg-ai-spec-label")].map((label) => label.textContent),
+	[...host.querySelectorAll(".wg-studio-ai-spec-details .wg-studio-ai-spec-label")].map((label) => label.textContent),
 	["Pages", "Not included", "Done when"],
 );
 
 drawCard(false);
 await settle();
-check("a card from an earlier turn offers no answers", host.querySelectorAll(".wg-ai-spec-buttons").length, 0);
+check("a card from an earlier turn offers no answers", host.querySelectorAll(".wg-studio-ai-spec-buttons").length, 0);
 check(
 	"and its features can no longer be ticked, drawn as they were",
 	[...host.querySelectorAll<HTMLButtonElement>("button.wg-kit-row[aria-pressed]")].map((row) => row.disabled),
@@ -499,16 +510,16 @@ watchers.forEach((onChange) => onChange());
 await settle();
 check(
 	"a spec that stopped fitting says why instead of drawing",
-	host.querySelector(".wg-ai-spec-refused")?.textContent?.includes("front matter"),
+	host.querySelector(".wg-studio-ai-spec-refused")?.textContent?.includes("front matter"),
 	true,
 );
 
 text = SPEC;
 const slowWrites: (() => void)[] = [];
-const slowPort: SpecPort = {
-	read: async () => text,
-	watch: () => () => {},
-	change: (_path, edit) =>
+const slowPort: AppFiles = {
+	readAppFile: async () => text,
+	onAppFile: () => () => {},
+	changeAppFile: (_path, edit) =>
 		new Promise((done, refuse) => {
 			slowWrites.push(() => {
 				if (text === "refuse") return refuse(new Error("the disk said no"));
@@ -519,7 +530,7 @@ const slowPort: SpecPort = {
 };
 const drawSlow = (): void =>
 	render(
-		h(SpecCard, { app: "Vocabulary", port: slowPort, isAnswerable: true, onBuild: () => {}, onChange: () => {} }),
+		h(SpecCard, { app: "Vocabulary", files: slowPort, isAnswerable: true, onBuild: () => {}, onChange: () => {} }),
 		host,
 	);
 drawSlow();
@@ -547,7 +558,7 @@ check(
 	host.querySelector("button.wg-kit-row")?.classList.contains("is-off"),
 	true,
 );
-check("and says why", host.querySelector(".wg-ai-spec-refused")?.textContent, "the disk said no");
+check("and says why", host.querySelector(".wg-studio-ai-spec-refused")?.textContent, "the disk said no");
 
 text = SPEC;
 const installed = callOf("i", `${BIN} install @default/list`);
@@ -555,63 +566,65 @@ const writing = callOf("w", `${BIN} start @you/flashcard --title Flashcard`);
 const runCalls = [data, installed, writing];
 const liveRun = buildRunIn(runCalls, true) ?? { key: "", app: "", rows: [] };
 const liveBuilds = buildsIn(runCalls, true);
-const jobsHolding = (held: readonly Job[]): Jobs => ({
-	watch: () => () => undefined,
-	version: () => 0,
-	apps: () => (held.length > 0 ? ["Vocabulary"] : []),
-	jobsOf: () => [...held],
-	liveOf: () => null,
-	start: async () => undefined,
-	stop: async () => undefined,
-	note: async () => undefined,
-	answer: async () => undefined,
-	stopAll: async () => undefined,
-	close: () => undefined,
-});
-render(
-	h(BuildRunCard, { run: liveRun, port, builds: liveBuilds, installs: installsIn(runCalls), jobs: jobsHolding([]) }),
-	host,
-);
+const jobsHolding = (held: readonly Job[]): JobsPort => {
+	const apps = held.length > 0 ? [{ app: "Vocabulary", jobs: held }] : [];
+	return {
+		jobs: () => apps,
+		onJobs: () => () => undefined,
+		startJob: async () => undefined,
+		stopJob: async () => undefined,
+	};
+};
+const reportNothing: Report = async (running) => {
+	await running;
+	return true;
+};
+const runCard = { run: liveRun, builds: liveBuilds, installs: installsIn(runCalls), isRunning: false };
+render(h(BuildRunCard, { card: runCard, files: port, jobs: jobsHolding([]), report: reportNothing }), host);
 await settle();
-check("the build card names the app", host.querySelector(".wg-ai-spec-title h3")?.textContent, "Building Vocabulary");
+check(
+	"the build card names the app",
+	host.querySelector(".wg-studio-ai-spec-title h3")?.textContent,
+	"Building Vocabulary",
+);
 check(
 	"and counts the features still kept",
-	host.querySelector(".wg-ai-spec-title span")?.textContent,
+	host.querySelector(".wg-studio-ai-spec-title span")?.textContent,
 	"2 features · 1 pages",
 );
 check(
 	"a done stage draws the kit's done circle",
-	host.querySelectorAll(".wg-kit-row:not(.is-inner) .wg-ai-stage-ring.is-done").length,
+	host.querySelectorAll(".wg-kit-row:not(.is-inner) .wg-studio-ai-stage-ring.is-done").length,
 	2,
 );
 check(
 	"a widget installed from the catalogue and one being written both stand under design, where they happen",
-	[...host.querySelectorAll(".wg-kit-row.is-inner .wg-ai-spec-name")].map((node) => node.textContent),
+	[...host.querySelectorAll(".wg-kit-row.is-inner .wg-studio-ai-spec-name")].map((node) => node.textContent),
 	["@default/list", "Flashcard"],
 );
 check(
 	"and the widget being written says the step it is on",
-	host.querySelectorAll(".wg-kit-row.is-inner .wg-ai-spec-sub")[1]?.textContent,
+	host.querySelectorAll(".wg-kit-row.is-inner .wg-studio-ai-spec-sub")[1]?.textContent,
 	"Writing the widget",
 );
 check(
 	"each widget stands right under the stage it belongs to",
-	[...host.querySelectorAll(".wg-kit-row .wg-ai-spec-name")].map((node) => node.textContent),
+	[...host.querySelectorAll(".wg-kit-row .wg-studio-ai-spec-name")].map((node) => node.textContent),
 	["Research", "Data", "Design", "@default/list", "Flashcard", "Verbs", "Widgets ready", "Pages"],
 );
 check(
 	"the stages are the design-first flow: design writes the widgets, then verbs, then pages",
-	[...host.querySelectorAll(".wg-kit-row:not(.is-inner) .wg-ai-spec-name")].map((node) => node.textContent),
+	[...host.querySelectorAll(".wg-kit-row:not(.is-inner) .wg-studio-ai-spec-name")].map((node) => node.textContent),
 	["Research", "Data", "Design", "Verbs", "Widgets ready", "Pages"],
 );
 check(
 	"the stage in progress draws a turning one",
-	host.querySelectorAll(".wg-kit-row:not(.is-inner) .wg-ai-stage-ring.is-active").length,
+	host.querySelectorAll(".wg-kit-row:not(.is-inner) .wg-studio-ai-stage-ring.is-active").length,
 	1,
 );
 const stageButton = (name: string): HTMLElement | undefined =>
 	[...host.querySelectorAll<HTMLElement>("button.wg-kit-row")].find(
-		(node) => node.querySelector(".wg-ai-spec-name")?.textContent === name,
+		(node) => node.querySelector(".wg-studio-ai-spec-name")?.textContent === name,
 	);
 check(
 	"a stage with widgets under it is a button that folds them, open at first",
@@ -622,10 +635,12 @@ stageButton("Design")?.click();
 await settle();
 check(
 	"pressing it shuts that stage's list and only that one",
-	[...host.querySelectorAll(".wg-ai-stage-fold > .wg-ai-fold")].map((fold) => fold.classList.contains("is-shut")),
+	[...host.querySelectorAll(".wg-studio-ai-stage-fold > .wg-studio-ai-fold")].map((fold) =>
+		fold.classList.contains("is-shut"),
+	),
 	[true],
 );
-const { buildStatusOf } = await import("../apps/obsidian/src/ai/build-stages.js");
+const { buildStatusOf } = await import("../packages/widgetarium/src/studio/assistant/cards/build-stages.js");
 const finishedElsewhere = {
 	key: "b",
 	widget: "@you/x",
@@ -659,7 +674,7 @@ check(
 	),
 	"failed",
 );
-const { latestPerWidget } = await import("../apps/obsidian/src/ai/build-stages.js");
+const { latestPerWidget } = await import("../packages/widgetarium/src/studio/assistant/cards/build-stages.js");
 check(
 	"a widget started three times stands once, as its latest start",
 	latestPerWidget([
@@ -682,23 +697,33 @@ const scrolledTo: string[] = [];
 		planned({ id: "home-implement", page: "Home", phase: "implement", status: "paused", after: ["home-review"] }),
 	];
 	const jobsHost = window.document.createElement("div");
-	render(h(BuildRunCard, { run: liveRun, port, builds: liveBuilds, installs: [], jobs: jobsHolding(held) }), jobsHost);
+	render(
+		h(BuildRunCard, {
+			card: { ...runCard, installs: [] },
+			files: port,
+			jobs: jobsHolding(held),
+			report: reportNothing,
+		}),
+		jobsHost,
+	);
 	await settle();
 	check(
 		"once the build is planned as jobs, the card's stages are the jobs' stages",
-		[...jobsHost.querySelectorAll(".wg-kit-row:not(.is-inner) .wg-ai-spec-name")].map((node) => node.textContent),
+		[...jobsHost.querySelectorAll(".wg-kit-row:not(.is-inner) .wg-studio-ai-spec-name")].map(
+			(node) => node.textContent,
+		),
 		["Research", "Preparing", "Canvas", "Connecting logic"],
 	);
 	check(
 		"the canvas stage says what is being worked on now",
-		jobsHost.querySelectorAll(".wg-kit-row:not(.is-inner) .wg-ai-spec-sub")[2]?.textContent,
+		jobsHost.querySelectorAll(".wg-kit-row:not(.is-inner) .wg-studio-ai-spec-sub")[2]?.textContent,
 		"Reviewing the Home page · Designing the Cards page",
 	);
 	check(
 		"a job waiting on another says which, and offers no press",
 		[...jobsHost.querySelectorAll(".wg-kit-row.is-inner")]
-			.filter((row) => row.querySelector(".wg-ai-spec-name")?.textContent === "design Deck")
-			.map((row) => [row.querySelector(".wg-ai-spec-sub")?.textContent, row.querySelector("button")]),
+			.filter((row) => row.querySelector(".wg-studio-ai-spec-name")?.textContent === "design Deck")
+			.map((row) => [row.querySelector(".wg-studio-ai-spec-sub")?.textContent, row.querySelector("button")]),
 		[["After design Cards", null]],
 	);
 	check(
@@ -711,31 +736,47 @@ const scrolledTo: string[] = [];
 Object.defineProperty(window.HTMLElement.prototype, "scrollIntoView", {
 	configurable: true,
 	value(this: HTMLElement) {
-		scrolledTo.push(this.dataset["buildKey"] ?? "");
+		const key = this.dataset["buildKey"] ?? "";
+		scrolledTo.push(host.contains(this) ? key : `outside the chat ${key}`);
 	},
 });
+const showInHost = (key: string): void => scrollToCard(host, key);
+const cardOfAnotherChat = document.createElement("div");
+cardOfAnotherChat.dataset["buildKey"] = liveRun.key;
+document.body.prepend(cardOfAnotherChat);
 render(
 	h("div", {}, [
-		h(BuildRunCard, { key: "card", run: liveRun, port, builds: liveBuilds, installs: [], jobs: jobsHolding([]) }),
-		h(PinnedRun, { key: "pinned", run: liveRun, builds: liveBuilds }),
+		h(BuildRunCard, {
+			key: "card",
+			card: { ...runCard, installs: [] },
+			files: port,
+			jobs: jobsHolding([]),
+			report: reportNothing,
+		}),
+		h(PinnedRun, { key: "pinned", run: liveRun, builds: liveBuilds, showCard: showInHost }),
 	]),
 	host,
 );
 await settle();
-host.querySelector<HTMLElement>(".wg-ai-pinned-run")?.click();
-check("pressing the pinned bar takes the person to its build card", scrolledTo, [liveRun.key]);
-render(h(PinnedRun, { run: liveRun, builds: liveBuilds }), host);
+host.querySelector<HTMLElement>(".wg-studio-ai-pinned-run")?.click();
+check(
+	"pressing the pinned bar takes the person to its build card, never to another chat's card of the same build",
+	scrolledTo,
+	[liveRun.key],
+);
+cardOfAnotherChat.remove();
+render(h(PinnedRun, { run: liveRun, builds: liveBuilds, showCard: showInHost }), host);
 await settle();
 check(
 	"the pinned bar says where the build is, and what it is doing right now",
-	[...host.querySelectorAll(".wg-ai-spec-text > span")].map((node) => node.textContent),
+	[...host.querySelectorAll(".wg-studio-ai-spec-text > span")].map((node) => node.textContent),
 	["Vocabulary · 2 of 5", "Design · Flashcard · Writing the widget"],
 );
 render(null, host);
 
 const { readDesign, designPathOf } = await import("../packages/core/src/app-design.ts");
 const { lastDesignAppIn } = await import("../apps/obsidian/src/ai/spec-calls.js");
-const { DesignCard } = await import("../apps/obsidian/src/ai/design-card.js");
+const { DesignCard } = await import("../packages/widgetarium/src/studio/assistant/cards/design-card.js");
 const DESIGN = JSON.stringify({
 	app: "Vocabulary",
 	screens: [
@@ -1025,15 +1066,15 @@ check(
 	"Vocabulary",
 );
 const designAsked: string[] = [];
-const designPort: SpecPort = {
-	read: async (path) => (path === designPathOf("Vocabulary") ? DESIGN : null),
-	watch: () => () => undefined,
-	change: async () => undefined,
+const designPort: AppFiles = {
+	readAppFile: async (path) => (path === designPathOf("Vocabulary") ? DESIGN : null),
+	onAppFile: () => () => undefined,
+	changeAppFile: async () => undefined,
 };
 const designCard = (isAnswerable: boolean) =>
 	h(DesignCard, {
 		app: "Vocabulary",
-		port: designPort,
+		files: designPort,
 		isAnswerable,
 		onOpen: () => designAsked.push("open"),
 		onApprove: () => designAsked.push("approve"),
@@ -1044,19 +1085,19 @@ await settle();
 check(
 	"the design card is one press that opens the canvas, naming its screens",
 	[
-		host.querySelector(".wg-ai-design .wg-ai-spec-sub")?.textContent,
-		host.querySelectorAll(".wg-ai-design-frame").length,
+		host.querySelector(".wg-studio-ai-design .wg-studio-ai-spec-sub")?.textContent,
+		host.querySelectorAll(".wg-studio-ai-design-frame").length,
 	],
 	["2 screens · Words, Review", 2],
 );
-host.querySelector<HTMLElement>(".wg-ai-design")?.click();
-host.querySelectorAll<HTMLElement>(".wg-ai-spec-buttons button").forEach((button) => button.click());
+host.querySelector<HTMLElement>(".wg-studio-ai-design")?.click();
+host.querySelectorAll<HTMLElement>(".wg-studio-ai-spec-buttons button").forEach((button) => button.click());
 check("and its two answers approve or change it", designAsked, ["open", "approve", "change"]);
 render(designCard(false), host);
 await settle();
 check(
 	"a design from an earlier turn opens but offers no answers",
-	host.querySelectorAll(".wg-ai-spec-buttons").length,
+	host.querySelectorAll(".wg-studio-ai-spec-buttons").length,
 	0,
 );
 render(null, host);

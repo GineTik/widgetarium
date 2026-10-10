@@ -1,25 +1,7 @@
 import { isObject } from "@widgetarium/core/engine/is-object.js";
 import { argumentsIn, clipLine, ourCallOf } from "./tools.js";
-import type { KeptCall } from "./transcript.js";
-
-export type StepStatus = "pending" | "failed" | "active" | "done";
-
-export interface BuildStep {
-	readonly label: string;
-	readonly status: StepStatus;
-	readonly hint: string;
-}
-
-export interface Build {
-	readonly key: string;
-	readonly widget: string;
-	readonly name: string;
-	readonly title: string;
-	readonly steps: BuildStep[];
-	readonly isLive: boolean;
-	readonly startedAt: number;
-	readonly endedAt: number;
-}
+import type { AssistantCall } from "@widgetarium/core/engine/assistant-port.js";
+import type { Build, BuildStep, StepStatus } from "@widgetarium/core/engine/assistant-cards.js";
 
 export interface BuildStart {
 	readonly id: string;
@@ -28,7 +10,7 @@ export interface BuildStart {
 
 interface OwnedCall {
 	readonly step: number;
-	readonly call: KeptCall;
+	readonly call: AssistantCall;
 }
 
 interface StartedBuild extends BuildStart {
@@ -39,11 +21,9 @@ interface StartedBuild extends BuildStart {
 
 interface Step {
 	readonly label: string;
-	readonly owns: (call: KeptCall, id: string) => boolean;
-	readonly hint: (call: KeptCall, id: string) => string;
+	readonly owns: (call: AssistantCall, id: string) => boolean;
+	readonly hint: (call: AssistantCall, id: string) => string;
 }
-
-export const TASK_PROGRESS = "@default/task-progress";
 
 const BUILDING = "Building {title}";
 const BUILT = "Built {title}";
@@ -58,7 +38,7 @@ const NOTE_FILE = /\.md$/;
 const SHELL_VARIABLE = /\$(?:\w|\{)/;
 const TITLE_OPTION = /--title\s+(?:"([^"]*)"|'([^']*)'|(\S+))/;
 
-export function buildsIn(calls: readonly KeptCall[] | null | undefined, isRunning: boolean): Build[] {
+export function buildsIn(calls: readonly AssistantCall[] | null | undefined, isRunning: boolean): Build[] {
 	const { started, touchedLast } = startedBuilds(calls ?? []);
 	return started.map((build) =>
 		buildOf(build, {
@@ -68,7 +48,7 @@ export function buildsIn(calls: readonly KeptCall[] | null | undefined, isRunnin
 	);
 }
 
-export function startIn(call: KeptCall): BuildStart | null {
+export function startIn(call: AssistantCall): BuildStart | null {
 	if (ourVerbOf(call) !== "start") return null;
 	const said = ourSaidOf(call);
 	const id = firstWordOf(said);
@@ -76,7 +56,7 @@ export function startIn(call: KeptCall): BuildStart | null {
 	return { id, title: titleIn(said) || titleFromId(id) };
 }
 
-function startedBuilds(calls: readonly KeptCall[]): { started: StartedBuild[]; touchedLast: StartedBuild | null } {
+function startedBuilds(calls: readonly AssistantCall[]): { started: StartedBuild[]; touchedLast: StartedBuild | null } {
 	const started: StartedBuild[] = [];
 	let touchedLast: StartedBuild | null = null;
 	for (const call of calls) {
@@ -91,7 +71,7 @@ function startedBuilds(calls: readonly KeptCall[]): { started: StartedBuild[]; t
 	return { started, touchedLast };
 }
 
-function buildNamedBy(call: KeptCall, started: readonly StartedBuild[]): StartedBuild | null {
+function buildNamedBy(call: AssistantCall, started: readonly StartedBuild[]): StartedBuild | null {
 	for (let at = started.length - 1; at >= 0; at -= 1) {
 		const build = started[at];
 		if (build && namesWidget(call, build.id)) return build;
@@ -99,7 +79,7 @@ function buildNamedBy(call: KeptCall, started: readonly StartedBuild[]): Started
 	return null;
 }
 
-function namesWidget(call: KeptCall, id: string): boolean {
+function namesWidget(call: AssistantCall, id: string): boolean {
 	return writesInto(call, id) || startIn(call)?.id === id || isCheckOf(call, id);
 }
 
@@ -113,7 +93,7 @@ function hasPassedCheckSinceWriting(build: StartedBuild): boolean {
 	return lastWorked?.step === CHECK_STEP && lastWorked.call.answered && !lastWorked.call.failed;
 }
 
-function isCheckOf(call: KeptCall, id: string): boolean {
+function isCheckOf(call: AssistantCall, id: string): boolean {
 	return ourVerbOf(call) === "check" && firstWordOf(ourSaidOf(call)) === id;
 }
 
@@ -174,7 +154,7 @@ function stepsOf(build: StartedBuild, isLive: boolean): BuildStep[] {
 	});
 }
 
-function statusOf(last: KeptCall | null, isLatest: boolean, isLive: boolean): StepStatus {
+function statusOf(last: AssistantCall | null, isLatest: boolean, isLive: boolean): StepStatus {
 	if (!last) return "pending";
 	if (last.answered && last.failed) return "failed";
 	if (isLive && isLatest) return "active";
@@ -186,7 +166,7 @@ function endOf(build: StartedBuild): number {
 	return Number(last?.answeredAt ?? last?.at ?? 0);
 }
 
-function checkHint(call: KeptCall): string {
+function checkHint(call: AssistantCall): string {
 	if (call.failed) return firstLineOf(call.output);
 	return call.answered ? CLEAN : `check ${firstWordOf(ourSaidOf(call))}`;
 }
@@ -196,12 +176,12 @@ function titleFromId(id: string): string {
 	return name === "" ? id : `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
 }
 
-function widgetFileOf(call: KeptCall, id: string): string {
+function widgetFileOf(call: AssistantCall, id: string): string {
 	const path = writtenPathOf(call);
 	return path.slice(path.indexOf(`/${id}/`) + 1);
 }
 
-function noteNameOf(call: KeptCall): string {
+function noteNameOf(call: AssistantCall): string {
 	const path = writtenPathOf(call);
 	return path.slice(path.lastIndexOf("/") + 1).replace(NOTE_FILE, "");
 }
@@ -210,21 +190,21 @@ function firstLineOf(output: string): string {
 	return clipLine(output, LONGEST_HINT);
 }
 
-function writesInto(call: KeptCall, id: string): boolean {
+function writesInto(call: AssistantCall, id: string): boolean {
 	return writtenPathOf(call).includes(`/${id}/`);
 }
 
-function writtenPathOf(call: KeptCall | null | undefined): string {
+function writtenPathOf(call: AssistantCall | null | undefined): string {
 	if (!call || !WRITING_TOOLS.has(call.name)) return "";
 	const input = isObject(call.input) ? call.input : {};
 	return String(input["file_path"] ?? input["path"] ?? "");
 }
 
-function ourVerbOf(call: KeptCall): string | null {
+function ourVerbOf(call: AssistantCall): string | null {
 	return ourCallOf(call)?.verb ?? null;
 }
 
-function ourSaidOf(call: KeptCall): string {
+function ourSaidOf(call: AssistantCall): string {
 	return ourCallOf(call)?.said ?? "";
 }
 

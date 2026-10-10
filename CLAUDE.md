@@ -553,6 +553,11 @@ widgets' `defineStates`, under the one pan-zoom the Obsidian design view imports
 `StudioHostPort` (`packages/core/src/engine/studio-host.ts`): window-button insets, which the safe areas
 read as `--wg-studio-inset-left|right`, and the apps; a host without them answers "not available" and
 the shell stays. `@catalogue` ships inside the plugin (`tools/system-widget-files.mts`), read-only.
+The AI sidebar is the engine's too: `studio/assistant` draws the chat, 380px beside the outlet, over
+`AssistantPort` (`packages/core/src/engine/assistant-port.ts`, `ports.assistant`). Obsidian lends its
+session through `ai/assistant-port-obsidian.ts` and its old AI view draws the same `AssistantChat`; a
+browser gets `NO_ASSISTANT` and the sidebar says so. Spec, build, design and jobs cards are still
+Obsidian's, handed in as `AssistantCards` by that view alone (TODO in `assistant-cards.ts`).
 
 **In Obsidian an app note opens in the studio view, and Obsidian draws nothing of its own over it.** A
 markdown note whose front matter holds `widgetarium-app: <project folder>` (and optionally

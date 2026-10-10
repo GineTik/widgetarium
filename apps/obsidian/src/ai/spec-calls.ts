@@ -1,31 +1,22 @@
 import { BUILD_STAGES } from "@widgetarium/core/app-spec.js";
 import type { BuildStage } from "@widgetarium/core/app-spec.js";
 import { argumentsIn, ourCallOf } from "./tools.js";
-import type { KeptCall, KeptTurn } from "./transcript.js";
+import type { AssistantCall, AssistantTurn } from "@widgetarium/core/engine/assistant-port.js";
+import { buildKeyOf } from "@widgetarium/core/engine/assistant-cards.js";
+import type { BuildRun, InstallRow, ItemStatus, StageRow } from "@widgetarium/core/engine/assistant-cards.js";
 
-export type StageStatus = "done" | "active" | "pending";
+const ASKED_FOR_APP = "{said}: {app}";
 
-export interface StageRow {
-	readonly stage: BuildStage;
-	readonly said: string;
-	readonly status: StageStatus;
+export function askedForApp(said: string, app: string): string {
+	return ASKED_FOR_APP.replace("{said}", said).replace("{app}", app);
 }
 
-export interface BuildRun {
-	readonly key: string;
-	readonly app: string;
-	readonly rows: readonly StageRow[];
+export function isAskedBy(text: string, said: string): boolean {
+	const asked = text.trim();
+	return asked === said || appAskedFor(asked, said) !== null;
 }
 
-export type ItemStatus = "done" | "active" | "failed" | "cancelled";
-
-export interface InstallRow {
-	readonly key: string;
-	readonly widget: string;
-	readonly status: ItemStatus;
-}
-
-export function installsIn(calls: readonly KeptCall[]): InstallRow[] {
+export function installsIn(calls: readonly AssistantCall[]): InstallRow[] {
 	return calls.flatMap((call) => {
 		const ours = ourCallOf(call);
 		const widget = ours?.verb === "install" ? argumentsIn(ours.said)[0] : undefined;
@@ -35,19 +26,19 @@ export function installsIn(calls: readonly KeptCall[]): InstallRow[] {
 	});
 }
 
-export function specAppIn(call: KeptCall): string | null {
+export function specAppIn(call: AssistantCall): string | null {
 	const ours = ourCallOf(call);
 	if (ours?.verb !== "spec" || !call.answered || call.failed) return null;
 	return argumentsIn(ours.said)[0] ?? null;
 }
 
-export function designAppIn(call: KeptCall): string | null {
+export function designAppIn(call: AssistantCall): string | null {
 	const ours = ourCallOf(call);
 	if (ours?.verb !== "design" || !call.answered || call.failed) return null;
 	return argumentsIn(ours.said)[0] ?? null;
 }
 
-export function lastDesignAppIn(calls: readonly KeptCall[]): string | null {
+export function lastDesignAppIn(calls: readonly AssistantCall[]): string | null {
 	return (
 		calls
 			.map(designAppIn)
@@ -56,7 +47,7 @@ export function lastDesignAppIn(calls: readonly KeptCall[]): string | null {
 	);
 }
 
-export function lastSpecAppIn(calls: readonly KeptCall[]): string | null {
+export function lastSpecAppIn(calls: readonly AssistantCall[]): string | null {
 	return (
 		calls
 			.map(specAppIn)
@@ -66,7 +57,7 @@ export function lastSpecAppIn(calls: readonly KeptCall[]): string | null {
 }
 
 export function buildRunIn(
-	calls: readonly KeptCall[],
+	calls: readonly AssistantCall[],
 	isRunning: boolean,
 	startedFor: string | null = null,
 ): BuildRun | null {
@@ -82,11 +73,11 @@ export interface BuildSpan {
 	readonly endAt: number;
 }
 
-export function buildSpanOf(turns: readonly KeptTurn[], at: number, buildSaid: string): BuildSpan | null {
+export function buildSpanOf(turns: readonly AssistantTurn[], at: number, buildSaid: string): BuildSpan | null {
 	for (let startAt = at; startAt > 0; startAt -= 1) {
 		if (buildStartedIn(turns, startAt, buildSaid) === null) continue;
 		const nextAsk = turns.findIndex(
-			(turn, index) => index > startAt && turn.role === "user" && turn.text.trim() === buildSaid,
+			(turn, index) => index > startAt && turn.role === "user" && isAskedBy(turn.text, buildSaid),
 		);
 		const endAt = nextAsk < 0 ? turns.length - 1 : nextAsk - 1;
 		return at <= endAt ? { startAt, endAt } : null;
@@ -94,14 +85,12 @@ export function buildSpanOf(turns: readonly KeptTurn[], at: number, buildSaid: s
 	return null;
 }
 
-export function buildStartedIn(turns: readonly KeptTurn[], at: number, buildSaid: string): string | null {
+export function buildStartedIn(turns: readonly AssistantTurn[], at: number, buildSaid: string): string | null {
 	const asked = turns[at - 1];
-	if (turns[at]?.role !== "agent" || asked?.role !== "user" || asked.text.trim() !== buildSaid) return null;
-	return lastSpecAppIn(turns.slice(0, at - 1).flatMap((turn) => turn.calls));
-}
-
-export function buildKeyOf(app: string): string {
-	return `build-${app}`;
+	if (turns[at]?.role !== "agent" || asked?.role !== "user" || !isAskedBy(asked.text, buildSaid)) return null;
+	return (
+		appAskedFor(asked.text.trim(), buildSaid) ?? lastSpecAppIn(turns.slice(0, at - 1).flatMap((turn) => turn.calls))
+	);
 }
 
 function stageRowsOf(saidOf: ReadonlyMap<BuildStage, string>, isRunning: boolean): StageRow[] {
@@ -120,7 +109,7 @@ interface StageCall {
 	readonly said: string;
 }
 
-function stageCallOf(call: KeptCall): StageCall[] {
+function stageCallOf(call: AssistantCall): StageCall[] {
 	const ours = ourCallOf(call);
 	if (ours?.verb !== "stage" || !call.answered || call.failed) return [];
 	const words = argumentsIn(ours.said);
@@ -133,4 +122,10 @@ function stageCallOf(call: KeptCall): StageCall[] {
 function saidIn(words: readonly string[]): string {
 	const saidAt = words.indexOf("--said");
 	return saidAt >= 0 ? (words[saidAt + 1] ?? "") : "";
+}
+
+function appAskedFor(asked: string, said: string): string | null {
+	const opening = askedForApp(said, "");
+	if (!asked.startsWith(opening)) return null;
+	return asked.slice(opening.length).trim() || null;
 }

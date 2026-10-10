@@ -5651,7 +5651,7 @@ body.wg-tree-carrying .wg-tile-body {
 	padding: 0;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai {
+:is(.wg-root, .wg-portal) .wg-studio-ai {
 	--wg-ai-gutter: 5px;
 	display: flex;
 	flex-direction: column;
@@ -5660,20 +5660,20 @@ body.wg-tree-carrying .wg-tile-body {
 	gap: 8px;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-head {
+:is(.wg-root, .wg-portal) .wg-studio-ai-head {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 	padding: var(--wg-ai-gutter) var(--wg-ai-gutter) 0;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-title {
+:is(.wg-root, .wg-portal) .wg-studio-ai-title {
 	font-size: var(--font-ui-small, 14px);
 	font-weight: var(--font-semibold, 600);
 	color: var(--wg-kit-text);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-who {
+:is(.wg-root, .wg-portal) .wg-studio-ai-who {
 	flex: 1;
 	font-size: var(--font-ui-smaller, 12px);
 	color: var(--text-faint);
@@ -5682,7 +5682,7 @@ body.wg-tree-carrying .wg-tile-body {
 	white-space: nowrap;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-scroll-frame {
+:is(.wg-root, .wg-portal) .wg-studio-ai-scroll-frame {
 	position: relative;
 	flex: 1;
 	min-height: 0;
@@ -5690,7 +5690,7 @@ body.wg-tree-carrying .wg-tile-body {
 	flex-direction: column;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-to-end {
+:is(.wg-root, .wg-portal) .wg-studio-ai-to-end {
 	position: absolute;
 	bottom: 8px;
 	left: 50%;
@@ -5700,7 +5700,7 @@ body.wg-tree-carrying .wg-tile-body {
 	box-shadow: 0 0 0 1px var(--background-modifier-border);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-scroll {
+:is(.wg-root, .wg-portal) .wg-studio-ai-scroll {
 	flex: 1;
 	min-height: 0;
 	overflow-y: auto;
@@ -5710,18 +5710,18 @@ body.wg-tree-carrying .wg-tile-body {
 	padding: 4px var(--wg-ai-gutter);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-turn {
+:is(.wg-root, .wg-portal) .wg-studio-ai-turn {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
 	align-items: flex-start;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-turn.is-mine {
+:is(.wg-root, .wg-portal) .wg-studio-ai-turn.is-mine {
 	align-items: flex-end;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-said {
+:is(.wg-root, .wg-portal) .wg-studio-ai-said {
 	max-width: 92%;
 	padding: 0 4px;
 	border-radius: 16px;
@@ -5733,13 +5733,13 @@ body.wg-tree-carrying .wg-tile-body {
 	overflow-wrap: anywhere;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown {
+:is(.wg-root, .wg-portal) .wg-studio-ai-said.is-markdown {
 	width: 100%;
 	max-width: 100%;
 	white-space: normal;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-tail {
+:is(.wg-root, .wg-portal) .wg-studio-ai-tail {
 	margin: 0;
 	font-size: var(--font-ui-small, 14px);
 	line-height: 1.55;
@@ -5748,20 +5748,20 @@ body.wg-tree-carrying .wg-tile-body {
 	overflow-wrap: anywhere;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown > :first-child {
+:is(.wg-root, .wg-portal) .wg-studio-ai-said.is-markdown > :first-child {
 	margin-top: 0;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown > :last-child {
+:is(.wg-root, .wg-portal) .wg-studio-ai-said.is-markdown > :last-child {
 	margin-bottom: 0;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown p {
+:is(.wg-root, .wg-portal) .wg-studio-ai-said.is-markdown p {
 	margin: 0 0 8px;
 	line-height: 1.55;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown :is(h1, h2, h3, h4, h5, h6) {
+:is(.wg-root, .wg-portal) .wg-studio-ai-said.is-markdown :is(h1, h2, h3, h4, h5, h6) {
 	margin: 14px 0 6px;
 	font-size: var(--font-ui-small, 14px);
 	font-weight: var(--font-semibold, 600);
@@ -5769,17 +5769,17 @@ body.wg-tree-carrying .wg-tile-body {
 	color: var(--wg-kit-text);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown :is(ul, ol) {
+:is(.wg-root, .wg-portal) .wg-studio-ai-said.is-markdown :is(ul, ol) {
 	margin: 0 0 8px;
 	padding-left: 20px;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown li {
+:is(.wg-root, .wg-portal) .wg-studio-ai-said.is-markdown li {
 	margin: 2px 0;
 	line-height: 1.5;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown pre {
+:is(.wg-root, .wg-portal) .wg-studio-ai-said.is-markdown pre {
 	margin: 0 0 8px;
 	padding: 10px 12px;
 	border-radius: 12px;
@@ -5787,21 +5787,21 @@ body.wg-tree-carrying .wg-tile-body {
 	overflow-x: auto;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown :not(pre) > code {
+:is(.wg-root, .wg-portal) .wg-studio-ai-said.is-markdown :not(pre) > code {
 	padding: 1px 5px;
 	border-radius: 6px;
 	background: var(--wg-kit-fill);
 	font-size: var(--font-ui-smaller, 12px);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown blockquote {
+:is(.wg-root, .wg-portal) .wg-studio-ai-said.is-markdown blockquote {
 	margin: 0 0 8px;
 	padding: 2px 0 2px 12px;
 	border-left: 2px solid var(--wg-kit-card-edge);
 	color: var(--wg-kit-text-muted);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown table {
+:is(.wg-root, .wg-portal) .wg-studio-ai-said.is-markdown table {
 	display: block;
 	width: 100%;
 	margin: 0 0 8px;
@@ -5809,22 +5809,22 @@ body.wg-tree-carrying .wg-tile-body {
 	font-size: var(--font-ui-smaller, 12px);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown img {
+:is(.wg-root, .wg-portal) .wg-studio-ai-said.is-markdown img {
 	max-width: 100%;
 	border-radius: 10px;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown hr {
+:is(.wg-root, .wg-portal) .wg-studio-ai-said.is-markdown hr {
 	margin: 12px 0;
 	border: none;
 	border-top: 1px solid var(--wg-kit-card-edge);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown .copy-code-button {
+:is(.wg-root, .wg-portal) .wg-studio-ai-said.is-markdown .copy-code-button {
 	font-size: var(--font-ui-smaller, 12px);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-turn.is-mine .wg-ai-said {
+:is(.wg-root, .wg-portal) .wg-studio-ai-turn.is-mine .wg-studio-ai-said {
 	padding: 10px 12px;
 	background: var(--wg-kit-fill);
 	box-shadow: none;
@@ -5835,7 +5835,7 @@ body.wg-tree-carrying .wg-tile-body {
 	background: var(--background-primary);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-tools {
+:is(.wg-root, .wg-portal) .wg-studio-ai-tools {
 	display: flex;
 	flex-direction: column;
 	align-items: flex-start;
@@ -5843,7 +5843,7 @@ body.wg-tree-carrying .wg-tile-body {
 	width: 100%;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-tools-head {
+:is(.wg-root, .wg-portal) .wg-studio-ai-tools-head {
 	display: flex;
 	align-items: center;
 	gap: 8px;
@@ -5855,17 +5855,17 @@ body.wg-tree-carrying .wg-tile-body {
 	cursor: pointer;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-tools-head:hover {
+:is(.wg-root, .wg-portal) .wg-studio-ai-tools-head:hover {
 	color: var(--wg-kit-text);
 	background: none;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-tools-marks {
+:is(.wg-root, .wg-portal) .wg-studio-ai-tools-marks {
 	display: flex;
 	align-items: center;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-tools-mark {
+:is(.wg-root, .wg-portal) .wg-studio-ai-tools-mark {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -5878,48 +5878,48 @@ body.wg-tree-carrying .wg-tile-body {
 	color: var(--wg-kit-text-muted);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-tools-mark:nth-child(odd) {
+:is(.wg-root, .wg-portal) .wg-studio-ai-tools-mark:nth-child(odd) {
 	rotate: 7deg;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-tools-mark:nth-child(even) {
+:is(.wg-root, .wg-portal) .wg-studio-ai-tools-mark:nth-child(even) {
 	rotate: -7deg;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-tools-said {
+:is(.wg-root, .wg-portal) .wg-studio-ai-tools-said {
 	margin-left: 6px;
 	font-size: var(--font-ui-smaller, 12px);
 	font-weight: var(--font-semibold, 600);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-tools-failed {
+:is(.wg-root, .wg-portal) .wg-studio-ai-tools-failed {
 	font-size: var(--font-ui-smaller, 12px);
 	color: var(--text-error);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-turn-mark {
+:is(.wg-root, .wg-portal) .wg-studio-ai-chevron {
 	transition: rotate 180ms ease;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-turn-mark.is-open {
+:is(.wg-root, .wg-portal) .wg-studio-ai-chevron.is-open {
 	rotate: 90deg;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-tools-list {
+:is(.wg-root, .wg-portal) .wg-studio-ai-tools-list {
 	display: flex;
 	flex-direction: column;
 	width: 100%;
 	padding-left: 4px;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-call {
+:is(.wg-root, .wg-portal) .wg-studio-ai-call {
 	display: flex;
 	align-items: stretch;
 	gap: 8px;
 	min-width: 0;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-call-rail {
+:is(.wg-root, .wg-portal) .wg-studio-ai-call-rail {
 	display: flex;
 	align-items: flex-start;
 	justify-content: center;
@@ -5929,22 +5929,22 @@ body.wg-tree-carrying .wg-tile-body {
 	color: var(--text-faint);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-call:not(:last-child) .wg-ai-call-rail {
+:is(.wg-root, .wg-portal) .wg-studio-ai-call:not(:last-child) .wg-studio-ai-call-rail {
 	background: linear-gradient(var(--wg-kit-card-edge), var(--wg-kit-card-edge)) no-repeat center top 24px / 1.5px
 		calc(100% - 24px);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-call.is-failed .wg-ai-call-rail {
+:is(.wg-root, .wg-portal) .wg-studio-ai-call.is-failed .wg-studio-ai-call-rail {
 	color: var(--text-error);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-call-body {
+:is(.wg-root, .wg-portal) .wg-studio-ai-call-body {
 	flex: 1;
 	min-width: 0;
 	padding-bottom: 6px;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-call-head {
+:is(.wg-root, .wg-portal) .wg-studio-ai-call-head {
 	display: flex;
 	align-items: center;
 	gap: 4px;
@@ -5956,21 +5956,21 @@ body.wg-tree-carrying .wg-tile-body {
 	cursor: pointer;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-call-head:disabled {
+:is(.wg-root, .wg-portal) .wg-studio-ai-call-head:disabled {
 	cursor: default;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-call-head:hover {
+:is(.wg-root, .wg-portal) .wg-studio-ai-call-head:hover {
 	color: var(--wg-kit-text);
 	background: none;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-call-name {
+:is(.wg-root, .wg-portal) .wg-studio-ai-call-name {
 	font-size: var(--font-ui-smaller, 12px);
 	font-weight: var(--font-semibold, 600);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-call-hint {
+:is(.wg-root, .wg-portal) .wg-studio-ai-call-hint {
 	margin: 0;
 	font-family: var(--font-monospace, monospace);
 	font-size: var(--font-ui-smaller, 12px);
@@ -5980,7 +5980,7 @@ body.wg-tree-carrying .wg-tile-body {
 	white-space: nowrap;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-call-open {
+:is(.wg-root, .wg-portal) .wg-studio-ai-call-open {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
@@ -5990,19 +5990,19 @@ body.wg-tree-carrying .wg-tile-body {
 	background: var(--wg-kit-fill);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-call-part {
+:is(.wg-root, .wg-portal) .wg-studio-ai-call-part {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
 	min-width: 0;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-call-part-label {
+:is(.wg-root, .wg-portal) .wg-studio-ai-call-part-label {
 	font-size: var(--font-ui-smaller, 12px);
 	color: var(--text-faint);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-call-part-said {
+:is(.wg-root, .wg-portal) .wg-studio-ai-call-part-said {
 	margin: 0;
 	max-height: 200px;
 	overflow: auto;
@@ -6014,7 +6014,7 @@ body.wg-tree-carrying .wg-tile-body {
 	overflow-wrap: anywhere;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-busy {
+:is(.wg-root, .wg-portal) .wg-studio-ai-busy {
 	display: grid;
 	grid-template-columns: auto 1fr;
 	align-items: center;
@@ -6022,15 +6022,15 @@ body.wg-tree-carrying .wg-tile-body {
 	padding: 2px 2px 6px;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-busy-mark {
+:is(.wg-root, .wg-portal) .wg-studio-ai-busy-mark {
 	grid-row: 1 / span 2;
 	align-self: start;
 	margin-top: 2px;
 	color: var(--wg-kit-text-muted);
-	animation: wg-ai-thinking 1500ms ease-in-out infinite;
+	animation: wg-studio-ai-thinking 1500ms ease-in-out infinite;
 }
 
-@keyframes wg-ai-thinking {
+@keyframes wg-studio-ai-thinking {
 	0%,
 	100% {
 		opacity: 0.55;
@@ -6043,29 +6043,29 @@ body.wg-tree-carrying .wg-tile-body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-	:is(.wg-root, .wg-portal) .wg-ai-busy-mark {
+	:is(.wg-root, .wg-portal) .wg-studio-ai-busy-mark {
 		animation: none;
 		opacity: 0.7;
 	}
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-busy-said {
+:is(.wg-root, .wg-portal) .wg-studio-ai-busy-said {
 	font-size: var(--font-ui-small, 14px);
 	color: var(--wg-kit-text);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-busy-warn {
+:is(.wg-root, .wg-portal) .wg-studio-ai-busy-warn {
 	font-size: var(--font-ui-smaller, 12px);
 	color: var(--text-faint);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-build {
+:is(.wg-root, .wg-portal) .wg-studio-ai-build {
 	align-self: stretch;
 	min-width: 0;
-	animation: wg-ai-build-arrive 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
+	animation: wg-studio-ai-build-arrive 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-pinned-run {
+:is(.wg-root, .wg-portal) .wg-studio-ai-pinned-run {
 	display: flex;
 	width: 100%;
 	height: auto;
@@ -6082,11 +6082,11 @@ body.wg-tree-carrying .wg-tile-body {
 	background: var(--wg-kit-group-fill);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-pinned-run .wg-ai-spec-name {
+:is(.wg-root, .wg-portal) .wg-studio-ai-pinned-run .wg-studio-ai-spec-name {
 	font-size: var(--wg-kit-text-m);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-pinned {
+:is(.wg-root, .wg-portal) .wg-studio-ai-pinned {
 	flex: none;
 	display: flex;
 	flex-direction: column;
@@ -6094,7 +6094,7 @@ body.wg-tree-carrying .wg-tile-body {
 	padding: 0 var(--wg-ai-gutter);
 }
 
-@keyframes wg-ai-build-arrive {
+@keyframes wg-studio-ai-build-arrive {
 	from {
 		opacity: 0;
 		transform: translateY(8px);
@@ -6106,12 +6106,12 @@ body.wg-tree-carrying .wg-tile-body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-	:is(.wg-root, .wg-portal) .wg-ai-build {
+	:is(.wg-root, .wg-portal) .wg-studio-ai-build {
 		animation: none;
 	}
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-build.is-missing {
+:is(.wg-root, .wg-portal) .wg-studio-ai-build.is-missing {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
@@ -6119,56 +6119,56 @@ body.wg-tree-carrying .wg-tile-body {
 	color: var(--wg-kit-text-muted);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-build-why {
+:is(.wg-root, .wg-portal) .wg-studio-ai-build-why {
 	color: var(--text-error);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec {
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec {
 	display: flex;
 	flex-direction: column;
 	gap: var(--size-4-4, 16px);
 	margin: var(--size-4-2, 8px) 0;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-title {
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec-title {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
 	padding: 0 var(--size-4-1, 4px);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-title h3 {
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec-title h3 {
 	margin: 0;
 	font-size: var(--h3-size, 1.25em);
 	font-weight: var(--font-bold, 700);
 	color: var(--wg-kit-text);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-title span,
-:is(.wg-root, .wg-portal) .wg-ai-spec-sub {
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec-title span,
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec-sub {
 	color: var(--wg-kit-text-muted);
 	font-size: var(--wg-kit-text-m);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-group,
-:is(.wg-root, .wg-portal) .wg-ai-spec-details {
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec-group,
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec-details {
 	display: flex;
 	flex-direction: column;
 	gap: var(--size-4-2, 8px);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-details {
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec-details {
 	gap: var(--size-4-4, 16px);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-label {
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec-label {
 	padding: 0 var(--size-4-1, 4px);
 	font-size: var(--wg-kit-text-s);
 	font-weight: var(--font-semibold, 600);
 	color: var(--wg-kit-text-muted);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-label.is-fold {
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec-label.is-fold {
 	display: inline-flex;
 	align-items: center;
 	gap: var(--size-4-1, 4px);
@@ -6181,7 +6181,7 @@ body.wg-tree-carrying .wg-tile-body {
 	cursor: pointer;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-fold {
+:is(.wg-root, .wg-portal) .wg-studio-ai-fold {
 	display: grid;
 	grid-template-rows: 1fr;
 	opacity: 1;
@@ -6190,29 +6190,23 @@ body.wg-tree-carrying .wg-tile-body {
 		opacity var(--wg-quick) var(--wg-ease);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-fold.is-shut {
+:is(.wg-root, .wg-portal) .wg-studio-ai-fold.is-shut {
 	grid-template-rows: 0fr;
 	opacity: 0;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-fold > div {
+:is(.wg-root, .wg-portal) .wg-studio-ai-fold > div {
 	min-height: 0;
 	overflow: hidden;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-fold-chevron {
+:is(.wg-root, .wg-portal) :is(.wg-studio-ai-stage-fold, .wg-studio-ai-spec-label.is-fold) .wg-studio-ai-chevron {
 	flex: none;
-	margin-inline-start: auto;
 	color: var(--wg-kit-text-muted);
-	transition: rotate var(--wg-quick) var(--wg-spring);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-fold-chevron.is-shut {
-	rotate: -90deg;
-}
-
-:is(.wg-root, .wg-portal) .wg-ai-spec-label.is-fold .wg-ai-fold-chevron {
-	margin-inline-start: 0;
+:is(.wg-root, .wg-portal) .wg-studio-ai-stage-fold .wg-studio-ai-chevron {
+	margin-inline-start: auto;
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-row.is-inner {
@@ -6220,11 +6214,11 @@ body.wg-tree-carrying .wg-tile-body {
 	padding-left: var(--wg-kit-row-hairline);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-row.is-inner .wg-ai-spec-name {
+:is(.wg-root, .wg-portal) .wg-kit-row.is-inner .wg-studio-ai-spec-name {
 	font-size: var(--wg-kit-text-m);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-text {
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec-text {
 	display: flex;
 	flex: 1;
 	min-width: 0;
@@ -6232,44 +6226,44 @@ body.wg-tree-carrying .wg-tile-body {
 	gap: 1px;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-name {
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec-name {
 	font-size: var(--wg-kit-text-l);
 	font-weight: var(--font-semibold, 600);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-row.is-off .wg-ai-spec-name,
-:is(.wg-root, .wg-portal) .wg-kit-row.is-pending .wg-ai-spec-name {
+:is(.wg-root, .wg-portal) .wg-kit-row.is-off .wg-studio-ai-spec-name,
+:is(.wg-root, .wg-portal) .wg-kit-row.is-pending .wg-studio-ai-spec-name {
 	color: var(--wg-kit-text-muted);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-row.is-locked:disabled,
-:is(.wg-root, .wg-portal) .wg-ai-spec-verbs .wg-kit-btn:disabled {
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec-verbs .wg-kit-btn:disabled {
 	opacity: 1;
 	cursor: default;
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-row.is-off .wg-ai-spec-name,
-:is(.wg-root, .wg-portal) .wg-ai-spec-reference.is-off .wg-ai-spec-name {
+:is(.wg-root, .wg-portal) .wg-kit-row.is-off .wg-studio-ai-spec-name,
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec-reference.is-off .wg-studio-ai-spec-name {
 	text-decoration: line-through;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-stage-ring.is-active svg {
-	animation: wg-ai-stage-turn 1400ms linear infinite;
+:is(.wg-root, .wg-portal) .wg-studio-ai-stage-ring.is-active svg {
+	animation: wg-studio-ai-stage-turn 1400ms linear infinite;
 }
 
-@keyframes wg-ai-stage-turn {
+@keyframes wg-studio-ai-stage-turn {
 	to {
 		transform: rotate(360deg);
 	}
 }
 
 @media (prefers-reduced-motion: reduce) {
-	:is(.wg-root, .wg-portal) .wg-ai-stage-ring.is-active svg {
+	:is(.wg-root, .wg-portal) .wg-studio-ai-stage-ring.is-active svg {
 		animation: none;
 	}
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-link {
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec-link {
 	flex: 1;
 	display: flex;
 	align-items: center;
@@ -6279,23 +6273,23 @@ body.wg-tree-carrying .wg-tile-body {
 	text-decoration: none;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-link-icon {
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec-link-icon {
 	flex: none;
 	margin-inline-start: auto;
 	color: var(--wg-kit-text-muted);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-link:hover .wg-ai-spec-name {
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec-link:hover .wg-studio-ai-spec-name {
 	text-decoration: underline;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-link:hover .wg-ai-spec-link-icon {
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec-link:hover .wg-studio-ai-spec-link-icon {
 	color: var(--wg-kit-text);
 }
 
-:is(.wg-root, .wg-portal) :is(.wg-kit-row, .wg-ai-stage-fold) + .wg-ai-stage-fold > .wg-kit-row::after,
-:is(.wg-root, .wg-portal) .wg-ai-stage-fold + .wg-kit-row::after,
-:is(.wg-root, .wg-portal) .wg-ai-stage-fold > .wg-ai-fold > div > .wg-kit-row:first-child::after {
+:is(.wg-root, .wg-portal) :is(.wg-kit-row, .wg-studio-ai-stage-fold) + .wg-studio-ai-stage-fold > .wg-kit-row::after,
+:is(.wg-root, .wg-portal) .wg-studio-ai-stage-fold + .wg-kit-row::after,
+:is(.wg-root, .wg-portal) .wg-studio-ai-stage-fold > .wg-studio-ai-fold > div > .wg-kit-row:first-child::after {
 	content: "";
 	position: absolute;
 	top: 0;
@@ -6305,12 +6299,13 @@ body.wg-tree-carrying .wg-tile-body {
 	background: var(--wg-kit-group-line);
 }
 
-:is(.wg-root, .wg-portal) :is(.wg-ai-stage-fold > button, .wg-ai-spec-label.is-fold):focus:not(:focus-visible) {
+:is(.wg-root, .wg-portal)
+	:is(.wg-studio-ai-stage-fold > button, .wg-studio-ai-spec-label.is-fold):focus:not(:focus-visible) {
 	outline: none;
 	box-shadow: none;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-tile {
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec-tile {
 	flex: none;
 	display: flex;
 	align-items: center;
@@ -6322,37 +6317,37 @@ body.wg-tree-carrying .wg-tile-body {
 	color: var(--wg-kit-text-muted);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-record {
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec-record {
 	flex-wrap: wrap;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-verbs {
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec-verbs {
 	display: flex;
 	flex: none;
 	gap: var(--size-4-1, 4px);
 	margin-inline-start: auto;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-buttons {
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec-buttons {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: var(--size-4-2, 8px);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-refused,
+:is(.wg-root, .wg-portal) .wg-studio-ai-spec-refused,
 :is(.wg-root, .wg-portal) .wg-studio-refused {
 	margin: 0;
 	color: var(--wg-kit-error-ink);
 	font-size: var(--wg-kit-text-m);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-target.is-attached {
+:is(.wg-root, .wg-portal) .wg-studio-ai-target.is-attached {
 	background: var(--wg-kit-accent-wash);
 	color: var(--wg-kit-accent-ink);
 	font-weight: var(--font-semibold, 600);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-attached-clear {
+:is(.wg-root, .wg-portal) .wg-studio-ai-attached-clear {
 	display: flex;
 	padding: 2px;
 	border: none;
@@ -6362,7 +6357,7 @@ body.wg-tree-carrying .wg-tile-body {
 	cursor: pointer;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-failure {
+:is(.wg-root, .wg-portal) .wg-studio-ai-failure {
 	display: flex;
 	flex-direction: column;
 	align-items: flex-start;
@@ -6372,22 +6367,32 @@ body.wg-tree-carrying .wg-tile-body {
 	background: var(--wg-kit-error-wash);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-failure .wg-kit-btn::before {
+:is(.wg-root, .wg-portal) .wg-studio-ai-failure .wg-kit-btn::before {
 	background: var(--background-primary);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-failure .wg-kit-btn:hover::before {
+:is(.wg-root, .wg-portal) .wg-studio-ai-failure .wg-kit-btn:hover::before {
 	background: var(--wg-kit-fill);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-failure-said {
+:is(.wg-root, .wg-portal) .wg-studio-ai-failure.is-quiet {
+	flex: none;
+	margin: 0 var(--wg-ai-gutter);
+	padding: 6px 10px;
+	border-radius: var(--wg-kit-plate);
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--wg-kit-error-ink);
+	overflow-wrap: anywhere;
+}
+
+:is(.wg-root, .wg-portal) .wg-studio-ai-failure-said {
 	font-size: var(--font-ui-smaller, 12px);
 	color: var(--wg-kit-text);
 	white-space: pre-wrap;
 	overflow-wrap: anywhere;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-empty {
+:is(.wg-root, .wg-portal) .wg-studio-ai-empty {
 	margin: auto;
 	display: flex;
 	flex-direction: column;
@@ -6398,27 +6403,27 @@ body.wg-tree-carrying .wg-tile-body {
 	color: var(--wg-kit-text-muted);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-empty-lead {
+:is(.wg-root, .wg-portal) .wg-studio-ai-empty-lead {
 	margin: 0;
 	font-size: var(--font-ui-small, 14px);
 	font-weight: var(--font-semibold, 600);
 	color: var(--wg-kit-text);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-empty-said {
+:is(.wg-root, .wg-portal) .wg-studio-ai-empty-said {
 	margin: 0;
 	font-size: var(--font-ui-smaller, 12px);
 	line-height: 1.5;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-composer {
+:is(.wg-root, .wg-portal) .wg-studio-ai-composer {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
 	padding: 4px var(--wg-ai-gutter) var(--wg-ai-gutter);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-risk {
+:is(.wg-root, .wg-portal) .wg-studio-ai-risk {
 	margin: 0;
 	padding: 0 4px;
 	font-size: var(--font-ui-smaller, 12px);
@@ -6426,7 +6431,7 @@ body.wg-tree-carrying .wg-tile-body {
 	color: var(--text-faint);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-well {
+:is(.wg-root, .wg-portal) .wg-studio-ai-well {
 	position: relative;
 	display: flex;
 	flex-direction: column;
@@ -6439,11 +6444,11 @@ body.wg-tree-carrying .wg-tile-body {
 	transition: border-color 140ms ease;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-well:focus-within {
+:is(.wg-root, .wg-portal) .wg-studio-ai-well:focus-within {
 	border-color: var(--wg-kit-accent);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-box {
+:is(.wg-root, .wg-portal) .wg-studio-ai-box {
 	min-height: 24px;
 	max-height: 120px;
 	resize: none;
@@ -6458,18 +6463,18 @@ body.wg-tree-carrying .wg-tile-body {
 	overflow-y: hidden;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-box,
-:is(.wg-root, .wg-portal) .wg-ai-box:hover,
-:is(.wg-root, .wg-portal) .wg-ai-box:focus,
-:is(.wg-root, .wg-portal) .wg-ai-box:focus-visible,
-:is(.wg-root, .wg-portal) .wg-ai-box:active {
+:is(.wg-root, .wg-portal) .wg-studio-ai-box,
+:is(.wg-root, .wg-portal) .wg-studio-ai-box:hover,
+:is(.wg-root, .wg-portal) .wg-studio-ai-box:focus,
+:is(.wg-root, .wg-portal) .wg-studio-ai-box:focus-visible,
+:is(.wg-root, .wg-portal) .wg-studio-ai-box:active {
 	background: transparent;
 	border: none;
 	outline: none;
 	box-shadow: none;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-bar {
+:is(.wg-root, .wg-portal) .wg-studio-ai-bar {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -6477,7 +6482,7 @@ body.wg-tree-carrying .wg-tile-body {
 	padding-top: 6px;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-target {
+:is(.wg-root, .wg-portal) .wg-studio-ai-target {
 	display: inline-flex;
 	align-items: center;
 	gap: 5px;
@@ -6489,30 +6494,30 @@ body.wg-tree-carrying .wg-tile-body {
 	font-size: var(--font-ui-smaller, 12px);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-target.is-unset {
+:is(.wg-root, .wg-portal) .wg-studio-ai-target.is-unset {
 	color: var(--text-faint);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-bar button:disabled {
+:is(.wg-root, .wg-portal) .wg-studio-ai-bar button:disabled {
 	cursor: default;
 	color: var(--text-faint);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-bar button:disabled::before,
-:is(.wg-root, .wg-portal) .wg-ai-bar button:disabled:hover::before {
+:is(.wg-root, .wg-portal) .wg-studio-ai-bar button:disabled::before,
+:is(.wg-root, .wg-portal) .wg-studio-ai-bar button:disabled:hover::before {
 	background: var(--wg-kit-fill-hover);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-head .wg-kit-icon::before {
+:is(.wg-root, .wg-portal) .wg-studio-ai-head .wg-kit-icon::before {
 	background: var(--background-primary);
 	box-shadow: var(--wg-kit-control-edge, none);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-head .wg-kit-icon:hover::before {
+:is(.wg-root, .wg-portal) .wg-studio-ai-head .wg-kit-icon:hover::before {
 	background: var(--wg-kit-fill);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-target-name {
+:is(.wg-root, .wg-portal) .wg-studio-ai-target-name {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
@@ -7789,7 +7794,7 @@ body.wg-tree-carrying .wg-tile-body {
 	color: var(--text-faint);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-design {
+:is(.wg-root, .wg-portal) .wg-studio-ai-design {
 	display: flex;
 	flex-direction: column;
 	gap: var(--size-4-3, 12px);
@@ -7806,11 +7811,11 @@ body.wg-tree-carrying .wg-tile-body {
 	cursor: pointer;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-design:hover {
+:is(.wg-root, .wg-portal) .wg-studio-ai-design:hover {
 	background: var(--wg-kit-fill-hover);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-design-preview {
+:is(.wg-root, .wg-portal) .wg-studio-ai-design-preview {
 	display: flex;
 	gap: var(--size-4-2, 8px);
 	height: 140px;
@@ -7822,7 +7827,7 @@ body.wg-tree-carrying .wg-tile-body {
 	overflow: hidden;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-design-frame {
+:is(.wg-root, .wg-portal) .wg-studio-ai-design-frame {
 	flex: 1;
 	display: flex;
 	flex-direction: column;
@@ -7834,7 +7839,7 @@ body.wg-tree-carrying .wg-tile-body {
 	box-shadow: 0 0 0 1px var(--wg-kit-card-edge);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-design-frame b {
+:is(.wg-root, .wg-portal) .wg-studio-ai-design-frame b {
 	overflow: hidden;
 	font-size: var(--wg-kit-text-xs);
 	color: var(--wg-kit-text-muted);
@@ -7842,23 +7847,23 @@ body.wg-tree-carrying .wg-tile-body {
 	text-overflow: ellipsis;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-design-frame i {
+:is(.wg-root, .wg-portal) .wg-studio-ai-design-frame i {
 	height: 6px;
 	border-radius: 3px;
 	background: var(--wg-kit-fill);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-design-frame i.is-accent {
+:is(.wg-root, .wg-portal) .wg-studio-ai-design-frame i.is-accent {
 	background: var(--wg-kit-accent-wash);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-design-said {
+:is(.wg-root, .wg-portal) .wg-studio-ai-design-said {
 	display: flex;
 	align-items: center;
 	gap: var(--size-4-3, 12px);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-design-go {
+:is(.wg-root, .wg-portal) .wg-studio-ai-design-go {
 	flex: none;
 	margin-inline-start: auto;
 	color: var(--wg-kit-accent);
@@ -8143,7 +8148,7 @@ body.wg-tree-carrying .wg-tile-body {
 	box-shadow: none;
 }
 
-.wg-design-layers-tree.is-dragging .wg-ai-fold:not(.is-shut) > div {
+.wg-design-layers-tree.is-dragging .wg-studio-ai-fold:not(.is-shut) > div {
 	overflow: visible;
 }
 
@@ -8223,7 +8228,7 @@ body.wg-tree-carrying .wg-tile-body {
 	opacity: 0;
 }
 
-.wg-design-layers .wg-ai-fold {
+.wg-design-layers .wg-studio-ai-fold {
 	width: max-content;
 	min-width: 100%;
 }
@@ -8732,7 +8737,7 @@ body.wg-tree-carrying .wg-tile-body {
 	white-space: pre-wrap;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-jobs {
+:is(.wg-root, .wg-portal) .wg-studio-ai-jobs {
 	flex: none;
 	display: flex;
 	flex-direction: column;
@@ -8740,7 +8745,7 @@ body.wg-tree-carrying .wg-tile-body {
 	padding: var(--size-4-2, 8px) var(--wg-ai-gutter);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-jobs-app {
+:is(.wg-root, .wg-portal) .wg-studio-ai-jobs-app {
 	display: flex;
 	align-items: center;
 	gap: var(--size-4-2, 8px);
@@ -8757,11 +8762,11 @@ body.wg-tree-carrying .wg-tile-body {
 	cursor: pointer;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-jobs-app:hover {
+:is(.wg-root, .wg-portal) .wg-studio-ai-jobs-app:hover {
 	background: var(--wg-kit-group-inset);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-jobs-said {
+:is(.wg-root, .wg-portal) .wg-studio-ai-jobs-said {
 	flex: 1;
 	min-width: 0;
 	color: var(--text-muted);
@@ -11881,8 +11886,10 @@ body.wg-tree-carrying .wg-tile-body {
 	--wg-studio-edge: 8px;
 	--wg-studio-inset-left: 0px;
 	--wg-studio-inset-right: 0px;
+	--wg-studio-sidebar: 380px;
 	display: grid;
 	grid-template-rows: var(--wg-studio-band) minmax(0, 1fr);
+	grid-template-columns: minmax(0, 1fr) auto;
 	height: 100vh;
 	background: var(--wg-kit-page);
 }
@@ -11906,6 +11913,7 @@ body:not(.is-mobile) .workspace-leaf-content[data-type="widgetarium-studio"] > .
 }
 
 .wg-studio-band {
+	grid-column: 1 / -1;
 	--wg-board-pad: 0px;
 	--wg-root-head: 0px;
 	min-width: 0;
@@ -11926,6 +11934,27 @@ body:not(.is-mobile) .workspace-leaf-content[data-type="widgetarium-studio"] > .
 	position: relative;
 	min-width: 0;
 	overflow: auto;
+}
+
+.wg-studio-sidebar {
+	box-sizing: border-box;
+	width: min(var(--wg-studio-sidebar), 100vw);
+	min-height: 0;
+	padding: 0 var(--wg-studio-edge) var(--wg-studio-edge);
+}
+
+.wg-studio-ai-host {
+	height: 100%;
+	min-height: 0;
+	padding: 0;
+	background: transparent;
+}
+
+.wg-studio-ai-quiet {
+	margin: 0;
+	padding: var(--wg-studio-edge);
+	font-size: var(--wg-kit-text-s);
+	color: var(--wg-kit-text-muted);
 }
 
 .wg-studio-canvas {

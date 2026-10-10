@@ -8,6 +8,15 @@ import { registerPacks } from "../packages/core/src/engine/packs.js";
 import { pageParamCell } from "../packages/core/src/engine/page-params.js";
 import { projectPackOf } from "../packages/core/src/engine/project-pack.js";
 import { NO_STUDIO_HOST } from "../packages/core/src/engine/studio-host.js";
+import { NO_ASSISTANT } from "../packages/core/src/engine/assistant-port.js";
+import type {
+	AssistantPort,
+	AssistantSession,
+	AssistantSetup,
+	AssistantTurn,
+} from "../packages/core/src/engine/assistant-port.js";
+import type { ChatCards } from "../packages/core/src/engine/assistant-cards.js";
+import { JobSchema } from "../packages/core/src/app-jobs.js";
 import { corePack } from "../packages/packs/core/src/index.js";
 import { createMemoryRouter } from "../packages/widgetarium/src/app/memory-router.js";
 import { WidgetariumApp, startProject } from "../packages/widgetarium/src/app/widgetarium-app.js";
@@ -66,8 +75,116 @@ const MAC_INSETS = { left: 76, right: 0 };
 
 const MEMORY_PARAMS_KEY = "Apps/Farm.md";
 
-const studioStartOf = (mode: unknown): StudioStart =>
-	mode === "studio-mac" ? { studio: { ...NO_STUDIO_HOST, insets: () => MAC_INSETS } } : {};
+const FAKE_SETUP: AssistantSetup = {
+	isReady: true,
+	providerLabel: "Fake provider",
+	providers: [{ id: "fake", label: "Fake provider", canEdit: true }],
+	chosen: "fake",
+	helperAgents: false,
+	note: null,
+	renderMarkdown: null,
+};
+
+const FAKE_ANSWER = "Planting them now.";
+const REFUSED_WORD = "Break";
+const REFUSED_SEND = "the fake provider refuses";
+const SETUP_GONE = "the fake vault is gone";
+const FARM_JOBS = [
+	{
+		app: "Farm",
+		jobs: [
+			JobSchema.parse({
+				id: "rows-design",
+				app: "Farm",
+				title: "Design Rows",
+				says: "x",
+				phase: "design",
+				status: "running",
+			}),
+		],
+	},
+];
+const FAKE_SPEC = `---
+app: Farm
+job: Grow what the season allows.
+features:
+  - title: Plant a row
+    says: Name the crop and the row
+    actions: [create]
+research:
+  - product: Notion
+    takes: Rows in a table
+    url: https://www.notion.so
+records:
+  - name: Row
+    can: [create]
+pages:
+  - name: Rows
+    body: list-detail
+    says: The rows and the open one
+checks:
+  - A planted row is in the list
+---
+`;
+
+function fakeCardsOf(session: AssistantSession): ChatCards {
+	return {
+		ofTurns: session.turns.map((turn) => ({
+			build: null,
+			specApp: turn.role === "agent" ? "Farm" : null,
+			designApp: null,
+		})),
+		pinned: null,
+	};
+}
+
+function fakeAssistant(): AssistantPort {
+	const watchers = new Set<() => void>();
+	const sent: string[] = [];
+	const built: string[] = [];
+	const setupWatchers = new Set<() => void>();
+	const setupRead = { fails: false };
+	let session: AssistantSession = NO_ASSISTANT.session();
+	const failSetup = (): void => {
+		setupRead.fails = true;
+		for (const changed of setupWatchers) changed();
+	};
+	Object.assign(window, { __SENT__: sent, __BUILT__: built, __FAIL_SETUP__: failSetup });
+	return {
+		...NO_ASSISTANT,
+		can: true,
+		session: () => session,
+		onSession: (changed) => {
+			watchers.add(changed);
+			return () => void watchers.delete(changed);
+		},
+		setup: async () => {
+			if (setupRead.fails) throw new Error(SETUP_GONE);
+			return FAKE_SETUP;
+		},
+		onSetup: (changed) => {
+			setupWatchers.add(changed);
+			return () => void setupWatchers.delete(changed);
+		},
+		jobs: () => FARM_JOBS,
+		cardsOf: fakeCardsOf,
+		readAppFile: async () => FAKE_SPEC,
+		buildIt: async (app) => void built.push(app),
+		send: async (said) => {
+			if (said.startsWith(REFUSED_WORD)) throw new Error(REFUSED_SEND);
+			sent.push(said);
+			const asked: AssistantTurn = { role: "user", text: said, calls: [] };
+			const answered: AssistantTurn = { role: "agent", text: FAKE_ANSWER, calls: [] };
+			session = { ...session, turns: [...session.turns, asked, answered] };
+			for (const changed of watchers) changed();
+		},
+	};
+}
+
+function studioStartOf(mode: unknown): StudioStart {
+	if (mode === "studio-mac") return { studio: { ...NO_STUDIO_HOST, insets: () => MAC_INSETS } };
+	return { assistant: fakeAssistant() };
+}
 
 function studioOverOpenedProject(): StartedStudio {
 	registerPacks(corePack, projectPackOf(PROJECT.handlers), studioPack);

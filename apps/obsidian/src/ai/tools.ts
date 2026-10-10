@@ -103,23 +103,6 @@ export function withResult<Call extends AnswerableCall>(calls: Call[], result: C
 	return landed ? held : calls;
 }
 
-export function failuresIn(calls: readonly AnswerableCall[]): number {
-	return calls.filter((call) => call.failed).length;
-}
-
-export function glyphsOf(calls: readonly CallSeen[], most: number): string[] {
-	const seen = new Set<string>();
-	const held: string[] = [];
-	for (const call of calls) {
-		const glyph = glyphOf(call);
-		if (seen.has(glyph)) continue;
-		seen.add(glyph);
-		held.push(glyph);
-		if (held.length === most) break;
-	}
-	return held;
-}
-
 export function clipLine(text: unknown, longest: number): string {
 	const line = (
 		String(text ?? "")

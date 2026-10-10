@@ -1,13 +1,13 @@
 import "./packs-registered.ts";
 import { createElement as h } from "react";
 import { createRoot } from "react-dom/client";
-import { AiChat } from "../apps/obsidian/src/ai/chat.js";
+import { AssistantChat } from "../packages/widgetarium/src/studio/assistant/assistant-chat.js";
+import { obsidianAssistantPort } from "../apps/obsidian/src/ai/assistant-port-obsidian.js";
 import { DEFAULT_PRESET, PRESETS } from "../apps/obsidian/src/ai/providers.js";
-import type { ProgressWidget } from "../apps/obsidian/src/ai/assistant.js";
+import type { AssistantCall, ProgressWidget } from "../packages/core/src/engine/assistant-port.js";
 import type { ObsidianHost } from "../apps/obsidian/src/host.js";
 import { standIn } from "./stand-in.ts";
 import type { Session, SessionState } from "../apps/obsidian/src/ai/session.js";
-import type { KeptCall } from "../apps/obsidian/src/ai/transcript.js";
 import { buildWidget } from "../packages/core/src/registry.js";
 import taskProgressSource from "widget-source:@default/task-progress/widget.tsx";
 import taskProgressCard from "../registry/@default/task-progress/manifest.generated.json";
@@ -32,9 +32,9 @@ const NO_JOBS: Jobs = {
 	close: () => {},
 };
 
+const NO_SPECS = { read: async () => null, watch: () => () => {}, change: async () => {} };
+
 const AI = {
-	specs: { read: async () => null, watch: () => () => {}, change: async () => {} },
-	openDesign: () => undefined,
 	chosen: "claude-code",
 	helperAgents: true,
 	provider: DEFAULT_PRESET,
@@ -45,7 +45,6 @@ const AI = {
 	publishWidgets: true,
 	jobsStartThemselves: true,
 	jobsAtOnce: 2,
-	jobs: NO_JOBS,
 	note: { path: "Boards/Dashboard.md", hasBoard: true },
 	host: standIn<ObsidianHost>({}, [], "ai shot host"),
 };
@@ -146,7 +145,7 @@ const TOOL = "node /Users/me/Vault/.widgetarium/bin/widgets.mjs";
 const WIDGET_FOLDER = "/Users/me/Vault/.widgetarium/widgets/@mine";
 const STARTED = Date.now() - 41000;
 
-const buildCalls = (id: string, title: string, from: number): KeptCall[] => [
+const buildCalls = (id: string, title: string, from: number): AssistantCall[] => [
 	{
 		ref: `${id}-start`,
 		name: "Bash",
@@ -249,12 +248,14 @@ const which = document.body.dataset["state"] ?? "empty";
 const holder = document.createElement("div");
 holder.className = "wg-ai-shot";
 host.appendChild(holder);
-createRoot(holder).render(
-	h(AiChat, {
-		session: sessionOf(STATES.get(which) ?? EMPTY),
-		ai: { ...AI, progress: PROGRESS },
-		onChoose: () => {},
-		onOpenProviders: () => {},
-		onHelperAgents: () => {},
-	}),
-);
+const port = obsidianAssistantPort({
+	session: sessionOf(STATES.get(which) ?? EMPTY),
+	settings: { choose: async () => AI, setHelperAgents: async () => AI },
+	jobs: NO_JOBS,
+	specs: NO_SPECS,
+	state: async () => AI,
+	progress: () => PROGRESS,
+	openProviders: () => {},
+	openDesign: async () => {},
+});
+createRoot(holder).render(h(AssistantChat, { port }));

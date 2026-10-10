@@ -2,20 +2,21 @@ import { ItemView } from "obsidian";
 import type { WorkspaceLeaf } from "obsidian";
 import { createElement as h } from "react";
 import { render } from "@widgetarium/core/engine/render.js";
-import { AiChat } from "./chat.js";
-import type { Assistant } from "./assistant.js";
+import { AssistantChat } from "widgetarium/studio";
+import type { ObsidianAssistantPort } from "./assistant-port-obsidian.js";
 
 export const AI_VIEW_TYPE = "widgetarium-ai";
 export const AI_VIEW_TITLE = "Widgetarium AI";
 export const AI_VIEW_ICON = "sparkles";
 
 export class AssistantView extends ItemView {
-	private readonly assistant: Assistant;
 	private node: HTMLElement | null = null;
 
-	constructor(leaf: WorkspaceLeaf, assistant: Assistant) {
+	constructor(
+		leaf: WorkspaceLeaf,
+		private readonly port: ObsidianAssistantPort,
+	) {
 		super(leaf);
-		this.assistant = assistant;
 	}
 
 	getViewType(): string {
@@ -31,29 +32,10 @@ export class AssistantView extends ItemView {
 	}
 
 	override async onOpen(): Promise<void> {
-		this.node = this.contentEl.createDiv({ cls: "wg-root wg-ai-host" });
-		await this.draw();
-	}
-
-	async draw(): Promise<void> {
-		if (!this.node) return;
-		const ai = await this.assistant.state();
-		render(
-			h(AiChat, {
-				session: this.assistant.session,
-				ai,
-				onChoose: async (id: string) => {
-					await this.assistant.settings.choose(id);
-					await this.draw();
-				},
-				onOpenProviders: () => this.assistant.openProviders(),
-				onHelperAgents: async (on: boolean) => {
-					await this.assistant.settings.setHelperAgents(on);
-					await this.draw();
-				},
-			}),
-			this.node,
-		);
+		const node = this.contentEl.createDiv({ cls: "wg-root wg-ai-host" });
+		this.node = node;
+		const setup = await this.port.setup().catch(() => undefined);
+		if (this.node === node) render(h(AssistantChat, { port: this.port, setup }), node);
 	}
 
 	override async onClose(): Promise<void> {

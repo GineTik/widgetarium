@@ -53,5 +53,5 @@ function framePictureOf(
 function screenOf(state: DrawnState, size: Size, drawing: Drawing): ReactElement {
 	if (state.picture) return h(StateDrawing, { picture: state.picture, registry: drawing.registry });
 	if (state.board) return h(ScreenBoard, { board: state.board, width: size.width, ...drawing });
-	return h("p", { className: "wg-ai-spec-refused" }, state.refusal ?? "");
+	return h("p", { className: "wg-studio-ai-spec-refused" }, state.refusal ?? "");
 }

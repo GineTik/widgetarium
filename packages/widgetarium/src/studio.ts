@@ -4,6 +4,8 @@ export type { OpenedApp } from "./app/widgetarium-app.js";
 export { browserStudioHost } from "./studio/browser-studio-host.js";
 export { studioPack } from "./studio/logic/studio-pack.js";
 export type { ChromeInsets, HostApp, StudioHostPort } from "@widgetarium/core/engine/studio-host.js";
+export { AssistantChat } from "./studio/assistant/assistant-chat.js";
+export { foldOf } from "./studio/assistant/cards/spec-rows.js";
 export { DESKTOP_FRAME } from "./studio/canvas/frame-size.js";
 export type { Size } from "./studio/canvas/frame-size.js";
 export { PRESSABLE_CONTROLS, fitLook, usePanZoom } from "./studio/canvas/pan-zoom.js";

@@ -22,6 +22,8 @@ import { substituteIn } from "./inline-render.js";
 import { AI_VIEW_TYPE, AssistantView } from "./ai/view.js";
 import { WidgetariumSettingTab } from "./ai/settings-tab.js";
 import { createAssistant } from "./ai/assistant.js";
+import { obsidianAssistantPort } from "./ai/assistant-port-obsidian.js";
+import type { ObsidianAssistantPort } from "./ai/assistant-port-obsidian.js";
 import { layAgentFiles } from "./ai/agent-files.js";
 import { addCommandsAndRibbon } from "./plugin-commands.js";
 import { createCataloguePort } from "./catalogue-port.js";
@@ -63,13 +65,13 @@ export function startPlugin(plugin: WidgetariumPlugin): void {
 	plugin.cataloguePort = createCataloguePort(plugin);
 	plugin.host = createHost(plugin.app, plugin);
 	plugin.rules = [];
-	registerRenderersBeforeFirstNote(plugin);
+	const assistant = startAssistant(plugin);
+	registerRenderersBeforeFirstNote(plugin, assistant);
 	plugin.installer = pluginInstaller(plugin);
 	plugin.wanted = wantedWidgetsOf(plugin);
 	plugin.started = plugin
 		.startUp()
 		.catch((failure: unknown) => console.error("[widgetarium] the widgets could not be read", failure));
-	startAssistant(plugin);
 	registerBoardViews(plugin);
 	registerDesignView(plugin);
 	receiveDropsInNotes(plugin);
@@ -184,7 +186,7 @@ function shapeStoreFollowingRenames(plugin: WidgetariumPlugin): ShapeStore {
 	return shapes;
 }
 
-function registerRenderersBeforeFirstNote(plugin: WidgetariumPlugin): void {
+function registerRenderersBeforeFirstNote(plugin: WidgetariumPlugin, assistant: ObsidianAssistantPort): void {
 	plugin.registerMarkdownCodeBlockProcessor("widgetarium", (source, element, context) =>
 		plugin.renderBlock(source, element, context),
 	);
@@ -201,10 +203,10 @@ function registerRenderersBeforeFirstNote(plugin: WidgetariumPlugin): void {
 		);
 	plugin.registerMarkdownPostProcessor(substituteSection);
 	traceSub("post-processor registered", { rules: plugin.rules.length });
-	registerAppBlocks(plugin);
+	registerAppBlocks(plugin, assistant);
 }
 
-function registerAppBlocks(plugin: WidgetariumPlugin): void {
+function registerAppBlocks(plugin: WidgetariumPlugin, assistant: ObsidianAssistantPort): void {
 	const projects = createAppProjects(plugin.app.vault.adapter);
 	plugin.register(() => projects.close());
 	const place = { projects, hostOf: (notePath: string) => bindNote(plugin.host, notePath) };
@@ -212,7 +214,7 @@ function registerAppBlocks(plugin: WidgetariumPlugin): void {
 		drawAppBlock(place, source, element, context),
 	);
 	reportVaultChangesTo(plugin, projects);
-	registerStudioView(plugin, projects);
+	registerStudioView(plugin, projects, assistant);
 }
 
 function reportVaultChangesTo(plugin: WidgetariumPlugin, projects: AppProjects): void {
@@ -241,14 +243,17 @@ function wantedWidgetsOf(plugin: WidgetariumPlugin): WantedWidgets {
 	});
 }
 
-function startAssistant(plugin: WidgetariumPlugin): void {
+function startAssistant(plugin: WidgetariumPlugin): ObsidianAssistantPort {
 	const assistant = createAssistant(plugin.app, plugin);
+	const port = obsidianAssistantPort(assistant);
 	plugin.assistant = assistant;
-	plugin.registerView(AI_VIEW_TYPE, (leaf) => new AssistantView(leaf, assistant));
+	plugin.assistantPort = port;
+	plugin.registerView(AI_VIEW_TYPE, (leaf) => new AssistantView(leaf, port));
 	plugin.addSettingTab(new WidgetariumSettingTab(plugin.app, plugin));
 	assistant
 		.restore()
 		.catch((failure: unknown) => console.error("[widgetarium] the last conversation could not be read back", failure));
 	plugin.app.workspace.onLayoutReady(() => void plugin.showAssistant(false));
 	plugin.registerEvent(plugin.app.workspace.on("active-leaf-change", () => plugin.redrawAssistant()));
+	return port;
 }

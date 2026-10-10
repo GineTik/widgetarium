@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 import { Loader, useNow } from "@widgetarium/kit";
 import type { Job } from "@widgetarium/core/app-jobs.js";
 import type { JobControls } from "./design-job.js";
-import { doingOf } from "./job-words.js";
+import { doingOf } from "@widgetarium/core/job-words.js";
 
 const PAUSE = "Pause";
 const TOKENS = "{tokens} tokens";

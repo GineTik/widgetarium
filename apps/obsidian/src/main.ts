@@ -7,8 +7,9 @@ import { setTracing, tracing, measure, spentSoFar, forgetSpent, traceSub } from 
 import type { Board } from "@widgetarium/core/model.js";
 import type { createWantedWidgets } from "@widgetarium/core/engine/widgets-wanted.js";
 import { isObject } from "@widgetarium/core/engine/is-object.js";
-import { AI_VIEW_TYPE, AssistantView } from "./ai/view.js";
+import { AI_VIEW_TYPE } from "./ai/view.js";
 import type { Assistant } from "./ai/assistant.js";
+import type { ObsidianAssistantPort } from "./ai/assistant-port-obsidian.js";
 import { activeRules } from "./substitution.js";
 import type { Rule } from "./substitution.js";
 import { createBoardNote, insertBoardAtCursor, isScreenNote } from "./board-note.js";
@@ -54,6 +55,7 @@ export default class WidgetariumPlugin extends Plugin {
 	declare cataloguePort: PluginCataloguePort;
 	declare started: Promise<void>;
 	assistant: Assistant | null = null;
+	assistantPort: ObsidianAssistantPort | null = null;
 	available: Drawn<AvailableOffer>[] | null = null;
 	templateFolder: TFolder | undefined = undefined;
 	closeSubstitutions: (() => void) | null = null;
@@ -101,9 +103,7 @@ export default class WidgetariumPlugin extends Plugin {
 	}
 
 	redrawAssistant(): void {
-		for (const leaf of this.app.workspace.getLeavesOfType(AI_VIEW_TYPE)) {
-			if (leaf.view instanceof AssistantView) void leaf.view.draw();
-		}
+		this.assistantPort?.setupChanged();
 	}
 
 	showCatalogue(): Promise<void> {

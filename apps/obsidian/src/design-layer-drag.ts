@@ -27,7 +27,7 @@ interface Lift {
 }
 
 const ROW = ".wg-design-layer-row";
-const SHUT = ".wg-ai-fold.is-shut";
+const SHUT = ".wg-studio-ai-fold.is-shut";
 const DRAGGING = "is-dragging";
 const LIFTED = "is-lifted";
 const STARTS_AFTER_PX = 4;

@@ -166,6 +166,9 @@ const { registerStudioView } = await import("../apps/obsidian/src/studio-leaves.
 const { followAppFolderRename } = await import("../apps/obsidian/src/studio-renames.js");
 const { createStudioRouting } = await import("../apps/obsidian/src/studio-routing.js");
 const { STUDIO_VIEW_TYPE, StudioView } = await import("../apps/obsidian/src/studio-view.js");
+const { checkedAssistantPort } = await import("./obsidian-assistant-port-checks.ts");
+const { NO_ASSISTANT } = await import("../packages/core/src/engine/assistant-port.js");
+const { STUDIO_STATE } = await import("../packages/widgetarium/src/studio/studio-state.js");
 registerPacks(corePack);
 
 const APP_NOTE = { path: "Apps/Farm.md", basename: "Farm" };
@@ -269,6 +272,7 @@ function fakePluginOver(leaves: readonly FakeLeaf[]) {
 	registerStudioView(
 		standIn<WidgetariumPlugin>(plugin, ["app", "host", "registerView", "registerEvent"], "plugin"),
 		countedProjects,
+		NO_ASSISTANT,
 	);
 	return {
 		fileOpened: () => handlers.get("file-open")?.(),
@@ -406,16 +410,19 @@ check(
 	false,
 );
 
+const checkedAssistant = await checkedAssistantPort(check);
+
 const place = standIn<StudioPlace>(
 	{
 		app: { metadataCache: { getFileCache: frontMatterOf } },
 		projects: createAppProjects(adapter),
 		viewType: STUDIO_VIEW_TYPE,
+		assistant: checkedAssistant.port,
 		hostOf: () => host,
 		openAsMarkdown: async () => undefined,
 		showAsMarkdown: async () => undefined,
 	},
-	["app", "projects", "viewType", "hostOf", "openAsMarkdown", "showAsMarkdown"],
+	["app", "projects", "viewType", "assistant", "hostOf", "openAsMarkdown", "showAsMarkdown"],
 	"place",
 );
 async function drawnFor(file: NoteFile): Promise<HTMLElement> {
@@ -441,6 +448,18 @@ check(
 	[true, true],
 );
 check("and no refusal", studioNode.querySelector(".wg-app-refusal")?.textContent ?? null, null);
+STUDIO_STATE.toggleAssistant();
+await settle();
+check(
+	"the studio's sidebar draws the chat over the assistant the plugin lends",
+	[
+		studioNode.querySelector(".wg-studio-sidebar .wg-studio-ai-who")?.textContent ?? null,
+		studioNode.querySelector(".wg-studio-sidebar .wg-studio-ai-turn.is-mine")?.textContent ?? null,
+	],
+	[checkedAssistant.providerLabel, checkedAssistant.asked],
+);
+STUDIO_STATE.toggleAssistant();
+await settle();
 const plainNode = await drawnFor(PLAIN_NOTE);
 check(
 	"a note naming no app says what to add",

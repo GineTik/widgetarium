@@ -23,7 +23,7 @@ const ERRORS_ATTRIBUTE = "data-wg-console-errors";
 const ERRORS_HELD = new RegExp(`${ERRORS_ATTRIBUTE}="([^"]*)"`);
 const RENDER_BUDGET_MS = 9000;
 const STUDIO_MARK = "wg-studio-band";
-const STUDIO_RULE = ".wg-studio";
+const STUDIO_RULE = /\.wg-studio|@keyframes\s+wg-studio/;
 const STUDIO_OUT = "dist-studio";
 
 const SCHEMA = `import { z } from "zod";
@@ -264,11 +264,15 @@ try {
 	check("the route's board draws both task titles the handler answered", titlesDrawnInBoard(drawn), true);
 	check("and the page logs no console error", drawn.errors.join("\n"), "");
 	check("app mode ships no studio code", scriptsUnder(path.join(app, "dist")).includes(STUDIO_MARK), false);
-	check("and no studio rule in its CSS", sheetsUnder(path.join(app, "dist")).includes(STUDIO_RULE), false);
+	check(
+		"and no studio rule or studio keyframes in its CSS",
+		STUDIO_RULE.test(sheetsUnder(path.join(app, "dist"))),
+		false,
+	);
 
 	const studio = await studioBuiltAndDrawn(app);
 	check("studio mode ships the studio", scriptsUnder(path.join(app, STUDIO_OUT)).includes(STUDIO_MARK), true);
-	check("and its CSS holds the studio rules", sheetsUnder(path.join(app, STUDIO_OUT)).includes(STUDIO_RULE), true);
+	check("and its CSS holds the studio rules", STUDIO_RULE.test(sheetsUnder(path.join(app, STUDIO_OUT))), true);
 	check("and draws its band", studio.dom.includes(`class="${STUDIO_MARK}"`), true);
 	check("with the route's tasks below it", titlesDrawnInBoard(studio), true);
 	check("and logs no console error", studio.errors.join("\n"), "");

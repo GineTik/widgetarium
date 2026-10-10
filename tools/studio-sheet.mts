@@ -9,6 +9,7 @@ interface Block {
 }
 
 const STUDIO_CLASS = /\.wg-studio/;
+const STUDIO_KEYFRAMES = /^@keyframes\s+wg-studio/;
 const NESTING_AT_RULE = /^@(?:media|supports|container|layer)\b/;
 const COMMENT = /\/\*[\s\S]*?\*\//g;
 const QUOTES = new Set(['"', "'"]);
@@ -22,6 +23,7 @@ function splitBlock(block: Block): SplitSheet {
 	if (block.body === null) return { app: block.prelude, studio: "" };
 	const opening = block.prelude.replace(COMMENT, "").trim();
 	if (NESTING_AT_RULE.test(opening)) return splitNested(block.prelude, block.body);
+	if (STUDIO_KEYFRAMES.test(opening)) return { app: "", studio: `${opening} {${block.body}}\n\n` };
 	if (opening.startsWith("@")) return { app: `${block.prelude}{${block.body}}`, studio: "" };
 	return splitRule(block.prelude, block.body);
 }

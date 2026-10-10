@@ -67,8 +67,8 @@ Then write `.widgetarium/apps/<app>/spec.md` by `spec.md` in the handbook: the p
 take from each, the job, the features in the person's words plus `mark: suggested` ones from the
 research, at most three choices you could not guess, the pages, what is excluded, the checks, and
 for you what each list allows. Run `node {tool} spec <app>`, say one line, and **stop**: this is the
-one place you wait. When the next message is "Build it", read the spec again and build only the
-features still kept.
+one place you wait. When the next message is "Build it: <app>", read that app's spec again and build
+only the features still kept.
 
 **Then plan the build as jobs, and stop.** `node {tool} job add <app> --title … --phase … --page … --says … [--after …]`:
 

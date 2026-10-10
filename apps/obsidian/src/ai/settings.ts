@@ -4,7 +4,7 @@ import type { EditableField, Provider } from "./providers.js";
 import { READER_NAMES } from "./stream.js";
 import type { Held } from "./stream.js";
 import { sessionToKeep, turnsToKeep } from "./transcript.js";
-import type { KeptTurn } from "./transcript.js";
+import type { AssistantTurn } from "@widgetarium/core/engine/assistant-port.js";
 
 export const AI_KEY = "ai";
 export const DEFAULT_JOBS_AT_ONCE = 2;
@@ -13,7 +13,7 @@ export const MOST_JOBS_AT_ONCE = 4;
 export type ProviderFields = Partial<Record<EditableField, string>>;
 
 export interface Transcript {
-	readonly turns: KeptTurn[];
+	readonly turns: AssistantTurn[];
 	readonly session: string | null;
 }
 

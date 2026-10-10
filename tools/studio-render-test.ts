@@ -6,8 +6,10 @@ import path from "node:path";
 import { promisify } from "node:util";
 import esbuild from "esbuild";
 import { NOT_AVAILABLE_ON_HOST } from "../packages/core/src/engine/studio-host.ts";
+import { ASSISTANT_NOT_AVAILABLE } from "../packages/core/src/engine/assistant-port.ts";
 import { STUDIO_BAND_PX } from "../packages/widgetarium/src/studio/shared/studio-band-size.ts";
 import { bundleOf, findBrowser } from "./harness.ts";
+import { MEASURE_SCRIPT } from "./studio-render-measure.ts";
 
 interface Box {
 	readonly x: number;
@@ -24,6 +26,23 @@ interface Seen {
 	readonly menu?: Box | null;
 	readonly ai?: Box | null;
 	readonly aiPressed?: string | null;
+	readonly outletBefore?: Box | null;
+	readonly outletOpen?: Box | null;
+	readonly sidebarOpen?: Box | null;
+	readonly bandOpen?: Box | null;
+	readonly sentTurn?: string | null;
+	readonly sent?: readonly string[] | null;
+	readonly specTitle?: string | null;
+	readonly built?: readonly string[] | null;
+	readonly scrolledTo?: readonly string[];
+	readonly setupFailure?: string | null;
+	readonly chatAfterSetupFailure?: boolean;
+	readonly sendFailure?: string | null;
+	readonly draftBack?: string | null;
+	readonly sidebarGone?: boolean;
+	readonly outletClosed?: Box | null;
+	readonly quietSaid?: string | null;
+	readonly bandWithQuiet?: boolean;
 	readonly canvasShown?: boolean;
 	readonly taskGoneInCanvas?: boolean;
 	readonly frames?: readonly string[];
@@ -74,95 +93,6 @@ const sheets = ["packages/widgetarium/src/browser-host.css", "apps/obsidian/styl
 
 // TRADE-OFF: headless Chrome under a virtual time budget runs one animation frame; timers stand in for the rest
 const FRAMES_BY_TIMER = `window.requestAnimationFrame = (step) => setTimeout(() => step(performance.now()), 16); window.cancelAnimationFrame = (frame) => clearTimeout(frame);`;
-
-const MEASURE_SCRIPT = `
-const wait = (ms) => new Promise((done) => setTimeout(done, ms));
-const until = async (find) => { for (let at = 0; at < 80; at += 1) { const found = find(); if (found) return found; await wait(50); } return null; };
-const leafNamed = (said, under = document) => [...under.querySelectorAll("*")].find((one) => one.children.length === 0 && one.textContent.trim() === said);
-const boxOf = (node) => { if (!node) return null; const box = node.getBoundingClientRect(); return { x: Math.round(box.left), y: Math.round(box.top), w: Math.round(box.width), h: Math.round(box.height), right: Math.round(innerWidth - box.right) }; };
-const triggerHitIn = (selector) => { const trigger = document.querySelector(selector); if (!trigger) return null; const box = trigger.getBoundingClientRect(); return trigger.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)); };
-const menuButton = () => document.querySelector('[aria-label$=" menu"]');
-const aiButton = () => document.querySelector('[aria-label="AI assistant"]');
-(async () => {
-	const seen = {};
-	const report = () => (document.getElementById("seen").textContent = JSON.stringify(seen));
-	await until(() => document.querySelector("[data-task]"));
-	await until(() => window.__MODE__ === "app" || menuButton());
-	await wait(300);
-	const routeHolder = document.querySelector(window.__MODE__ === "app" ? "#root" : ".wg-studio-outlet");
-	seen.routeDom = routeHolder ? routeHolder.innerHTML : null;
-	const routeBoard = routeHolder ? routeHolder.querySelector(".wg-root") : null;
-	seen.routeTop = routeBoard ? Math.round(routeBoard.getBoundingClientRect().top) : null;
-	seen.studioElements = document.querySelectorAll('[class*="wg-studio"]').length;
-	seen.routeTriggerHit = triggerHitIn('[aria-label="Task options"]');
-	seen.menu = boxOf(menuButton());
-	seen.ai = boxOf(aiButton());
-	seen.bandHeight = boxOf(document.querySelector(".wg-studio-band"))?.h ?? null;
-	const corner = document.querySelector(".wg-studio-corner");
-	seen.cornerGap = corner ? parseFloat(getComputedStyle(corner).columnGap) : null;
-	report();
-	if (window.__MODE__ === "studio-mac") {
-		menuButton().click();
-		seen.appsFailure = (await until(() => document.querySelector('[data-name="Apps failure"]')))?.textContent ?? null;
-		report();
-	}
-	if (window.__MODE__ === "studio-memory") {
-		seen.navigated = window.__ROUTER__.navigate("/done/7");
-		seen.memoryLeftTask = Boolean(await until(() => !document.querySelector("[data-task]")));
-		seen.locationAfter = location.pathname;
-		seen.param = await window.__PARAM__("id");
-		seen.navigatedBack = window.__ROUTER__.navigate("/");
-		seen.paramAfter = await window.__PARAM__("id");
-		report();
-	}
-	if (window.__MODE__ !== "studio") return;
-	aiButton().click();
-	await until(() => aiButton()?.getAttribute("aria-pressed") === "true");
-	seen.aiPressed = aiButton()?.getAttribute("aria-pressed") ?? null;
-	menuButton().click();
-	(await until(() => leafNamed("Edit in canvas")))?.click();
-	seen.canvasShown = Boolean(await until(() => document.querySelector(".wg-studio-canvas")));
-	seen.taskGoneInCanvas = document.querySelectorAll(".wg-studio-outlet > :not(.wg-studio-canvas)").length === 0;
-	seen.frames = [...document.querySelectorAll(".wg-studio-frame")].map((frame) => frame.dataset.route);
-	seen.frameDrawsRoute = Boolean(await until(() => document.querySelector('.wg-studio-frame[data-route="/"] [data-task]')));
-	seen.needsSaid = document.querySelector('.wg-studio-frame[data-route="/done/:id"] .wg-studio-needs')?.textContent ?? null;
-	const frameTrigger = '.wg-studio-frame[data-route="/"] [aria-label="Task options"]';
-	seen.frameTriggerHit = triggerHitIn(frameTrigger);
-	document.querySelector(frameTrigger)?.focus();
-	seen.frameTriggerFocused = document.activeElement === document.querySelector(frameTrigger);
-	await wait(400);
-	const layer = document.querySelector(".wg-studio-canvas-layer");
-	const field = document.querySelector(".wg-studio-canvas-field");
-	seen.transformBefore = layer?.style.transform ?? "";
-	field?.dispatchEvent(new WheelEvent("wheel", { deltaY: -200, ctrlKey: true, clientX: 400, clientY: 300, bubbles: true, cancelable: true }));
-	await wait(200);
-	seen.transformZoomed = layer?.style.transform ?? "";
-	field?.dispatchEvent(new WheelEvent("wheel", { deltaX: 80, deltaY: 40, bubbles: true, cancelable: true }));
-	await wait(200);
-	seen.transformPanned = layer?.style.transform ?? "";
-	seen.locationInCanvas = location.pathname;
-	leafNamed("Components")?.click();
-	await until(() => document.querySelector(".wg-studio-canvas-card"));
-	seen.cards = [...document.querySelectorAll(".wg-studio-canvas-card")].map((card) => card.dataset.state);
-	seen.cardDrawsState = (document.querySelector('[data-state="task-list · Full"]')?.textContent ?? "").includes("Sow the beans");
-	leafNamed("Pages")?.click();
-	await wait(200);
-	seen.transformBackOnPages = document.querySelector(".wg-studio-canvas-layer.is-pages")?.style.transform ?? "";
-	report();
-	menuButton().click();
-	(await until(() => leafNamed("Back to view")))?.click();
-	seen.backShowsRoute = Boolean(await until(() => document.querySelector(".wg-studio-outlet [data-task]")));
-	await wait(300);
-	seen.routeDomBack = document.querySelector(".wg-studio-outlet")?.innerHTML ?? null;
-	await wait(300);
-	menuButton().click();
-	const list = await until(() => document.querySelector(".wg-studio-apps"));
-	(list ? leafNamed("Farm", list) : null)?.click();
-	await wait(500);
-	seen.bandAfterRefusal = Boolean(document.querySelector(".wg-studio-band") && menuButton());
-	seen.refusal = document.querySelector('.wg-studio-menu [data-name="Refusal"]')?.textContent ?? null;
-	report();
-})();`;
 
 function pageOf(mode: Mode): string {
 	return `<!doctype html><html><head><meta charset="utf-8">
@@ -280,6 +210,77 @@ check(
 	withoutReactIds(studio.seen.routeDom).length,
 );
 check("the AI button presses the sidebar state", studio.seen.aiPressed === "true", studio.seen.aiPressed);
+const { outletBefore, outletOpen, sidebarOpen, bandOpen, outletClosed } = studio.seen;
+check(
+	"an open sidebar narrows the outlet by its own width",
+	outletBefore !== undefined &&
+		outletBefore !== null &&
+		outletOpen !== undefined &&
+		outletOpen !== null &&
+		sidebarOpen !== undefined &&
+		sidebarOpen !== null &&
+		sidebarOpen.w > 0 &&
+		outletOpen.w < outletBefore.w &&
+		Math.abs(outletOpen.w + sidebarOpen.w - outletBefore.w) <= 1,
+	{ outletBefore, outletOpen, sidebarOpen },
+);
+check(
+	"and stands beside it, never over it",
+	outletOpen !== undefined &&
+		outletOpen !== null &&
+		sidebarOpen !== undefined &&
+		sidebarOpen !== null &&
+		outletOpen.x + outletOpen.w <= sidebarOpen.x &&
+		sidebarOpen.right === 0,
+	{ outletOpen, sidebarOpen },
+);
+check(
+	"while the band stays above both, as wide as the window",
+	bandOpen !== undefined &&
+		bandOpen !== null &&
+		sidebarOpen !== undefined &&
+		sidebarOpen !== null &&
+		bandOpen.w === VIEW.width &&
+		bandOpen.y + bandOpen.h <= sidebarOpen.y,
+	{ bandOpen, sidebarOpen },
+);
+check(
+	"a message typed and sent reaches the port and shows as a turn",
+	studio.seen.sentTurn === "Plant the beans" && sameList(studio.seen.sent ?? [], ["Plant the beans"]),
+	{ turn: studio.seen.sentTurn, sent: studio.seen.sent },
+);
+check("the sidebar draws the spec card the port's cards name", studio.seen.specTitle === "Farm", studio.seen.specTitle);
+check(
+	"and its Build it asks the port to build that app",
+	sameList(studio.seen.built ?? [], ["Farm"]),
+	studio.seen.built,
+);
+check(
+	"a press on a working app's line scrolls this chat's card, never another chat's",
+	sameList(studio.seen.scrolledTo ?? [], ["this chat"]),
+	studio.seen.scrolledTo,
+);
+check(
+	"a setup that fails to read again keeps the chat on screen",
+	studio.seen.chatAfterSetupFailure === true,
+	studio.seen.chatAfterSetupFailure,
+);
+check(
+	"and says so on the quiet failure line",
+	(studio.seen.setupFailure ?? "").includes("the fake vault is gone"),
+	studio.seen.setupFailure,
+);
+check(
+	"a send the port refuses says so above the composer",
+	(studio.seen.sendFailure ?? "").includes("the fake provider refuses"),
+	studio.seen.sendFailure,
+);
+check("and puts the draft back into the box", studio.seen.draftBack === "Break the fence", studio.seen.draftBack);
+check(
+	"a second press closes the sidebar and gives the outlet its width back",
+	studio.seen.sidebarGone === true && outletClosed?.w === outletBefore?.w,
+	{ gone: studio.seen.sidebarGone, outletClosed },
+);
 check("Edit in canvas swaps the route for the canvas", studio.seen.canvasShown === true, studio.seen.canvasShown);
 check("and the route leaves the outlet", studio.seen.taskGoneInCanvas === true, studio.seen.taskGoneInCanvas);
 check("the canvas holds one frame per route", sameList(studio.seen.frames, ["/", "/done/:id"]), studio.seen.frames);
@@ -341,6 +342,11 @@ check("the band is as tall as STUDIO_BAND_PX", studio.seen.bandHeight === STUDIO
 
 const mac = await seenIn("studio-mac");
 check("a host with no apps drew without a failure", mac.reported === "", mac.reported);
+check(
+	"a host with no assistant says so in the sidebar, and the band stays",
+	mac.seen.quietSaid === ASSISTANT_NOT_AVAILABLE && mac.seen.bandWithQuiet === true,
+	{ quiet: mac.seen.quietSaid, band: mac.seen.bandWithQuiet },
+);
 check(
 	"a host inset of 76px moves the menu past the system buttons",
 	mac.seen.menu?.x === MAC_SAFE_AREA_PX + (mac.seen.cornerGap ?? Number.NaN),
