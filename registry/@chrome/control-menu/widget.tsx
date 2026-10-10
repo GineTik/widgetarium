@@ -43,8 +43,8 @@ const ControlMenu = createWidget({
 		};
 		const control = <CurrentApp app={current} onEdit={() => void closedAfter(editInCanvas)()} />;
 		const trigger = (
-			<Button variant={shown ? "secondary" : "ghost"} size="icon" aria-label={`${current.name} menu`}>
-				<AppMark app={current} px={MARK_PX.s} />
+			<Button variant={shown ? "secondary" : "ghost"} size="icon-sm" aria-label={`${current.name} menu`}>
+				<AppMark app={current} px={MARK_PX.button} />
 			</Button>
 		);
 		return (
@@ -110,7 +110,7 @@ export const metadata = defineMetadata(ControlMenu, {
 	},
 });
 
-export const layout = defineLayout({ role: "navigation", size: { preferredWidth: 36, preferredHeight: 36 } });
+export const layout = defineLayout({ role: "navigation", size: { preferredWidth: 34, preferredHeight: 34 } });
 
 const OPEN = { getCurrentApp: READING_APP, getApps: [...SAMPLE_APPS], getIsOpen: true };
 

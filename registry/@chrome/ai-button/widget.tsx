@@ -19,12 +19,19 @@ const AiButton = createWidget({
 	},
 	draw: ({ getIsShown: isShown, getLook: look, toggleAssistant }) => {
 		const [isOpen, setOpen] = useState<boolean | null>(null);
-		if (!isShown) return <span className="block size-9" data-name="Reserved for the AI button" aria-hidden="true" />;
+		if (!isShown)
+			return (
+				<span
+					className="block size-[var(--wg-kit-control-s)]"
+					data-name="Reserved for the AI button"
+					aria-hidden="true"
+				/>
+			);
 		const shownLook = isOpen === null ? look : lookOf(isOpen);
 		return (
 			<Button
 				variant={VARIANT_OF_LOOK[shownLook]}
-				size="icon"
+				size="icon-sm"
 				aria-label="AI assistant"
 				aria-pressed={shownLook === "open"}
 				onClick={async () => {
@@ -65,7 +72,7 @@ export const metadata = defineMetadata(AiButton, {
 	},
 });
 
-export const layout = defineLayout({ role: "control", size: { preferredWidth: 36, preferredHeight: 36 } });
+export const layout = defineLayout({ role: "control", size: { preferredWidth: 34, preferredHeight: 34 } });
 
 export const states = defineStates(AiButton, {
 	Rest: {},

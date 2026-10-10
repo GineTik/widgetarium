@@ -7,7 +7,7 @@
 	"role": "control",
 	"size": {
 		"preferredWidth": 138,
-		"preferredHeight": 44
+		"preferredHeight": 50
 	},
 	"props": {
 		"getSide": {

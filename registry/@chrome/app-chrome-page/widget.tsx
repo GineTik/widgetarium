@@ -18,13 +18,13 @@ const AppChromePage = createWidget({
 				</Container>
 			</div>
 			<div
-				className="pointer-events-none absolute inset-x-0 top-0 flex h-11 items-center justify-between"
+				className="pointer-events-none absolute inset-x-0 top-0 flex h-[50px] items-center justify-between"
 				data-name="Corners"
 			>
-				<div className="pointer-events-auto flex h-11 items-center gap-1" data-name="Left corner">
+				<div className="pointer-events-auto flex h-[50px] items-center gap-1" data-name="Left corner">
 					<Slots of={start} />
 				</div>
-				<div className="pointer-events-auto flex h-11 items-center gap-1" data-name="Right corner">
+				<div className="pointer-events-auto flex h-[50px] items-center gap-1" data-name="Right corner">
 					<Slots of={end} />
 				</div>
 			</div>

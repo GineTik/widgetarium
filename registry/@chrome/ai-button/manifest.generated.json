@@ -6,8 +6,8 @@
 	"keywords": ["ai", "assistant", "sidebar", "agent", "chat", "chrome", "corner"],
 	"role": "control",
 	"size": {
-		"preferredWidth": 36,
-		"preferredHeight": 36
+		"preferredWidth": 34,
+		"preferredHeight": 34
 	},
 	"commands": {
 		"toggleAssistant": {

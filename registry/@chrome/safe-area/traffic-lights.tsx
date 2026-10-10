@@ -3,7 +3,7 @@ const TRAFFIC_LIGHTS = ["bg-red", "bg-yellow", "bg-green"] as const;
 export function TrafficLights({ isDrawn }: { readonly isDrawn: boolean }) {
 	return (
 		<span
-			className="flex h-11 w-[76px] shrink-0 items-center gap-2 pl-4"
+			className="flex h-[50px] w-[76px] shrink-0 items-center gap-2 pl-4"
 			data-name="macOS window buttons"
 			aria-hidden="true"
 		>

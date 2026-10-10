@@ -6,8 +6,8 @@
 	"keywords": ["app switcher", "menu", "workspace", "control", "settings", "chrome", "corner", "apps"],
 	"role": "navigation",
 	"size": {
-		"preferredWidth": 36,
-		"preferredHeight": 36
+		"preferredWidth": 34,
+		"preferredHeight": 34
 	},
 	"commands": {
 		"openApp": {

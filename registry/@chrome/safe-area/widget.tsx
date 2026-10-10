@@ -19,7 +19,7 @@ const SafeArea = createWidget({
 		getDrawsSystemButtons: IQuery.output(z.boolean().default(false)),
 	},
 	draw: ({ getSide: side, getPlatform: platform, getDrawsSystemButtons: drawsSystemButtons }) => {
-		if (OWNER_OF_SIDE[side] !== platform) return <span className="block w-1 shrink-0" data-name="Window edge" />;
+		if (OWNER_OF_SIDE[side] !== platform) return <span className="block w-2 shrink-0" data-name="Window edge" />;
 		if (side === "left") return <TrafficLights isDrawn={drawsSystemButtons} />;
 		return <CaptionButtons isDrawn={drawsSystemButtons} />;
 	},
@@ -44,7 +44,7 @@ export const metadata = defineMetadata(SafeArea, {
 	},
 });
 
-export const layout = defineLayout({ role: "control", size: { preferredWidth: 138, preferredHeight: 44 } });
+export const layout = defineLayout({ role: "control", size: { preferredWidth: 138, preferredHeight: 50 } });
 
 export const states = defineStates(SafeArea, {
 	"macOS left": { getSide: "left", getPlatform: "macos", getDrawsSystemButtons: true },
