@@ -3,7 +3,7 @@ import type { HostApp } from "@widgetarium/core/engine/studio-host.js";
 import { PageInputSchema, PageOf, offsetOfCursor, pageAt } from "@widgetarium/core/gateway/page.js";
 import type { Page, PageInput } from "@widgetarium/core/gateway/page.js";
 import { IQuery } from "@widgetarium/core/gateway/queries.js";
-import { APP_SHAPES, DRAFT_APP, NothingAskedSchema, StudioAppSchema } from "../shared/studio-app.js";
+import { DRAFT_APP, NothingAskedSchema, StudioAppSchema } from "../shared/studio-app.js";
 import type { StudioApp } from "../shared/studio-app.js";
 import type { AppFields, NoFields } from "./studio-fields.js";
 
@@ -51,12 +51,7 @@ async function studioAppsOf(ports: ImplementationPorts): Promise<readonly Studio
 }
 
 function studioAppOf({ id, name, pages, firstPage, refusal }: HostApp): StudioApp {
-	return { id, name, shape: shapeOf(id), line: refusal ?? lineOf(pages, firstPage) };
-}
-
-function shapeOf(id: string): StudioApp["shape"] {
-	const sum = [...id].reduce((total, letter) => total + letter.charCodeAt(0), 0);
-	return APP_SHAPES[sum % APP_SHAPES.length] ?? APP_SHAPES[0];
+	return { id, name, line: refusal ?? lineOf(pages, firstPage) };
 }
 
 function lineOf(pages: number, firstPage: string | null): string {
