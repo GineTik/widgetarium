@@ -175,3 +175,7 @@ The decisions, each with what it replaced:
   route and draws in reading mode and Live Preview through one code-block processor, in any note,
   while the project stays a folder that also runs alone. A file type of its own would have needed a
   view of its own and held the app in a second format.
+- **Layer folders keep their plain names** (`app`, `widgets`, `logic`, `shared`), sorted however the
+  editor sorts them. The layer order is a rule about imports, enforced by the layer lint and stated
+  in `AGENTS.md`, not a display order; numbered prefixes would leak into every import, alias and
+  prompt. FSD keeps its plain names for the same reason.
