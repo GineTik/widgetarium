@@ -6,6 +6,7 @@ import { render } from "@widgetarium/core/engine/render.js";
 import { failureMessage } from "@widgetarium/core/engine/failure-message.js";
 import { withPageParams } from "@widgetarium/core/engine/page-params.js";
 import { normalizeBoard } from "@widgetarium/core/model.js";
+import type { Board } from "@widgetarium/core/model.js";
 import { WidgetSurface } from "@widgetarium/core/surface.js";
 import { shieldFromEditor } from "@widgetarium/core/editor-shield.js";
 import { formatFindings, matchProjectRoute } from "@widgetarium/core/project/index.js";
@@ -46,6 +47,7 @@ interface RouteBoardProps {
 	readonly board: unknown;
 	readonly registry: BoardRegistry;
 	readonly host: SurfaceHost;
+	readonly boardNode: HTMLElement;
 }
 
 const BLOCK_UNREADABLE =
@@ -112,18 +114,37 @@ async function drawOpening(view: BlockView, asked: Promise<AppOpening>): Promise
 	}
 }
 
-async function drawnOpening({ block, host }: BlockView, opening: AppOpening): Promise<ReactElement> {
+async function drawnOpening({ block, host, node }: BlockView, opening: AppOpening): Promise<ReactElement> {
 	if (!opening.ok) return refusalOf(projectRefusal(block.folder, opening.findings));
 	const matched = matchProjectRoute(opening.routes, block.route);
 	if (!matched) return refusalOf(missingRoute(block, opening.routes));
 	// TRADE-OFF: params are kept per note, so two app blocks in one note share them
 	if (host.notePath) await withPageParams(host.notePath, matched.params);
-	return h(RouteBoard, { key: opening.version, board: matched.route.board, registry: opening.registry, host });
+	return h(RouteBoard, {
+		key: opening.version,
+		board: matched.route.board,
+		registry: opening.registry,
+		host,
+		boardNode: node,
+	});
 }
 
-function RouteBoard({ board, registry, host }: RouteBoardProps): ReactElement {
-	const [drawn, setDrawn] = useState(() => normalizeBoard(board));
-	return h(WidgetSurface, { board: drawn, registry, host, editing: false, isReadOnly: true, onChange: setDrawn });
+function RouteBoard({ board, registry, host, boardNode }: RouteBoardProps): ReactElement {
+	const [drawn, setDrawn] = useState(() => routePageOf(board));
+	return h(WidgetSurface, {
+		board: drawn,
+		registry,
+		host,
+		boardNode,
+		editing: false,
+		isReadOnly: true,
+		screen: true,
+		onChange: setDrawn,
+	});
+}
+
+function routePageOf(board: unknown): Board {
+	return { ...normalizeBoard(board), mode: "expanded" };
 }
 
 function refusalOf(said: string): ReactElement {

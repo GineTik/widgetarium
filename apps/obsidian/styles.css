@@ -27,10 +27,10 @@
 	--wg-root-head: 1.6rem;
 }
 
-.block-language-widgetarium,
-pre:has(> .block-language-widgetarium),
-.cm-preview-code-block:has(> .block-language-widgetarium),
-.cm-embed-block:has(> .block-language-widgetarium) {
+:is(.block-language-widgetarium, .block-language-widgetarium-app),
+pre:has(> :is(.block-language-widgetarium, .block-language-widgetarium-app)),
+.cm-preview-code-block:has(> :is(.block-language-widgetarium, .block-language-widgetarium-app)),
+.cm-embed-block:has(> :is(.block-language-widgetarium, .block-language-widgetarium-app)) {
 	background: none !important;
 	border: none !important;
 	box-shadow: none !important;
@@ -39,11 +39,11 @@ pre:has(> .block-language-widgetarium),
 	overflow: visible !important;
 }
 
-.cm-embed-block:has(> .block-language-widgetarium):hover {
+.cm-embed-block:has(> :is(.block-language-widgetarium, .block-language-widgetarium-app)):hover {
 	box-shadow: none !important;
 }
 
-.cm-embed-block:has(> .block-language-widgetarium) .edit-block-button {
+.cm-embed-block:has(> :is(.block-language-widgetarium, .block-language-widgetarium-app)) .edit-block-button {
 	display: none !important;
 }
 
