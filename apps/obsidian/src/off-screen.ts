@@ -27,6 +27,7 @@ export async function drawnOffScreen<T>(
 	read: (node: HTMLElement) => Promise<T>,
 ): Promise<T> {
 	const node = document.body.createDiv({ cls: "wg-off-screen" });
+	node.inert = true;
 	node.style.width = size.width ? `${size.width}px` : "max-content";
 	if (size.height) node.style.height = `${size.height}px`;
 	try {
@@ -48,7 +49,8 @@ export function canvasOf(node: HTMLElement, scale: number): Promise<HTMLCanvasEl
 	return domToCanvas(node, pictureOptionsOf(node, scale));
 }
 
-export async function stackedPngOf(canvases: readonly HTMLCanvasElement[]): Promise<ArrayBuffer> {
+export async function stackedPngOf(drawn: readonly HTMLCanvasElement[]): Promise<ArrayBuffer> {
+	const canvases = drawn.filter((one) => one.width > 0 && one.height > 0);
 	const width = Math.max(1, ...canvases.map((one) => one.width));
 	const height = canvases.reduce((sum, one) => sum + one.height + STACK_GAP_PX, STACK_GAP_PX);
 	const stacked = document.createElement("canvas");

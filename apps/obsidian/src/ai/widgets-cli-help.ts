@@ -21,6 +21,7 @@ export const HELP = `widgets — the Widgetarium catalogue, for the agent
   node widgets.mjs report <app>         every kept feature: built, checked, placed — or what is left
   node widgets.mjs shot <note>          a picture of the note as Obsidian draws it; open the path it prints
     --design <app>                      a picture of the app's design canvas instead
+    --page <page> --frame <state>       with --design: one page, or one frame of it, at full size
   node widgets.mjs design <app>         check .widgetarium/apps/<app>/design/ and show it to the person as a card
   node widgets.mjs reference <app> <url>   put a picture from the web on the canvas, above the screens
     --why <line>                        what to take from it, shown under the picture

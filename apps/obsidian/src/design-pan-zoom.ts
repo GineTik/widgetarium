@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
+import type { MutableRefObject, PointerEvent as ReactPointerEvent, RefObject } from "react";
 import type { Size } from "./design-canvas-shapes.js";
 import { movedNow, zoomSettledAt } from "./design-zoom.js";
 import { flightBetween } from "./design-flight.js";
@@ -30,6 +30,8 @@ interface PointerMoves {
 
 const ZOOM_FLOOR = 0.1;
 const ZOOM_CEILING = 2;
+const UNMEASURED: Look = { x: 0, y: 0, scale: 1 };
+const FOLLOWS_LAYOUT_MS = 1500;
 const PINCH_RATE = 0.012;
 const WHEEL_RATE = 0.003;
 const PINCH_DELTA_BELOW = 30;
@@ -43,13 +45,13 @@ export function fitLook(field: Size, view: Size): Look {
 	return { scale, x: (view.width - field.width * scale) / 2, y: (view.height - field.height * scale) / 2 };
 }
 
-export function usePanZoom(layerRef: RefObject<HTMLDivElement | null>, fit: Look, isHand: boolean): PanZoom {
+export function usePanZoom(layerRef: RefObject<HTMLDivElement | null>, fit: Look | null, isHand: boolean): PanZoom {
 	const fieldRef = useRef<HTMLDivElement | null>(null);
 	const percentRef = useRef<HTMLSpanElement | null>(null);
 	const held = useRef<Look | null>(null);
 	const painter = usePainter(layerRef, percentRef);
 	const flying = useRef(0);
-	const lookNow = useCallback((): Look => held.current ?? fit, [fit]);
+	const lookNow = useCallback((): Look => held.current ?? fit ?? UNMEASURED, [fit]);
 	const moveTo = useCallback(
 		(next: Look): void => {
 			window.cancelAnimationFrame(flying.current);
@@ -58,7 +60,11 @@ export function usePanZoom(layerRef: RefObject<HTMLDivElement | null>, fit: Look
 		},
 		[painter],
 	);
-	useEffect(() => painter(lookNow()), [painter, lookNow]);
+	useEffect(() => {
+		const look = held.current ?? fit;
+		if (look) painter(look);
+	}, [painter, fit]);
+	useFitLatchedAfterLayout(held, fit);
 	useNativeWheel(fieldRef, lookNow, moveTo);
 	return {
 		fieldRef,
@@ -67,8 +73,9 @@ export function usePanZoom(layerRef: RefObject<HTMLDivElement | null>, fit: Look
 		zoomBy: (step) => moveTo(scaledAround(lookNow(), lookNow().scale + step, centreOf(fieldRef.current))),
 		zoomTo: (scale) => moveTo(scaledAround(lookNow(), scale, centreOf(fieldRef.current))),
 		refit: () => {
+			if (!fit) return;
 			window.cancelAnimationFrame(flying.current);
-			held.current = null;
+			held.current = fit;
 			painter(fit);
 		},
 		flyTo: (look) => {
@@ -87,6 +94,17 @@ export function usePanZoom(layerRef: RefObject<HTMLDivElement | null>, fit: Look
 		},
 		lookNow,
 	};
+}
+
+function useFitLatchedAfterLayout(held: MutableRefObject<Look | null>, fit: Look | null): void {
+	const latest = useRef(fit);
+	latest.current = fit;
+	const isMeasured = fit !== null;
+	useEffect(() => {
+		if (!isMeasured) return undefined;
+		const timer = window.setTimeout(() => (held.current ??= latest.current), FOLLOWS_LAYOUT_MS);
+		return () => window.clearTimeout(timer);
+	}, [held, isMeasured]);
 }
 
 function usePainter(

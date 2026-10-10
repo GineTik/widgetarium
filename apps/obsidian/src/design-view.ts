@@ -82,7 +82,7 @@ export class DesignView extends ItemView {
 	override async setState(state: unknown, result: ViewStateResult): Promise<void> {
 		this.appName = textIn(state, "app");
 		this.page = textIn(state, "page");
-		this.shownPage = this.page;
+		this.shownPage = "";
 		this.fromNote = textIn(state, "fromNote");
 		this.isLayersOpen = isObject(state) && state["layers"] === true;
 		this.mode = isObject(state) && state["mode"] === "pointer" ? "pointer" : "hand";
@@ -179,12 +179,14 @@ export class DesignView extends ItemView {
 		const docs = await docsOf(this.plugin, this.appName);
 		const isStarting = jobs.length > 0 || docs.length > 0;
 		const { screens, references, widgets } = await designOf(this.plugin, this.appName, isStarting);
-		this.shownPage = shownPageOf(this.page, { screens, references, jobs, docs });
+		const keptPage = this.shownPage === this.page ? this.page : "";
+		this.shownPage = shownPageOf(this.page, { screens, references, jobs, docs, keptPage });
+		this.page ||= this.shownPage;
 		this.drawnDrafts = draftsOn(screens);
 		this.drawnWidgets = widgetsDrawnOn(this.plugin, screens, widgets);
 		const onAddPhotos = (photos: readonly File[]): void => void this.addPhotos(photos);
 		const drawing = { registry: withBlocks(this.plugin.registry), host: this.plugin.host };
-		const paging = { page: this.page, onPage: (page: string): void => this.turnTo(page) };
+		const paging = { page: this.page, keptPage, onPage: (page: string): void => this.turnTo(page) };
 		const layering = {
 			isLayersOpen: this.isLayersOpen,
 			onLayers: (): void => this.toggleLayers(),

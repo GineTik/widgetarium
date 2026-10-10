@@ -164,7 +164,8 @@ pages). The body is cut into named slots; you put widgets into slots, never posi
 a slot name used twice. Never reshape the body; if the design does not fit, take another one.
 
 **7. The web is for research and references only**, in stages 1 and 3. Never open a tab or a note the
-person did not ask for: `shot` draws off screen.
+person did not ask for: `shot` draws off screen. Never pan, zoom, turn or focus the canvas the person
+has open; `shot --design <app> --page <page>` is how you look at one page.
 
 **8. Give every node its surface as you place it.** Nothing lays one for you. `surfaces.md` has the
 laws, `examples.md` whole boards.

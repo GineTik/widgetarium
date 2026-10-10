@@ -13,13 +13,19 @@ const WAIT_MS = 60000;
 const NOT_ANSWERED =
 	"Obsidian did not answer within a minute: it must be open on this vault, with the Widgetarium plugin on";
 const SAID = "Open this picture to see {note} as a person sees it: {path}";
+const LOOK_NEEDS = "--page needs --design <app>, and --frame needs --page <page>";
+
+export async function shotOf(note: string, design: string, page: string, frame: string): Promise<ShotAnswer> {
+	if ((page && !design) || (frame && !page)) return { refusal: LOOK_NEEDS };
+	return design ? shotOfDesign(design, page, frame) : shotOfNote(note);
+}
 
 export async function shotOfNote(note: string): Promise<ShotAnswer> {
 	return shotAsked({ note });
 }
 
-export async function shotOfDesign(app: string): Promise<ShotAnswer> {
-	return shotAsked({ design: app });
+export async function shotOfDesign(app: string, page = "", frame = ""): Promise<ShotAnswer> {
+	return shotAsked({ design: app, page, frame });
 }
 
 export function shotSaid(note: string, path: string): string {

@@ -9,6 +9,7 @@
 | `report <app>`                        | per kept feature: widget, page, check, lint — ✓ or what is left; exits 1 until done                                                     |
 | `shot <note>`                         | a PNG of the note's board, drawn off screen — no tab opens; open the path it prints and look                                            |
 | `shot --design <app>`                 | a PNG of the whole design canvas, every screen side by side                                                                             |
+| `shot --design <app> --page <page>`   | one page at full size, `--frame <state>` one frame of it, drawn off screen; the person's own canvas never moves                         |
 | `screen <app> <screen> --widget <id>` | puts a page widget on the canvas; `--state <name>` draws the state of that name from the widget's `states`                              |
 | `design <app>`                        | checks `.widgetarium/apps/<app>/design/` and shows it to the person as a card                                                           |
 | `reference <app> <url> --why <line>`  | a picture on the canvas; `--kind app\|site\|marketing\|photo` says what it is, `--page People,Person` the screens it informs            |

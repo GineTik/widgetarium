@@ -23,6 +23,7 @@ import type { LayerMove } from "./layer-moves.js";
 import { fitLook, usePanZoom } from "./design-pan-zoom.js";
 import type { PanZoom } from "./design-pan-zoom.js";
 import { PicturesProgress } from "./design-pictures-progress.js";
+import { AgentLookChip } from "./design-agent-look.js";
 import { TopBar } from "./design-top-bar.js";
 import type { CanvasTab } from "./design-top-bar.js";
 
@@ -40,6 +41,7 @@ export interface DesignCanvasProps {
 	readonly onFocusedWidget: () => void;
 	readonly onAddPhotos: (photos: readonly File[]) => void;
 	readonly page: string;
+	readonly keptPage: string;
 	readonly onPage: (page: string) => void;
 	readonly isLayersOpen: boolean;
 	readonly onLayers: () => void;
@@ -60,12 +62,12 @@ const PAGE_FADE_MS = 140;
 const FADED_ON_TURN = ".wg-design-layer, .wg-design-layers.is-open";
 
 export function DesignCanvas(props: DesignCanvasProps): ReactElement {
-	const { layerRef, field } = useLayerSize(props.size);
-	const fit = useMemo(() => fitLook(field, props.size), [field, props.size]);
+	const { layerRef, field } = useLayerSize();
+	const fit = useMemo(() => (field ? fitLook(field, props.size) : null), [field, props.size]);
 	const pan = usePanZoom(layerRef, fit, props.mode === "hand");
 	const selection = useCanvasSelection(layerRef, pan);
 	const { screens, references, widgets, jobs, docs, controls, opener, pick, registry, host } = props;
-	const page = shownPageOf(props.page, { screens, references, jobs, docs });
+	const page = shownPageOf(props.page, { screens, references, jobs, docs, keptPage: props.keptPage });
 	useEscapeClears(selection.picked !== null, selection.clear);
 	useFliesToWidget({ layerRef, pan, page, widget: props.focusWidget, onDone: props.onFocusedWidget });
 	const regions = useMemo(
@@ -116,6 +118,7 @@ function topBarOf(
 		references,
 		jobs,
 		docs,
+		keptPage,
 		onPage,
 		onAddPhotos,
 		mode,
@@ -128,8 +131,8 @@ function topBarOf(
 ): ReactElement {
 	const frames = screens.reduce((count, screen) => count + screen.states.length, 0);
 	const said = SCREENS_SAID.replace("{count}", String(screens.length)).replace("{frames}", String(frames));
-	const status = h(PicturesProgress, { key: "pictures" });
-	const tabs = canvasTabsOf({ screens, references, jobs, docs });
+	const status = [h(PicturesProgress, { key: "pictures" }), h(AgentLookChip, { key: "agent", app, onPage })];
+	const tabs = canvasTabsOf({ screens, references, jobs, docs, keptPage });
 	const layers =
 		page === COMPONENTS_PAGE
 			? null
@@ -208,13 +211,16 @@ function fadedTurn(field: HTMLElement | null, turn: () => void): void {
 	void Promise.all(outs.map((out) => out.finished)).then(turn);
 }
 
-function useLayerSize(view: Size) {
+function useLayerSize() {
 	const layerRef = useRef<HTMLDivElement | null>(null);
-	const [field, setField] = useState<Size>(view);
+	const [field, setField] = useState<Size | null>(null);
 	useEffect(() => {
 		const layer = layerRef.current;
 		if (!layer) return;
-		const measure = (): void => setField({ width: layer.offsetWidth, height: layer.offsetHeight });
+		const measure = (): void => {
+			if (layer.offsetWidth > 0 && layer.offsetHeight > 0)
+				setField({ width: layer.offsetWidth, height: layer.offsetHeight });
+		};
 		const watcher = new ResizeObserver(measure);
 		watcher.observe(layer);
 		measure();

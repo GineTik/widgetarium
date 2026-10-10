@@ -14,7 +14,7 @@ import { JOB_ENV, addJob, askJob, listJobs, refuseOwnedElsewhere } from "./job-c
 import type { JobAdd } from "./job-command.js";
 import { checkedWidget } from "./widget-checking.js";
 import { refuseStage, reportOfApp, isReportClean } from "./report-command.js";
-import { shotOfDesign, shotOfNote, shotSaid } from "./shot-command.js";
+import { shotOf, shotSaid } from "./shot-command.js";
 import { designOfApp } from "./design-command.js";
 import { noteOfApp, referenceOfApp } from "./reference-command.js";
 import { photosOfApp } from "./photos-command.js";
@@ -333,15 +333,22 @@ async function runReport(app: string | undefined, asked: Options): Promise<numbe
 }
 
 async function runShot(note: string | undefined, asked: Options): Promise<number> {
-	const design = typeof asked["design"] === "string" ? asked["design"] : "";
+	const design = textOption(asked, "design");
+	const page = textOption(asked, "page");
+	const frame = textOption(asked, "frame");
 	if (!note && !design) return missingNote();
-	const answer = design ? await shotOfDesign(design) : await shotOfNote(String(note));
+	const answer = await shotOf(String(note ?? ""), design, page, frame);
 	if (answer.path === undefined) {
 		console.error(answer.refusal);
 		return 1;
 	}
 	console.log(shotSaid(design ? `the design of ${design}` : String(note), answer.path));
 	return 0;
+}
+
+function textOption(asked: Options, name: string): string {
+	const value = asked[name];
+	return typeof value === "string" ? value : "";
 }
 
 function runJob(verb: string | undefined, asked: Options): Promise<number> | number {

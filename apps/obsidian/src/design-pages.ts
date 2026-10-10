@@ -24,6 +24,10 @@ export function PagesRegion({ screens, size, status, aside, registry, host }: Pa
 	);
 }
 
+export function frameLabelOf(screen: DrawnScreen, state: string): string {
+	return screen.states.length < 2 || state === screen.name ? screen.name : `${screen.name} · ${state}`;
+}
+
 function screenGroupOf(
 	screen: DrawnScreen,
 	framing: Omit<PagesRegionProps, "screens" | "status" | "aside">,
@@ -41,8 +45,4 @@ function screenGroupOf(
 			h(ScreenFrame, { key: state.name, label: frameLabelOf(screen, state.name), state, ...framing }),
 		),
 	);
-}
-
-function frameLabelOf(screen: DrawnScreen, state: string): string {
-	return screen.states.length < 2 || state === screen.name ? screen.name : `${screen.name} · ${state}`;
 }

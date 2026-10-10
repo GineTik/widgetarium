@@ -43,6 +43,7 @@ export interface CanvasHeld {
 	readonly references: readonly DrawnReference[];
 	readonly jobs: readonly Job[];
 	readonly docs: readonly CanvasDoc[];
+	readonly keptPage?: string;
 }
 
 export interface CanvasTabs {
@@ -51,12 +52,15 @@ export interface CanvasTabs {
 	readonly trailing: readonly string[];
 }
 
-export function canvasTabsOf({ screens, references, jobs, docs }: CanvasHeld): CanvasTabs {
+export function canvasTabsOf({ screens, references, jobs, docs, keptPage = "" }: CanvasHeld): CanvasTabs {
 	const drawn = [...new Set(screens.map((screen) => pageOfScreen(screen.name)))];
 	const coming = pagesBeingWorkedOn(jobs).filter((page) => !drawn.includes(page));
+	const listed = [...drawn, ...coming];
+	// TRADE-OFF: a page the agent deletes stays an empty tab until the person leaves it; moving them would be worse.
+	const isKept = keptPage !== "" && !listed.includes(keptPage) && !(keptPage in TAB_REGIONS);
 	return {
 		leading: docs.length > 0 ? [DOCS_PAGE] : [],
-		screens: [...drawn, ...coming],
+		screens: isKept ? [...listed, keptPage] : listed,
 		trailing: [...(references.length > 0 ? [REFERENCES_PAGE] : []), COMPONENTS_PAGE],
 	};
 }
