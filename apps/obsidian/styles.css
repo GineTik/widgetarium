@@ -7925,6 +7925,17 @@ body.wg-tree-carrying .wg-tile-body {
 	pointer-events: none;
 }
 
+.wg-design-topbar.has-corners {
+	padding: 0 0 40px;
+}
+
+.wg-design-top-start {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+}
+
 .wg-design-topbar::before {
 	content: "";
 	position: absolute;
@@ -7938,7 +7949,7 @@ body.wg-tree-carrying .wg-tile-body {
 	pointer-events: auto;
 }
 
-.wg-design-topbar > .wg-design-head {
+.wg-design-top-start > .wg-design-head {
 	position: relative;
 	top: auto;
 	left: auto;
@@ -11912,22 +11923,47 @@ body:not(.is-mobile) .workspace-leaf-content[data-type="widgetarium-studio"] > .
 	background: var(--background-primary);
 }
 
+.wg-studio.is-canvas {
+	grid-template-rows: minmax(0, 1fr);
+}
+
+.wg-studio.is-canvas > .wg-studio-sidebar {
+	padding-top: var(--wg-studio-edge);
+}
+
 .wg-studio-band {
 	grid-column: 1 / -1;
-	--wg-board-pad: 0px;
-	--wg-root-head: 0px;
+	display: flex;
+	justify-content: space-between;
 	min-width: 0;
 	height: var(--wg-studio-band);
 }
 
-.wg-studio-band > .wg-root {
+.wg-studio-corner-board {
+	--wg-board-pad: 0px;
+	--wg-root-head: 0px;
+	flex: none;
+	height: var(--wg-studio-band);
+}
+
+.wg-studio-corner-board > .wg-root {
+	width: max-content;
 	min-height: 0;
 	padding: 0;
 	background: transparent;
 }
 
-.wg-studio-band .wg-tree-region {
+.wg-studio-corner-board .wg-tree-region {
 	padding: 0;
+}
+
+.wg-studio-corner-board :is(.wg-tree-page, .wg-tree-columns, .wg-tree-region, .wg-tree, .wg-tree-band) {
+	display: block;
+}
+
+.wg-studio-corner-board :is(.wg-widget-root, .wg-studio-drawn) {
+	container-type: normal;
+	width: auto;
 }
 
 .wg-studio-outlet {

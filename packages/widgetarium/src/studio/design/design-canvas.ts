@@ -28,7 +28,7 @@ import type { LayerMove } from "./layer-moves.js";
 import { PicturesProgress } from "./design-pictures-progress.js";
 import { AgentLookChip } from "./design-agent-look.js";
 import { TopBar } from "./design-top-bar.js";
-import type { CanvasTab } from "./design-top-bar.js";
+import type { CanvasTab, TopBarCorners } from "./design-top-bar.js";
 
 export interface DesignCanvasProps {
 	readonly app: string;
@@ -111,11 +111,13 @@ export function DesignCanvas(props: DesignCanvasProps): ReactElement {
 
 export interface CanvasTopBarProps extends DesignCanvasProps {
 	readonly fieldOf: () => HTMLElement | null;
+	readonly corners?: TopBarCorners | undefined;
 }
 
 export function CanvasTopBar(props: CanvasTopBarProps): ReactElement {
 	const page = shownPageOf(props.page, props);
-	return topBarOf({ ...props, onPage: (next) => fadedTurn(props.fieldOf(), () => props.onPage(next)) }, page);
+	const onPage = (next: string): void => fadedTurn(props.fieldOf(), () => props.onPage(next));
+	return topBarOf({ ...props, onPage }, page);
 }
 
 function topBarOf(
@@ -133,7 +135,8 @@ function topBarOf(
 		onReturn,
 		isLayersOpen,
 		onLayers,
-	}: DesignCanvasProps,
+		corners,
+	}: CanvasTopBarProps,
 	page: string,
 ): ReactElement {
 	const frames = screens.reduce((count, screen) => count + screen.states.length, 0);
@@ -167,6 +170,7 @@ function topBarOf(
 		onReturn,
 		status,
 		layers,
+		corners,
 	});
 }
 

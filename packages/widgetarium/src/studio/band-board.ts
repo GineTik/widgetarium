@@ -13,9 +13,11 @@ type PanelButton = {
 
 const BAND_TILE = "studio-band";
 
-export function bandBoardOf(app: string): Record<string, unknown> {
-	const start = [safeAreaAt("left"), controlMenuOf(app)];
-	const end = [WIDGETS_BUTTON, AI_BUTTON, safeAreaAt("right")];
+export type BandCorner = "start" | "end";
+
+export function cornerBoardOf(app: string, corner: BandCorner): Record<string, unknown> {
+	const items =
+		corner === "start" ? [safeAreaAt("left"), controlMenuOf(app)] : [WIDGETS_BUTTON, AI_BUTTON, safeAreaAt("right")];
 	return {
 		v: 2,
 		tiles: [
@@ -23,8 +25,8 @@ export function bandBoardOf(app: string): Record<string, unknown> {
 				id: BAND_TILE,
 				widget: "@studio/band",
 				props: {},
-				mounts: { start: start.map(mountRowOf), end: end.map(mountRowOf) },
-				mounted: Object.fromEntries([...start, ...end].map(({ name, widget, props }) => [name, { widget, props }])),
+				mounts: { start: [], end: [], [corner]: items.map(mountRowOf) },
+				mounted: Object.fromEntries(items.map(({ name, widget, props }) => [name, { widget, props }])),
 			},
 		],
 		layout: { dir: "row", of: [{ dir: "column", keep: true, of: [{ id: BAND_TILE, surface: "none" }] }] },

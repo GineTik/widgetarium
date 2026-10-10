@@ -5,6 +5,7 @@ import { routeElementOf } from "../app/widgetarium-app.js";
 import type { StartedProject } from "../app/widgetarium-app.js";
 import { StudioCanvas } from "./studio-canvas.js";
 import type { StudioDesign } from "./studio-canvas.js";
+import type { TopBarCorners } from "./design/design-top-bar.js";
 
 export interface StudioOutletProps {
 	readonly project: StartedProject;
@@ -12,9 +13,10 @@ export interface StudioOutletProps {
 	readonly view: StudioView;
 	readonly design: StudioDesign;
 	readonly state: StudioState;
+	readonly corners: TopBarCorners;
 }
 
-export function StudioOutlet({ project, pathname, view, design, state }: StudioOutletProps): ReactElement {
-	const shown = view === "canvas" ? h(StudioCanvas, { design, state }) : routeElementOf(project, pathname);
+export function StudioOutlet({ project, pathname, view, design, state, corners }: StudioOutletProps): ReactElement {
+	const shown = view === "canvas" ? h(StudioCanvas, { design, state, corners }) : routeElementOf(project, pathname);
 	return h("main", { className: "wg-studio-outlet" }, shown);
 }

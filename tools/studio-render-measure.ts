@@ -123,6 +123,13 @@ const typeInto = (box, said) => { Object.getOwnPropertyDescriptor(HTMLTextAreaEl
 	seen.canvasShown = Boolean(await until(() => document.querySelector(".wg-studio-outlet .wg-design-view .wg-design-field")));
 	seen.taskGoneInCanvas = document.querySelectorAll(".wg-studio-outlet > :not(.wg-design-view)").length === 0;
 	seen.topBar = (await until(() => document.querySelector(".wg-design-topbar")))?.textContent ?? null;
+	await until(() => document.querySelector(".wg-design-topbar")?.contains(aiButton()));
+	seen.bandsInCanvas = document.querySelectorAll(".wg-studio-band").length;
+	seen.topBarsInCanvas = document.querySelectorAll(".wg-design-topbar").length;
+	seen.cornersInTopBar = [menuButton(), aiButton()].every((button) => Boolean(button) && document.querySelector(".wg-design-topbar").contains(button));
+	seen.canvasMenu = boxOf(menuButton());
+	seen.canvasAi = boxOf(aiButton());
+	seen.canvasPages = boxOf(document.querySelector(".wg-design-page-switch"));
 	seen.frames = [...document.querySelectorAll(".wg-design-frame .wg-design-name")].map((name) => name.textContent);
 	seen.frameDrawsRoute = Boolean(await until(() => document.querySelector(".wg-design-frame [data-task]")));
 	const frameTrigger = '.wg-design-frame [aria-label="Task options"]';

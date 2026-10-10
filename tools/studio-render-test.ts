@@ -54,6 +54,12 @@ interface Seen extends CatalogueSeen {
 	readonly frames?: readonly string[];
 	readonly frameDrawsRoute?: boolean;
 	readonly topBar?: string | null;
+	readonly bandsInCanvas?: number;
+	readonly topBarsInCanvas?: number;
+	readonly cornersInTopBar?: boolean;
+	readonly canvasMenu?: Box | null;
+	readonly canvasAi?: Box | null;
+	readonly canvasPages?: Box | null;
 	readonly transformBefore?: string;
 	readonly transformZoomed?: string;
 	readonly transformPanned?: string;
@@ -84,6 +90,7 @@ const VIEW = { width: 1280, height: 800 };
 const BAND_INSET_PX = 8;
 const BUTTON_PX = 34;
 const MAC_SAFE_AREA_PX = 76;
+const CENTRE_SLACK_PX = 2;
 const REACT_ID = /«[^»]*»|:r[0-9a-z]+:|_r_[0-9a-z]+_/g;
 const APP_ENTRY = "packages/widgetarium/src/app.ts";
 const STUDIO_FOLDER = "packages/widgetarium/src/studio/";
@@ -168,6 +175,10 @@ function sameList(got: readonly string[] | undefined, wanted: readonly string[])
 function scaleOf(transform: string | undefined): number {
 	const scale = /scale\(([\d.]+)\)/.exec(transform ?? "")?.[1];
 	return scale === undefined ? Number.NaN : Number(scale);
+}
+
+function centreOf(box: Box | null | undefined): number {
+	return box ? box.y + box.h / 2 : Number.NaN;
 }
 
 function withoutReactIds(dom: string | null | undefined): string {
@@ -296,6 +307,19 @@ check(
 	["Farm", "2 screens", "Pages", "Components", "Back to view"].every((said) => studio.seen.topBar?.includes(said)),
 	studio.seen.topBar,
 );
+const { canvasMenu, canvasAi, canvasPages } = studio.seen;
+check(
+	"the canvas draws one header row: no band above it, the band's corners inside the top bar",
+	studio.seen.bandsInCanvas === 0 && studio.seen.topBarsInCanvas === 1 && studio.seen.cornersInTopBar === true,
+	{ bands: studio.seen.bandsInCanvas, topBars: studio.seen.topBarsInCanvas, corners: studio.seen.cornersInTopBar },
+);
+check(
+	"the menu and the Pages switch share one vertical centre",
+	Math.abs(centreOf(canvasMenu) - centreOf(canvasPages)) <= CENTRE_SLACK_PX,
+	{ canvasMenu, canvasPages },
+);
+check("in the canvas the menu is 8px from the left", canvasMenu?.x === BAND_INSET_PX, canvasMenu);
+check("in the canvas the AI button is 8px from the right", canvasAi?.right === BAND_INSET_PX, canvasAi);
 check("the first route is the shown page's frame", sameList(studio.seen.frames, ["/"]), studio.seen.frames);
 check("a frame draws its route's content", studio.seen.frameDrawsRoute === true, studio.seen.frameDrawsRoute);
 check("a zoom changes the field's scale", scaleOf(studio.seen.transformZoomed) > scaleOf(studio.seen.transformBefore), [

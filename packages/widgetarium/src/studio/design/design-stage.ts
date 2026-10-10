@@ -10,6 +10,7 @@ import { TAKES_PICTURES } from "./design-drawn-when-seen.js";
 import { imageFilesIn } from "./design-photos.js";
 import { widgetOpenerOf } from "./design-references.js";
 import type { CanvasMode } from "./design-tools.js";
+import type { TopBarCorners } from "./design-top-bar.js";
 
 export interface DesignViewState {
 	readonly page: string;
@@ -25,6 +26,7 @@ export interface DesignStageProps {
 	readonly size: Size;
 	readonly fieldOf: () => HTMLElement | null;
 	readonly ownsPaste?: (() => boolean) | undefined;
+	readonly corners?: TopBarCorners | undefined;
 }
 
 export const DESIGN_OPENED_ON: DesignViewState = { page: "", isLayersOpen: false, mode: "hand" };
@@ -68,7 +70,7 @@ export function DesignStage(props: DesignStageProps): ReactElement | null {
 		{ value: port.pictureOf },
 		h(Fragment, null, [
 			h(DesignCanvas, { key: page, ...canvas }),
-			h(CanvasTopBar, { key: "top", ...canvas, fieldOf: props.fieldOf }),
+			h(CanvasTopBar, { key: "top", ...canvas, fieldOf: props.fieldOf, corners: props.corners }),
 		]),
 	);
 }

@@ -14,6 +14,8 @@ import { browserStudioHost } from "./browser-studio-host.js";
 import { browserCataloguePort } from "./catalogue/browser-catalogue-port.js";
 import { STUDIO_PACKS } from "./logic/studio-pack.js";
 import { StudioBand } from "./studio-band.js";
+import { StudioCorner } from "./studio-corner.js";
+import type { TopBarCorners } from "./design/design-top-bar.js";
 import { StudioOutlet } from "./studio-outlet.js";
 import type { StudioDesign } from "./studio-canvas.js";
 import { projectDesignPort } from "./design/project-design-port.js";
@@ -74,16 +76,15 @@ export function WidgetariumStudio({ started }: WidgetariumStudioProps): ReactEle
 	const frame = useRef<HTMLDivElement | null>(null);
 	useWritesHostInsets(frame, studio);
 	const catalogueAsk = useTakesCatalogueAsks(frame, catalogue.requests, state);
-	return h("div", { ref: frame, className: "wg-studio" }, [
-		h(StudioBand, {
-			key: `band ${appId}`,
-			app: appId,
-			registry: shellRegistry,
-			host,
-			studio,
-			state,
-		}),
-		h(StudioOutlet, { key: "outlet", project, pathname, view, design, state }),
+	const shell = { app: appId, registry: shellRegistry, host, studio, state };
+	const corners: TopBarCorners = {
+		start: h(StudioCorner, { key: `start ${appId}`, corner: "start", ...shell }),
+		end: h(StudioCorner, { key: `end ${appId}`, corner: "end", ...shell }),
+	};
+	const isCanvas = view === "canvas";
+	return h("div", { ref: frame, className: `wg-studio${isCanvas ? " is-canvas" : ""}` }, [
+		isCanvas ? null : h(StudioBand, { key: "band", corners }),
+		h(StudioOutlet, { key: "outlet", project, pathname, view, design, state, corners }),
 		panel === "none" ? null : h(StudioSidebar, { key: "sidebar", panel, assistant, catalogue, host, catalogueAsk }),
 	]);
 }
