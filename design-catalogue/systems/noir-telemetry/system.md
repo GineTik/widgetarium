@@ -22,6 +22,18 @@ The full-screen map of the source is **its product's structure, not this system*
 
 The source presents itself in its own system — panels, strokes, outlines and split numbers carry a whole presentation — so the system works for marketing pages as well as for the product.
 
+## References
+
+Five pictures, each read for what it teaches. `references/more/` holds the rest of the case study; read it only when one of these five leaves a question.
+
+| File                   | Read it for                                                                                                                                                                                     |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `1-screen.webp`        | the whole system on one screen: frost over a dark picture, fog, the nav bar, card tabs, counters, the plate that groups smaller plates. **Its layout is the source's product, not a template.** |
+| `2-object-cards.png`   | card anatomy (title, date, ↗), a picture bleeding to the card's edges, a line-art object, the tick scrubber, status pills, the accented card's glow                                             |
+| `3-alerts-group.png`   | grouping: a panel holding nested plates, status dots with numbers, a vertical hairline joining sub-items, folding                                                                               |
+| `4-stat-cards.png`     | the stat card: huge light number, split-emphasis sentence, stroke chart bleeding off the edges with a dashed target, a frosted label pill                                                       |
+| `5-markers-status.png` | markers in dashed halo rings, leader lines to their cards, status colours as signals on a flat dark street map                                                                                  |
+
 ## Visual language
 
 Five motifs. A screen that shows fewer than four of them is not this system.
