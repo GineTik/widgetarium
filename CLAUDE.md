@@ -20,7 +20,7 @@ apps/obsidian     FSL  the host: mounts core in a note, hands it the vault throu
 apps/studio       FSL  @widgetarium/studio: the band, canvas, AI chat and catalogue drawn around an app
       ↓
 packages/cli      FSL  @widgetarium/cli: the `widgetarium` bin (create, check, catalogue, add) and templates/project
-packages/vite     FSL  @widgetarium/vite: dev and build run the app, --mode studio the studio around it
+packages/vite     FSL  @widgetarium/vite: dev and build run the app, --mode studio the studio around it; the one package depending on an app, apps/studio, so a project's `npm run studio` resolves it
       ↓
 packages/core     FSL  the board builder: tree, engine, queries and commands, renderer, laws; `.` is the widget API, `./app` app mode and the routers
       ↓

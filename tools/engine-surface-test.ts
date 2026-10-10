@@ -10,12 +10,9 @@ interface SurfacePair {
 }
 
 const REPO = path.resolve(import.meta.dirname, "..");
-const ENGINE = path.join(REPO, "packages/core");
-const KIT = path.join(REPO, "packages/kit");
+const CORE = path.join(REPO, "packages/core");
 const SDK_SURFACE = path.join(REPO, "packages/sdk/types/widgetarium.d.ts");
-const KIT_SUBPATH = "./kit";
-const HOST_ENTRIES: readonly string[] = ["./app"];
-const INTERNAL_FILES = "*";
+const WIDGET_API_ENTRY = ".";
 const PROBE = "probe.ts";
 const PROBE_OPTIONS = {
 	target: "ES2022",
@@ -46,25 +43,10 @@ function exportSourcesOf(folder: string): Map<string, string> {
 	);
 }
 
-function kitSubpathOf(engineSubpath: string): string {
-	return `.${engineSubpath.slice(KIT_SUBPATH.length)}`;
-}
-
-function typedAgainstOf(engineSubpath: string, kitSources: ReadonlyMap<string, string>): string {
-	if (engineSubpath === ".") return SDK_SURFACE;
-	const kitSource = kitSources.get(kitSubpathOf(engineSubpath));
-	if (kitSource === undefined) throw new Error(`widgetarium exports ${engineSubpath}, the kit has no matching entry`);
-	return kitSource;
-}
-
 function surfacePairs(): SurfacePair[] {
-	const kitSources = exportSourcesOf(KIT);
-	return [...exportSourcesOf(ENGINE)]
-		.filter(([subpath]) => !HOST_ENTRIES.includes(subpath) && !subpath.includes(INTERNAL_FILES))
-		.map(([subpath, shipped]) => ({
-			shipped,
-			typedAgainst: typedAgainstOf(subpath, kitSources),
-		}));
+	const shipped = exportSourcesOf(CORE).get(WIDGET_API_ENTRY);
+	if (shipped === undefined) throw new Error("packages/core exports no widget API entry");
+	return [{ shipped, typedAgainst: SDK_SURFACE }];
 }
 
 function probeText(modules: readonly string[]): string {

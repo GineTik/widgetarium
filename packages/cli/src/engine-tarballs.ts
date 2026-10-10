@@ -11,8 +11,8 @@ export interface EngineTarball {
 	readonly dependencies: Readonly<Record<string, string>>;
 }
 
-const ENGINE_ROOTS: readonly string[] = ["@widgetarium/cli", "@widgetarium/vite"];
-const INTERNAL_PACKAGE = /^(?:widgetarium|@widgetarium\/.+)$/;
+const CLOSURE_SEED_PACKAGES: readonly string[] = ["@widgetarium/cli", "@widgetarium/vite"];
+const INTERNAL_PACKAGE = /^@widgetarium\/.+$/;
 const TARBALL = /\.tgz$/;
 const PACKED_MANIFEST = "package/package.json";
 const REPO_PACKED_INTO = "dist-packages";
@@ -34,7 +34,7 @@ export function engineFolderFor(asked: string | undefined, repo: string | null):
 export function engineClosureIn(folder: string): EngineTarball[] {
 	const byName = uniqueByName(tarballsIn(folder), folder);
 	const held = new Map<string, EngineTarball>();
-	const pending = [...ENGINE_ROOTS];
+	const pending = [...CLOSURE_SEED_PACKAGES];
 	for (let name = pending.pop(); name !== undefined; name = pending.pop()) {
 		if (held.has(name)) continue;
 		const tarball = tarballNamed(byName, name, folder);

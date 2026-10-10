@@ -39,8 +39,7 @@ const PackageManifestSchema = z.object({
 	optionalDependencies: DependenciesSchema,
 });
 type PackageManifest = z.infer<typeof PackageManifestSchema>;
-const BUILT_ROOTS: readonly string[] = [path.join(REPO, "packages"), path.join(REPO, "apps/studio")];
-const INTERNAL_PACKAGE = /^(?:widgetarium|@widgetarium\/.+)$/;
+const INTERNAL_PACKAGE = /^@widgetarium\/.+$/;
 const BUILT_TO = "dist";
 const SOURCE_FOLDER = "src";
 const KIT_THEME = /^@widgetarium\/kit\/theme\.css$/;
@@ -116,17 +115,7 @@ function internalDependenciesOf(manifest: PackageManifest): [string, string][] {
 }
 
 function clearBuilds(): void {
-	for (const built of BUILT_ROOTS.flatMap(builtFoldersUnder)) fs.rmSync(built, { recursive: true, force: true });
-}
-
-function builtFoldersUnder(at: string): string[] {
-	return fs
-		.readdirSync(at, { withFileTypes: true })
-		.filter((entry) => entry.isDirectory() && entry.name !== "node_modules")
-		.flatMap((entry) => {
-			const inside = path.join(at, entry.name);
-			return entry.name === BUILT_TO ? [inside] : builtFoldersUnder(inside);
-		});
+	for (const folder of ENGINE_PACKAGES) fs.rmSync(builtIn(path.join(REPO, folder)), { recursive: true, force: true });
 }
 
 async function bundleEntries(folder: string, built: string): Promise<void> {
