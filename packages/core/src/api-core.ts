@@ -34,7 +34,7 @@ import { pickedValue } from "./gateway/refs.js";
 import { applyTabStep, archivedOf, movesRows, movesSelection, tabsOf } from "./tab-rows.js";
 
 export { gatewayCache, stableKey } from "./gateway/cache";
-export { canOf, collectionGateway, rowOf, soloGateway, toRows, valueGateway } from "./gateway/create";
+export { canOf, collectionGateway, metaOf, rowOf, soloGateway, toRows, valueGateway } from "./gateway/create";
 export { narrow } from "./gateway/narrow";
 export { EMOJI_TABLE, EMOJI_VIEW_BOX } from "@widgetarium/kit/emoji-table";
 export { extendTailwindMerge } from "tailwind-merge";
