@@ -8013,6 +8013,10 @@ body.wg-tree-carrying .wg-tile-body {
 	padding: 0;
 }
 
+:is(.wg-root, .wg-portal) .wg-design-page-switch.is-s button {
+	height: calc(var(--wg-kit-control-s) - 4px);
+}
+
 .wg-design-page-switch .wg-kit-anchor {
 	display: flex;
 	height: 100%;
@@ -8023,7 +8027,7 @@ body.wg-tree-carrying .wg-tile-body {
 	align-items: center;
 	gap: 4px;
 	height: 100%;
-	padding: 0 var(--size-4-4, 16px);
+	padding: 0 var(--size-4-2, 8px);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-pop.wg-design-pages-menu .wg-kit-pop-inner {

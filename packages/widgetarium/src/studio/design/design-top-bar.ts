@@ -100,9 +100,10 @@ export function TopBar({
 					ask(next);
 					onPage(next);
 				},
+				size: "s",
 				className: "wg-design-page-switch",
 			}),
-			h(Button, { key: "return", variant: "tinted", onClick: onReturn }, RETURN),
+			h(Button, { key: "return", size: "s", variant: "tinted", onClick: onReturn }, RETURN),
 			corners?.end ?? null,
 		]),
 	]);
