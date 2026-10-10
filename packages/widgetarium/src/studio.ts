@@ -1,6 +1,6 @@
 export { WidgetariumStudio, startOpenedStudio, startStudio } from "./studio/widgetarium-studio.js";
 export type { StartedStudio, StudioStart, WidgetariumStudioProps } from "./studio/widgetarium-studio.js";
-export type { OpenedApp } from "./app/widgetarium-app.js";
+export type { OpenedApp } from "@widgetarium/core/app/widgetarium-app.js";
 export { browserStudioHost } from "./studio/browser-studio-host.js";
 export { STUDIO_PACKS } from "./studio/logic/studio-pack.js";
 export { CatalogueBoard } from "./studio/catalogue/catalogue-board.js";

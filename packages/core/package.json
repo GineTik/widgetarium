@@ -7,6 +7,16 @@
 		"dist"
 	],
 	"exports": {
+		".": {
+			"source": "./src/index.ts",
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		},
+		"./app": {
+			"source": "./src/app.ts",
+			"types": "./dist/app.d.ts",
+			"default": "./dist/app.js"
+		},
 		"./*": {
 			"source": "./src/*",
 			"types": "./dist/*",

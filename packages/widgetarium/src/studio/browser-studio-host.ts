@@ -1,6 +1,6 @@
 import { NO_INSETS, NO_STUDIO_HOST } from "@widgetarium/core/engine/studio-host.js";
 import type { ChromeInsets, HostApp, StudioHostPort } from "@widgetarium/core/engine/studio-host.js";
-import type { ProjectRouteBoard, WidgetariumAppIdentity } from "../app/widgetarium-project.js";
+import type { ProjectRouteBoard, WidgetariumAppIdentity } from "@widgetarium/core/app/widgetarium-project.js";
 
 interface ControlsOverlay extends EventTarget {
 	readonly visible: boolean;

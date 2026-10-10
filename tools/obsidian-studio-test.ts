@@ -167,7 +167,7 @@ Object.assign(dom.window, { ResizeObserver: SilentResizeObserver });
 const { registerPacks } = await import("../packages/core/src/engine/packs.js");
 const { pageParamCell } = await import("../packages/core/src/engine/page-params.js");
 const { corePack } = await import("../packages/packs/core/src/index.js");
-const { createMemoryRouter } = await import("../packages/widgetarium/src/app/memory-router.js");
+const { createMemoryRouter } = await import("../packages/core/src/app/memory-router.js");
 const { createAppProjects } = await import("../apps/obsidian/src/app-projects.js");
 const { drawStudio } = await import("../apps/obsidian/src/studio-drawing.js");
 const { obsidianStudioHost } = await import("../apps/obsidian/src/studio-host-obsidian.js");

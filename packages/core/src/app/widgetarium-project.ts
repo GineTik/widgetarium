@@ -1,5 +1,6 @@
-import type { ImportedWidgets } from "@widgetarium/core/engine/module-registry.js";
-import type { ImportedHandlers } from "@widgetarium/core/engine/project-pack.js";
+import type { ImportedWidgets } from "../engine/module-registry.js";
+import type { Pack } from "../engine/packs.js";
+import type { ImportedHandlers } from "../engine/project-pack.js";
 
 export interface ProjectRouteBoard {
 	readonly path: string;
@@ -17,4 +18,5 @@ export interface WidgetariumProject {
 	readonly routes: readonly ProjectRouteBoard[];
 	readonly widgets: ImportedWidgets;
 	readonly handlers: ImportedHandlers;
+	readonly packs: readonly Pack[];
 }

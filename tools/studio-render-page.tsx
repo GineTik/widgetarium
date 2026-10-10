@@ -18,9 +18,9 @@ import type {
 import type { ChatCards } from "../packages/core/src/engine/assistant-cards.js";
 import { JobSchema } from "../packages/core/src/app-jobs.js";
 import { corePack } from "../packages/packs/core/src/index.js";
-import { createMemoryRouter } from "../packages/widgetarium/src/app/memory-router.js";
-import { WidgetariumApp, startProject } from "../packages/widgetarium/src/app/widgetarium-app.js";
-import type { WidgetariumProject } from "../packages/widgetarium/src/app/widgetarium-project.js";
+import { createMemoryRouter } from "../packages/core/src/app/memory-router.js";
+import { WidgetariumApp, startProject } from "../packages/core/src/app/widgetarium-app.js";
+import type { WidgetariumProject } from "../packages/core/src/app/widgetarium-project.js";
 import {
 	WidgetariumStudio,
 	startOpenedStudio,
@@ -69,6 +69,7 @@ const PROJECT: WidgetariumProject = {
 	],
 	widgets: { "task-list": taskList },
 	handlers: { TasksQuery },
+	packs: [corePack],
 };
 
 const MAC_INSETS = { left: 76, right: 0 };

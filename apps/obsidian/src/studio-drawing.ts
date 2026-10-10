@@ -6,7 +6,7 @@ import type { AssistantPort } from "@widgetarium/core/engine/assistant-port.js";
 import type { CataloguePort } from "@widgetarium/core/engine/catalogue-port.js";
 import type { StudioHostPort } from "@widgetarium/core/engine/studio-host.js";
 import type { SurfaceHost } from "@widgetarium/core/surface/use-surface-shared.js";
-import { hostOverRouter } from "widgetarium/app";
+import { hostOverRouter } from "@widgetarium/core/app";
 import { WidgetariumStudio, createStudioState, startOpenedStudio } from "widgetarium/studio";
 import type { StartedStudio, StudioDesign, StudioState } from "widgetarium/studio";
 import type { AppOpening, AppProjects } from "./app-projects.js";

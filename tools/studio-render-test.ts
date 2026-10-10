@@ -92,7 +92,7 @@ const BUTTON_PX = 34;
 const MAC_SAFE_AREA_PX = 76;
 const CENTRE_SLACK_PX = 2;
 const REACT_ID = /«[^»]*»|:r[0-9a-z]+:|_r_[0-9a-z]+_/g;
-const APP_ENTRY = "packages/widgetarium/src/app.ts";
+const APP_ENTRY = "packages/core/src/app.ts";
 const STUDIO_FOLDER = "packages/widgetarium/src/studio/";
 
 const shotsAt = path.resolve(process.argv[2] ?? path.join(tmpdir(), "wg-studio-render"));

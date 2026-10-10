@@ -1,6 +1,6 @@
-import { refusingConsole } from "@widgetarium/core/engine/host-console.js";
-import type { Navigation } from "@widgetarium/core/gateway/host.js";
-import type { SurfaceHost } from "@widgetarium/core/surface/use-surface-shared.js";
+import { refusingConsole } from "../engine/host-console.js";
+import type { Navigation } from "../gateway/host.js";
+import type { SurfaceHost } from "../surface/use-surface-shared.js";
 
 const BROWSER = "browser";
 const NO_CONSOLE = "a browser app has no console";

@@ -25,6 +25,7 @@ interface ProjectToImport {
 }
 
 const APP_ICON_IMPORT = "appIcon";
+const CORE_PACK_IMPORT = 'import { corePack } from "@widgetarium/pack-core";';
 const NO_WIDGET_SOURCE = "{folder} was found as a widget, but holds no {files}";
 
 export async function projectModuleSourceOf(root: string, files: ProjectFiles, config: ProjectConfig): Promise<string> {
@@ -47,6 +48,7 @@ function importLinesOf({ root, config, map, widgets }: ProjectToImport): string[
 	const at = (relative: string): string => JSON.stringify(`${root}/${relative}`);
 	const bundledIcon = publicIconHrefOf(config.app.icon) === null ? [config.app.icon] : [];
 	return [
+		CORE_PACK_IMPORT,
 		...bundledIcon.map((icon) => `import ${APP_ICON_IMPORT} from ${at(`${icon}?url`)};`),
 		...widgets.map(({ file }, index) => `import * as widget${index} from ${at(file)};`),
 		...map.handlers.map(({ name, path }, index) => `import { ${name} as handler${index} } from ${at(path)};`),
@@ -64,6 +66,7 @@ function projectFieldsOf({ config, map, widgets }: ProjectToImport): string[] {
 		`routes: [${routes.join(", ")}]`,
 		`widgets: { ${widgets.map(({ name }, index) => `${JSON.stringify(name)}: widget${index}`).join(", ")} }`,
 		`handlers: { ${map.handlers.map(({ name }, index) => `${JSON.stringify(name)}: handler${index}`).join(", ")} }`,
+		"packs: [corePack]",
 	];
 }
 

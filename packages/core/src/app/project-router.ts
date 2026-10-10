@@ -1,7 +1,7 @@
-import { withPageParams } from "@widgetarium/core/engine/page-params.js";
-import type { PageParams } from "@widgetarium/core/engine/page-params.js";
-import type { Navigation, NavigationTarget } from "@widgetarium/core/gateway/host.js";
-import { matchProjectRoute } from "@widgetarium/core/project/index.js";
+import { withPageParams } from "../engine/page-params.js";
+import type { PageParams } from "../engine/page-params.js";
+import type { Navigation, NavigationTarget } from "../gateway/host.js";
+import { matchProjectRoute } from "../project/index.js";
 import type { ProjectRouteBoard } from "./widgetarium-project.js";
 
 export type RoutesOf = () => readonly ProjectRouteBoard[];

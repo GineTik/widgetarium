@@ -1,7 +1,7 @@
 import { NO_DESIGN } from "@widgetarium/core/engine/design-port.js";
 import type { DesignPort, DrawnDesign } from "@widgetarium/core/engine/design-port.js";
 import { normalizeBoard } from "@widgetarium/core/model.js";
-import type { StartedProject } from "../../app/widgetarium-app.js";
+import type { StartedProject } from "@widgetarium/core/app/widgetarium-app.js";
 
 const HOME = "/";
 

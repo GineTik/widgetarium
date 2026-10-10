@@ -1,5 +1,5 @@
-import { createMemoryRouter } from "widgetarium/app";
-import type { ProjectRouteBoard, ProjectRouter } from "widgetarium/app";
+import { createMemoryRouter } from "@widgetarium/core/app";
+import type { ProjectRouteBoard, ProjectRouter } from "@widgetarium/core/app";
 import type { StudioNote } from "./studio-note.js";
 
 export interface StudioRouting {

@@ -1,8 +1,8 @@
 import { createElement as h } from "react";
 import type { ReactElement } from "react";
 import type { StudioState, StudioView } from "@widgetarium/core/engine/studio-state-port.js";
-import { routeElementOf } from "../app/widgetarium-app.js";
-import type { StartedProject } from "../app/widgetarium-app.js";
+import { routeElementOf } from "@widgetarium/core/app/widgetarium-app.js";
+import type { StartedProject } from "@widgetarium/core/app/widgetarium-app.js";
 import { StudioCanvas } from "./studio-canvas.js";
 import type { StudioDesign } from "./studio-canvas.js";
 import type { TopBarCorners } from "./design/design-top-bar.js";

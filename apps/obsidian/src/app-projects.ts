@@ -6,7 +6,7 @@ import { openProject } from "@widgetarium/core/project/open-project.js";
 import type { OpenedRoute } from "@widgetarium/core/project/open-project.js";
 import { joinProjectPath, type ProjectApp, type ProjectFinding } from "@widgetarium/core/project/index.js";
 import type { DataAdapter } from "obsidian";
-import type { WidgetariumAppIdentity } from "widgetarium/app";
+import type { WidgetariumAppIdentity } from "@widgetarium/core/app";
 import { vaultProjectFiles, type ProjectAdapter } from "./project-files-vault.js";
 
 export type AppOpening =

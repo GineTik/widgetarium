@@ -1,11 +1,10 @@
 import { createElement as h, useSyncExternalStore } from "react";
 import type { ReactElement } from "react";
-import { corePack } from "@widgetarium/pack-core";
-import { ModuleRegistry } from "@widgetarium/core/engine/module-registry.js";
-import { registerPacks } from "@widgetarium/core/engine/packs.js";
-import { projectPackOf } from "@widgetarium/core/engine/project-pack.js";
-import { matchProjectRoute } from "@widgetarium/core/project/index.js";
-import type { SurfaceHost } from "@widgetarium/core/surface/use-surface-shared.js";
+import { ModuleRegistry } from "../engine/module-registry.js";
+import { registerPacks } from "../engine/packs.js";
+import { projectPackOf } from "../engine/project-pack.js";
+import { matchProjectRoute } from "../project/index.js";
+import type { SurfaceHost } from "../surface/use-surface-shared.js";
 import { browserHostOf } from "./browser-host.js";
 import { createBrowserRouter } from "./browser-router.js";
 import type { ProjectRouter } from "./project-router.js";
@@ -40,7 +39,7 @@ export function startProject(project: WidgetariumProject, start: ProjectStart = 
 }
 
 export function openApp(project: WidgetariumProject): OpenedApp {
-	registerPacks(corePack, projectPackOf(project.handlers));
+	registerPacks(...project.packs, projectPackOf(project.handlers));
 	return { app: project.app, routes: project.routes, registry: new ModuleRegistry(project.widgets) };
 }
 

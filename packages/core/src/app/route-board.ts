@@ -1,8 +1,8 @@
 import { createElement as h, useMemo, useState } from "react";
 import type { ReactElement } from "react";
-import type { ModuleRegistry } from "@widgetarium/core/engine/module-registry.js";
-import { normalizeBoard } from "@widgetarium/core/model.js";
-import { WidgetSurface } from "@widgetarium/core/surface.js";
+import type { ModuleRegistry } from "../engine/module-registry.js";
+import { normalizeBoard } from "../model.js";
+import { WidgetSurface } from "../surface.js";
 import type { HostOfPathname } from "./widgetarium-app.js";
 import type { ProjectRouteBoard } from "./widgetarium-project.js";
 
