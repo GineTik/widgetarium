@@ -11,7 +11,7 @@ interface Starter {
 }
 
 const APP_STARTER: Starter = {
-	entry: "widgetarium/app",
+	entry: "@widgetarium/core/app",
 	start: "startProject",
 	root: "WidgetariumApp",
 	prop: "project",

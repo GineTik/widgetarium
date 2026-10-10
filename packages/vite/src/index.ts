@@ -3,11 +3,12 @@ import {
 	PROJECT_CONFIG_FILE,
 	nodeProjectFiles,
 	readProjectConfig,
+	viteAliasesOf,
 	type ProjectConfig,
 	type ProjectFiles,
+	type ResolvedAlias,
 } from "@widgetarium/core/project/index.js";
 import { appHeadTagsOf, type AppHeadTag } from "./app-head.js";
-import { viteAliasesOf, type ResolvedAlias } from "./project-aliases.js";
 import { PROJECT_MODULE_ID, projectModuleSourceOf } from "./project-module-source.js";
 import { START_MODULE_ID, startModuleSourceOf } from "./start-module-source.js";
 

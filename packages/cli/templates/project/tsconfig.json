@@ -16,7 +16,7 @@
 		"isolatedModules": true,
 		"skipLibCheck": true,
 		"noEmit": true,
-		"types": ["vite/client", "widgetarium/project-module"],
+		"types": ["vite/client", "@widgetarium/vite/project-module"],
 		"paths": {}
 	},
 	"include": ["src"]

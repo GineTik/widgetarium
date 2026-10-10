@@ -1,0 +1,24 @@
+{
+	"name": "@widgetarium/cli",
+	"version": "0.1.0",
+	"description": "The widgetarium command: create, check, add and catalogue",
+	"license": "FSL-1.1-ALv2",
+	"type": "module",
+	"engines": {
+		"node": ">=20.12"
+	},
+	"bin": {
+		"widgetarium": "./dist/cli.js"
+	},
+	"files": [
+		"dist",
+		"templates",
+		"widgetarium.schema.json"
+	],
+	"dependencies": {
+		"@babel/parser": "^8.0.5",
+		"@widgetarium/core": "0.1.0",
+		"@widgetarium/kit": "0.1.0",
+		"zod": "^4.6.5"
+	}
+}

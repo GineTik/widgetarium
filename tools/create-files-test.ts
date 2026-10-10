@@ -3,9 +3,9 @@ import * as fileSystem from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { nodeProjectFiles, projectConfigJsonSchema, readProjectConfig } from "../packages/core/src/project/index.js";
-import { runCli } from "../packages/widgetarium/src/cli/run-cli.js";
-import { HANDBOOK_PAGES } from "../packages/widgetarium/src/cli/handbook-copy.js";
-import type { CliOutput } from "../packages/widgetarium/src/cli/cli-output.js";
+import { runCli } from "../packages/cli/src/run-cli.js";
+import { HANDBOOK_PAGES } from "../packages/cli/src/handbook-copy.js";
+import type { CliOutput } from "../packages/cli/src/cli-output.js";
 import { z } from "zod";
 import { fieldOf } from "./export-source.mts";
 import { fakeEngine } from "./fake-engine.ts";
@@ -28,8 +28,8 @@ interface CliRun {
 }
 
 const REPO = path.resolve(import.meta.dirname, "..");
-const SCHEMA_FILE = path.join(REPO, "packages/widgetarium/widgetarium.schema.json");
-const TEMPLATE_MANIFEST = path.join(REPO, "packages/widgetarium/templates/project/package.json");
+const SCHEMA_FILE = path.join(REPO, "packages/cli/widgetarium.schema.json");
+const TEMPLATE_MANIFEST = path.join(REPO, "packages/cli/templates/project/package.json");
 const WRITE_SCHEMA = process.argv.includes("--write-schema");
 const HANDBOOK_FOLDER = "docs/widgetarium";
 const UNFILLED = /\{(?:name|handbook|paths\.[a-z]+)\}/;
@@ -57,9 +57,10 @@ const EXPECTED_FILES = [
 	"src/widgets/.gitkeep",
 	"tsconfig.json",
 	"tsconfig.node.json",
-	"vendor/engine/widgetarium-0.1.0.tgz",
+	"vendor/engine/widgetarium-cli-0.1.0.tgz",
 	"vendor/engine/widgetarium-core-0.1.0.tgz",
 	"vendor/engine/widgetarium-kit-0.1.0.tgz",
+	"vendor/engine/widgetarium-vite-0.1.0.tgz",
 	"vite.config.ts",
 	"widgetarium.json",
 ];
@@ -185,14 +186,15 @@ try {
 	const manifest = jsonAt(path.join(project, "package.json"));
 	check("package.json is named after the folder", fieldOf(manifest, "name"), "shop");
 	check(
-		"the engine is the vendored closure of widgetarium, and only it",
+		"the engine is the vendored closure of the CLI and the Vite plugin, and only it",
 		Object.entries(RecordSchema.parse(fieldOf(manifest, "dependencies"))).filter(([, spec]) =>
 			String(spec).startsWith("file:"),
 		),
 		[
+			["@widgetarium/cli", "file:vendor/engine/widgetarium-cli-0.1.0.tgz"],
 			["@widgetarium/core", "file:vendor/engine/widgetarium-core-0.1.0.tgz"],
 			["@widgetarium/kit", "file:vendor/engine/widgetarium-kit-0.1.0.tgz"],
-			["widgetarium", "file:vendor/engine/widgetarium-0.1.0.tgz"],
+			["@widgetarium/vite", "file:vendor/engine/widgetarium-vite-0.1.0.tgz"],
 		],
 	);
 

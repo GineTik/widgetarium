@@ -7,13 +7,8 @@
 	"engines": {
 		"node": ">=20.12"
 	},
-	"bin": {
-		"widgetarium": "./dist/cli.js"
-	},
 	"files": [
-		"dist",
-		"templates",
-		"widgetarium.schema.json"
+		"dist"
 	],
 	"exports": {
 		".": {
@@ -46,9 +41,6 @@
 			"types": "./dist/studio.d.ts",
 			"default": "./dist/studio.js"
 		},
-		"./project-module": {
-			"types": "./dist/project-module.d.ts"
-		},
 		"./styles.css": {
 			"style": "./dist/styles.css",
 			"default": "./dist/styles.css"
@@ -56,15 +48,9 @@
 		"./studio.css": {
 			"style": "./dist/studio.css",
 			"default": "./dist/studio.css"
-		},
-		"./vite": {
-			"source": "./src/vite.ts",
-			"types": "./dist/vite.d.ts",
-			"node": "./dist/vite.js"
 		}
 	},
 	"dependencies": {
-		"@babel/parser": "^8.0.5",
 		"@widgetarium/core": "0.1.0",
 		"@widgetarium/kit": "0.1.0",
 		"@widgetarium/pack-catalogue": "0.1.0",

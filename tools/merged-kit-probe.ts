@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { mergeKit } from "../packages/widgetarium/src/cli/kit-copy.js";
+import { mergeKit } from "../packages/cli/src/kit-copy.js";
 
 export const KIT_FOLDER = "src/shared/kit";
 export const COMPONENTS = "components/";

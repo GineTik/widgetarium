@@ -1,0 +1,32 @@
+{
+	"name": "@widgetarium/vite",
+	"version": "0.1.0",
+	"description": "The Vite plugin: dev and build run the app, --mode studio runs the studio around it",
+	"license": "FSL-1.1-ALv2",
+	"type": "module",
+	"engines": {
+		"node": ">=20.12"
+	},
+	"files": [
+		"dist"
+	],
+	"exports": {
+		".": {
+			"source": "./src/index.ts",
+			"types": "./dist/index.d.ts",
+			"node": "./dist/index.js"
+		},
+		"./project-module": {
+			"types": "./dist/project-module.d.ts"
+		}
+	},
+	"dependencies": {
+		"@widgetarium/core": "0.1.0",
+		"@widgetarium/pack-core": "0.1.0",
+		"widgetarium": "0.1.0"
+	},
+	"peerDependencies": {
+		"react": "^19.2.8",
+		"react-dom": "^19.2.8"
+	}
+}

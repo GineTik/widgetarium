@@ -1,4 +1,4 @@
-import type { ProjectAliases } from "@widgetarium/core/project/index.js";
+import type { ProjectAliases } from "./project-config.js";
 
 export interface ResolvedAlias {
 	readonly find: RegExp;
@@ -18,7 +18,7 @@ export function tsconfigPathsOf(aliases: ProjectAliases): Record<string, string[
 }
 
 export function viteAliasesOf(aliases: ProjectAliases, root: string): ResolvedAlias[] {
-	const literalRoot = root.replaceAll("$", "$$$$");
+	const literalRoot = root.replace(/\$/g, "$$$$");
 	return Object.entries(aliases).map(([alias, target]) =>
 		isFileTarget(target)
 			? { find: new RegExp(`^${escaped(alias)}$`), replacement: `${literalRoot}/${target}` }

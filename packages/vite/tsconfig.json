@@ -1,0 +1,30 @@
+{
+	"compilerOptions": {
+		"target": "ES2020",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"customConditions": ["source"],
+		"lib": ["ES2022", "DOM"],
+		"jsx": "react",
+		"jsxFactory": "h",
+		"jsxFragmentFactory": "Fragment",
+		"strict": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noImplicitReturns": true,
+		"exactOptionalPropertyTypes": true,
+		"noUncheckedIndexedAccess": true,
+		"noEmit": true,
+		"tsBuildInfoFile": "../../node_modules/.cache/widgetarium/vite.tsbuildinfo",
+		"isolatedModules": true,
+		"verbatimModuleSyntax": true,
+		"skipLibCheck": true,
+		"types": ["node"]
+	},
+	"references": [
+		{
+			"path": "../core"
+		}
+	],
+	"include": ["src/**/*.ts", "../core/src/*.d.ts", "../kit/src/jsx-namespace.d.ts"]
+}

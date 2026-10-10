@@ -5,9 +5,14 @@ import path from "node:path";
 
 const FAKE_ENGINE = [
 	{
-		name: "widgetarium",
-		file: "widgetarium-0.1.0.tgz",
+		name: "@widgetarium/cli",
+		file: "widgetarium-cli-0.1.0.tgz",
 		dependencies: { "@widgetarium/core": "0.1.0", "@widgetarium/kit": "0.1.0" },
+	},
+	{
+		name: "@widgetarium/vite",
+		file: "widgetarium-vite-0.1.0.tgz",
+		dependencies: { "@widgetarium/core": "0.1.0" },
 	},
 	{
 		name: "@widgetarium/core",

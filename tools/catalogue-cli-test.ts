@@ -3,8 +3,8 @@ import type { AddressInfo } from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { z } from "zod";
-import { runCli } from "../packages/widgetarium/src/cli/run-cli.js";
-import type { CliOutput } from "../packages/widgetarium/src/cli/cli-output.js";
+import { runCli } from "../packages/cli/src/run-cli.js";
+import type { CliOutput } from "../packages/cli/src/cli-output.js";
 import { MINI_DEPENDENCY, miniRegistry, servedFolder } from "./catalogue-registry-fixture.ts";
 import { fakeEngine } from "./fake-engine.ts";
 

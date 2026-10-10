@@ -25,6 +25,8 @@ export const ENGINE_PACKAGES: readonly string[] = [
 	"packages/packs/git",
 	"packages/packs/catalogue",
 	"packages/widgetarium",
+	"packages/vite",
+	"packages/cli",
 ];
 
 const NpmPackAnswerSchema = z.tuple([z.object({ name: z.string(), version: z.string(), filename: z.string() })]);
@@ -46,7 +48,7 @@ const ENTRY_SOURCE = /\.tsx?$/;
 const DECLARATION = /\.d\.ts$/;
 const NODE_TARGET = "node20";
 const BUILT_BIN = /^\.\/dist\/(.+)\.js$/;
-const HANDBOOK = { from: path.join(REPO, "docs/ai"), into: path.join(REPO, "packages/widgetarium/dist/handbook") };
+const HANDBOOK = { from: path.join(REPO, "docs/ai"), into: path.join(REPO, "packages/cli/dist/handbook") };
 const BROWSER_STYLES = {
 	host: path.join(REPO, "packages/widgetarium/src/browser-host.css"),
 	board: path.join(REPO, "apps/obsidian/styles.css"),

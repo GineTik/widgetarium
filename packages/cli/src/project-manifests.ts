@@ -1,12 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
-import { PROJECT_CONFIG_FILE, ProjectConfigSchema, type ProjectAliases } from "@widgetarium/core/project/index.js";
-import { tsconfigPathsOf } from "../project-aliases.js";
+import {
+	PROJECT_CONFIG_FILE,
+	ProjectConfigSchema,
+	tsconfigPathsOf,
+	type ProjectAliases,
+} from "@widgetarium/core/project/index.js";
 import { kitAliasesOf } from "./kit-copy.js";
 import { writeFile } from "./template-files.js";
 
-export const CONFIG_SCHEMA_URL = "./node_modules/widgetarium/widgetarium.schema.json";
+export const CONFIG_SCHEMA_URL = "./node_modules/@widgetarium/cli/widgetarium.schema.json";
 
 const PACKAGE_MANIFEST = "package.json";
 const TSCONFIG = "tsconfig.json";
