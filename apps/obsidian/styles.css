@@ -676,7 +676,8 @@ body {
 	width: fit-content;
 }
 
-.wg-slot.is-content-width :is(.wg-widget-root, .wg-design-drawn) {
+.wg-slot.is-content-width .wg-widget-root,
+.wg-slot.is-content-width .wg-studio-drawn {
 	container-type: normal;
 	width: auto;
 }
@@ -6338,7 +6339,8 @@ body.wg-tree-carrying .wg-tile-body {
 	gap: var(--size-4-2, 8px);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-refused {
+:is(.wg-root, .wg-portal) .wg-ai-spec-refused,
+:is(.wg-root, .wg-portal) .wg-studio-refused {
 	margin: 0;
 	color: var(--wg-kit-error-ink);
 	font-size: var(--wg-kit-text-m);
@@ -8536,7 +8538,7 @@ body.wg-tree-carrying .wg-tile-body {
 	background: var(--background-primary);
 }
 
-.wg-design-drawn {
+.wg-studio-drawn {
 	container-type: inline-size;
 	min-width: 0;
 	--wg-gap-items: 16px;
@@ -8651,7 +8653,7 @@ body.wg-tree-carrying .wg-tile-body {
 }
 
 .wg-design-head,
-.wg-design-zoom,
+.wg-studio-zoom,
 .wg-design-hint {
 	position: absolute;
 	display: flex;
@@ -8659,8 +8661,8 @@ body.wg-tree-carrying .wg-tile-body {
 	gap: 8px;
 	padding: 6px 10px;
 	border-radius: 12px;
-	background: var(--background-primary);
-	box-shadow: 0 0 0 1px var(--background-modifier-border);
+	background: var(--background-primary, var(--wg-kit-raise));
+	box-shadow: 0 0 0 1px var(--background-modifier-border, var(--wg-kit-group-line));
 	font-size: var(--font-ui-small);
 }
 
@@ -8671,11 +8673,11 @@ body.wg-tree-carrying .wg-tile-body {
 
 .wg-design-head span,
 .wg-design-hint,
-.wg-design-percent {
+.wg-studio-percent {
 	color: var(--text-muted);
 }
 
-.wg-design-zoom {
+.wg-studio-zoom {
 	bottom: 16px;
 	left: 16px;
 	z-index: 2;
@@ -11926,6 +11928,81 @@ body:not(.is-mobile) .workspace-leaf-content[data-type="widgetarium-studio"] > .
 	overflow: auto;
 }
 
+.wg-studio-canvas {
+	position: relative;
+	height: 100%;
+}
+
+.wg-studio-canvas-switch {
+	position: absolute;
+	top: 16px;
+	left: 50%;
+	z-index: 2;
+	transform: translateX(-50%);
+}
+
+.wg-studio-canvas-field {
+	position: relative;
+	height: 100%;
+	overflow: hidden;
+	touch-action: none;
+	cursor: grab;
+	background-color: var(--wg-kit-page);
+	background-image: radial-gradient(var(--wg-kit-group-line) 1px, transparent 1px);
+	background-size: 20px 20px;
+}
+
+.wg-studio-canvas-layer {
+	position: absolute;
+	top: 0;
+	left: 0;
+	display: flex;
+	align-items: flex-start;
+	gap: 120px;
+	width: max-content;
+	padding: 80px;
+	transform-origin: 0 0;
+}
+
+.wg-studio-canvas-layer.is-components {
+	flex-direction: column;
+	gap: 64px;
+}
+
+.wg-studio-frame,
+.wg-studio-canvas-card {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin: 0;
+}
+
+.wg-studio-canvas-label {
+	display: flex;
+	gap: 8px;
+	margin: 0;
+	color: var(--wg-kit-text-muted);
+	font-size: var(--wg-kit-text-m);
+}
+
+.wg-studio-needs {
+	color: var(--wg-kit-warning-ink);
+}
+
+.wg-studio-frame-body {
+	overflow: hidden;
+	border-radius: 16px;
+	background: var(--wg-kit-page);
+	box-shadow: 0 0 0 1px var(--wg-kit-group-line);
+}
+
+.wg-studio-canvas-widget {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 40px;
+}
+
 .wg-studio-band-row {
 	display: flex;
 	align-items: center;
@@ -12042,8 +12119,4 @@ body:not(.is-mobile) .workspace-leaf-content[data-type="widgetarium-studio"] > .
 .wg-studio-refusal {
 	padding: 8px 12px;
 	font-size: var(--wg-kit-text-s);
-}
-
-.wg-studio-canvas-placeholder {
-	padding: var(--size-4-6, 24px);
 }

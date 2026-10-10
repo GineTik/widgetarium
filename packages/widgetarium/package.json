@@ -53,6 +53,10 @@
 			"style": "./dist/styles.css",
 			"default": "./dist/styles.css"
 		},
+		"./studio.css": {
+			"style": "./dist/studio.css",
+			"default": "./dist/studio.css"
+		},
 		"./vite": {
 			"source": "./src/vite.ts",
 			"types": "./dist/vite.d.ts",

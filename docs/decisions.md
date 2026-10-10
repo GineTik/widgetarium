@@ -182,7 +182,7 @@ The decisions, each with what it replaced:
 
 ## The studio wraps the app, it is not inside it
 
-The engine's shell (band, app switcher, AI button; canvas and assistant later) is `widgetarium/studio`,
+The engine's shell (band, app switcher, AI button, canvas; assistant later) is `widgetarium/studio`,
 itself built from `@studio` widgets and a pack. Replaced: `@chrome` widgets in the registry, a
 `@chrome` pack, and corner boards an Obsidian note laid over itself.
 
@@ -206,3 +206,12 @@ itself built from `@studio` widgets and a pack. Replaced: `@chrome` widgets in t
   history and two panes must not move each other.
 - **One composition.** `startOpenedStudio` takes routes and a built registry, so the Vite build and
   the vault's in-memory compile reach the same studio; only how a project is opened differs.
+- **The canvas draws the running project, not a copy of it.** "Edit in canvas" swaps the outlet for
+  `ProjectCanvas` (`packages/widgetarium/src/studio/canvas`): one frame per route drawn by the
+  `routeElementOf` the app uses, each over a memory router of its own whose page params are keyed per
+  frame, so a frame never navigates the studio; and a Components page drawing every widget's
+  `defineStates`. Pan, zoom and the camera latch live there once, and the Obsidian design view
+  imports them through `widgetarium/studio`.
+- TODO: migrate the design apps (`.widgetarium/apps/<app>/design`, the agent's design workflow) onto
+  project canvases, then retire the Obsidian design view.
+- TODO: a route with params draws empty until a board or config can declare a sample.

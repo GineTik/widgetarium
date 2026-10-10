@@ -26,7 +26,21 @@ interface Seen {
 	readonly aiPressed?: string | null;
 	readonly canvasShown?: boolean;
 	readonly taskGoneInCanvas?: boolean;
+	readonly frames?: readonly string[];
+	readonly frameDrawsRoute?: boolean;
+	readonly needsSaid?: string | null;
+	readonly transformBefore?: string;
+	readonly transformZoomed?: string;
+	readonly transformPanned?: string;
+	readonly locationInCanvas?: string;
+	readonly cards?: readonly string[];
+	readonly transformBackOnPages?: string;
+	readonly routeTriggerHit?: boolean | null;
+	readonly frameTriggerHit?: boolean | null;
+	readonly frameTriggerFocused?: boolean | null;
+	readonly cardDrawsState?: boolean;
 	readonly backShowsRoute?: boolean;
+	readonly routeDomBack?: string | null;
 	readonly bandAfterRefusal?: boolean;
 	readonly bandHeight?: number | null;
 	readonly cornerGap?: number | null;
@@ -46,7 +60,7 @@ const VIEW = { width: 1280, height: 800 };
 const BAND_INSET_PX = 8;
 const BUTTON_PX = 34;
 const MAC_SAFE_AREA_PX = 76;
-const REACT_ID = /«[^»]*»|:r[0-9a-z]+:/g;
+const REACT_ID = /«[^»]*»|:r[0-9a-z]+:|_r_[0-9a-z]+_/g;
 const APP_ENTRY = "packages/widgetarium/src/app.ts";
 const STUDIO_FOLDER = "packages/widgetarium/src/studio/";
 
@@ -58,11 +72,15 @@ const sheets = ["packages/widgetarium/src/browser-host.css", "apps/obsidian/styl
 	.map((at) => readFileSync(at, "utf8"))
 	.join("\n");
 
+// TRADE-OFF: headless Chrome under a virtual time budget runs one animation frame; timers stand in for the rest
+const FRAMES_BY_TIMER = `window.requestAnimationFrame = (step) => setTimeout(() => step(performance.now()), 16); window.cancelAnimationFrame = (frame) => clearTimeout(frame);`;
+
 const MEASURE_SCRIPT = `
 const wait = (ms) => new Promise((done) => setTimeout(done, ms));
 const until = async (find) => { for (let at = 0; at < 80; at += 1) { const found = find(); if (found) return found; await wait(50); } return null; };
 const leafNamed = (said, under = document) => [...under.querySelectorAll("*")].find((one) => one.children.length === 0 && one.textContent.trim() === said);
 const boxOf = (node) => { if (!node) return null; const box = node.getBoundingClientRect(); return { x: Math.round(box.left), y: Math.round(box.top), w: Math.round(box.width), h: Math.round(box.height), right: Math.round(innerWidth - box.right) }; };
+const triggerHitIn = (selector) => { const trigger = document.querySelector(selector); if (!trigger) return null; const box = trigger.getBoundingClientRect(); return trigger.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)); };
 const menuButton = () => document.querySelector('[aria-label$=" menu"]');
 const aiButton = () => document.querySelector('[aria-label="AI assistant"]');
 (async () => {
@@ -76,6 +94,7 @@ const aiButton = () => document.querySelector('[aria-label="AI assistant"]');
 	const routeBoard = routeHolder ? routeHolder.querySelector(".wg-root") : null;
 	seen.routeTop = routeBoard ? Math.round(routeBoard.getBoundingClientRect().top) : null;
 	seen.studioElements = document.querySelectorAll('[class*="wg-studio"]').length;
+	seen.routeTriggerHit = triggerHitIn('[aria-label="Task options"]');
 	seen.menu = boxOf(menuButton());
 	seen.ai = boxOf(aiButton());
 	seen.bandHeight = boxOf(document.querySelector(".wg-studio-band"))?.h ?? null;
@@ -102,12 +121,39 @@ const aiButton = () => document.querySelector('[aria-label="AI assistant"]');
 	seen.aiPressed = aiButton()?.getAttribute("aria-pressed") ?? null;
 	menuButton().click();
 	(await until(() => leafNamed("Edit in canvas")))?.click();
-	seen.canvasShown = Boolean(await until(() => document.querySelector(".wg-studio-canvas-placeholder")));
-	seen.taskGoneInCanvas = !document.querySelector("[data-task]");
-	await wait(300);
+	seen.canvasShown = Boolean(await until(() => document.querySelector(".wg-studio-canvas")));
+	seen.taskGoneInCanvas = document.querySelectorAll(".wg-studio-outlet > :not(.wg-studio-canvas)").length === 0;
+	seen.frames = [...document.querySelectorAll(".wg-studio-frame")].map((frame) => frame.dataset.route);
+	seen.frameDrawsRoute = Boolean(await until(() => document.querySelector('.wg-studio-frame[data-route="/"] [data-task]')));
+	seen.needsSaid = document.querySelector('.wg-studio-frame[data-route="/done/:id"] .wg-studio-needs')?.textContent ?? null;
+	const frameTrigger = '.wg-studio-frame[data-route="/"] [aria-label="Task options"]';
+	seen.frameTriggerHit = triggerHitIn(frameTrigger);
+	document.querySelector(frameTrigger)?.focus();
+	seen.frameTriggerFocused = document.activeElement === document.querySelector(frameTrigger);
+	await wait(400);
+	const layer = document.querySelector(".wg-studio-canvas-layer");
+	const field = document.querySelector(".wg-studio-canvas-field");
+	seen.transformBefore = layer?.style.transform ?? "";
+	field?.dispatchEvent(new WheelEvent("wheel", { deltaY: -200, ctrlKey: true, clientX: 400, clientY: 300, bubbles: true, cancelable: true }));
+	await wait(200);
+	seen.transformZoomed = layer?.style.transform ?? "";
+	field?.dispatchEvent(new WheelEvent("wheel", { deltaX: 80, deltaY: 40, bubbles: true, cancelable: true }));
+	await wait(200);
+	seen.transformPanned = layer?.style.transform ?? "";
+	seen.locationInCanvas = location.pathname;
+	leafNamed("Components")?.click();
+	await until(() => document.querySelector(".wg-studio-canvas-card"));
+	seen.cards = [...document.querySelectorAll(".wg-studio-canvas-card")].map((card) => card.dataset.state);
+	seen.cardDrawsState = (document.querySelector('[data-state="task-list · Full"]')?.textContent ?? "").includes("Sow the beans");
+	leafNamed("Pages")?.click();
+	await wait(200);
+	seen.transformBackOnPages = document.querySelector(".wg-studio-canvas-layer.is-pages")?.style.transform ?? "";
+	report();
 	menuButton().click();
 	(await until(() => leafNamed("Back to view")))?.click();
-	seen.backShowsRoute = Boolean(await until(() => document.querySelector("[data-task]")));
+	seen.backShowsRoute = Boolean(await until(() => document.querySelector(".wg-studio-outlet [data-task]")));
+	await wait(300);
+	seen.routeDomBack = document.querySelector(".wg-studio-outlet")?.innerHTML ?? null;
 	await wait(300);
 	menuButton().click();
 	const list = await until(() => document.querySelector(".wg-studio-apps"));
@@ -124,6 +170,7 @@ function pageOf(mode: Mode): string {
 </head><body><div id="root"></div>
 <pre id="boom"></pre><pre id="seen"></pre>
 <script>window.__MODE__=${JSON.stringify(mode)};</script>
+${mode === "studio" ? `<script>${FRAMES_BY_TIMER}</script>` : ""}
 <script>${bundle}</script>
 <script>${MEASURE_SCRIPT}</script>
 </body></html>`;
@@ -179,6 +226,15 @@ async function seenIn(mode: Mode): Promise<{ readonly seen: Seen; readonly repor
 	return { seen: parsed !== null && typeof parsed === "object" ? parsed : {}, reported: textOfPre(dom, "boom") };
 }
 
+function sameList(got: readonly string[] | undefined, wanted: readonly string[]): boolean {
+	return JSON.stringify(got ?? []) === JSON.stringify(wanted);
+}
+
+function scaleOf(transform: string | undefined): number {
+	const scale = /scale\(([\d.]+)\)/.exec(transform ?? "")?.[1];
+	return scale === undefined ? Number.NaN : Number(scale);
+}
+
 function withoutReactIds(dom: string | null | undefined): string {
 	return (dom ?? "").replace(REACT_ID, "id");
 }
@@ -226,7 +282,55 @@ check(
 check("the AI button presses the sidebar state", studio.seen.aiPressed === "true", studio.seen.aiPressed);
 check("Edit in canvas swaps the route for the canvas", studio.seen.canvasShown === true, studio.seen.canvasShown);
 check("and the route leaves the outlet", studio.seen.taskGoneInCanvas === true, studio.seen.taskGoneInCanvas);
+check("the canvas holds one frame per route", sameList(studio.seen.frames, ["/", "/done/:id"]), studio.seen.frames);
+check("a frame draws its route's content", studio.seen.frameDrawsRoute === true, studio.seen.frameDrawsRoute);
+check(
+	"a route with a param and no sample says what it needs",
+	studio.seen.needsSaid === "needs :id",
+	studio.seen.needsSaid,
+);
+check("a zoom changes the field's scale", scaleOf(studio.seen.transformZoomed) > scaleOf(studio.seen.transformBefore), [
+	studio.seen.transformBefore,
+	studio.seen.transformZoomed,
+]);
+check(
+	"a pan moves the field",
+	(studio.seen.transformPanned ?? "") !== "" && studio.seen.transformPanned !== studio.seen.transformZoomed,
+	studio.seen.transformPanned,
+);
+check(
+	"panning and zooming never navigate the studio",
+	studio.seen.locationInCanvas === "/",
+	studio.seen.locationInCanvas,
+);
+check(
+	"the Components page holds a card per widget state",
+	sameList(studio.seen.cards, ["task-list · Full", "task-list · Empty"]),
+	studio.seen.cards,
+);
+check("a state card draws the state's props", studio.seen.cardDrawsState === true, studio.seen.cardDrawsState);
+check(
+	"back on Pages, the camera stands where it was left",
+	(studio.seen.transformBackOnPages ?? "") !== "" && studio.seen.transformBackOnPages === studio.seen.transformPanned,
+	[studio.seen.transformPanned, studio.seen.transformBackOnPages],
+);
+check(
+	"a press on the route's popover trigger reaches it",
+	studio.seen.routeTriggerHit === true,
+	studio.seen.routeTriggerHit,
+);
+check(
+	"a press on a frame's popover trigger never reaches it",
+	studio.seen.frameTriggerHit === false,
+	studio.seen.frameTriggerHit,
+);
+check("and the trigger takes no focus", studio.seen.frameTriggerFocused === false, studio.seen.frameTriggerFocused);
 check("Back to view brings the route back", studio.seen.backShowsRoute === true, studio.seen.backShowsRoute);
+check(
+	"and its DOM equals the route's before the canvas",
+	withoutReactIds(studio.seen.routeDomBack) === withoutReactIds(studio.seen.routeDom),
+	withoutReactIds(studio.seen.routeDomBack).length,
+);
 check("an app the host cannot open leaves the shell standing", studio.seen.bandAfterRefusal === true, null);
 check(
 	"open-app answers ok:false, and the open menu says the host's reason",

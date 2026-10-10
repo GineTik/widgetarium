@@ -1,6 +1,7 @@
 import { createElement as h } from "react";
 import type { ReactElement, ReactNode } from "react";
-import type { Drawing, DrawnScreen, Size } from "./design-canvas-shapes.js";
+import type { Size } from "widgetarium/studio";
+import type { Drawing, DrawnScreen } from "./design-canvas-shapes.js";
 import { Group } from "./design-group.js";
 import { Region } from "./design-region.js";
 import { ScreenFrame } from "./design-screen-frame.js";

@@ -1,13 +1,7 @@
 import type { WidgetSurfaceProps } from "@widgetarium/core/surface/widget-surface.js";
 import type { Board } from "@widgetarium/core/model.js";
 import type { ReferenceNote } from "@widgetarium/core/app-design.js";
-
-export const DESKTOP_FRAME = { width: 1280, height: 832 } as const;
-
-export interface StatePicture {
-	readonly widget: string;
-	readonly props: Readonly<Record<string, unknown>>;
-}
+import type { StatePicture } from "widgetarium/studio";
 
 export interface DrawnState {
 	readonly name: string;
@@ -40,11 +34,6 @@ export interface DrawnDesign {
 	readonly screens: readonly DrawnScreen[];
 	readonly references: readonly DrawnReference[];
 	readonly widgets: readonly DrawnWidget[];
-}
-
-export interface Size {
-	readonly width: number;
-	readonly height: number;
 }
 
 export interface Drawing {

@@ -2,7 +2,7 @@ import { createContext, createElement as h, useContext, useEffect, useState } fr
 import type { ReactElement, ReactNode } from "react";
 import { useMountedInTurn } from "./design-mount-turns.js";
 import { askForSnapshot, useFramePicture } from "./design-snapshots.js";
-import { useIsFar } from "./design-zoom.js";
+import { useIsFar } from "widgetarium/studio";
 
 export interface DrawnWhenSeenProps {
 	readonly minHeight: number;

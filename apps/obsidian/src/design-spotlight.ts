@@ -1,7 +1,6 @@
 import { createElement as h, useEffect, useState } from "react";
 import type { ReactElement } from "react";
-import type { Box } from "./design-flight.js";
-import type { Look } from "./design-pan-zoom.js";
+import type { Box, Look } from "widgetarium/studio";
 import type { Hit } from "./design-selection.js";
 
 export interface Spot {

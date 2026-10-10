@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { MouseEvent, RefObject } from "react";
 import type { LayerFocus } from "./design-layers-panel.js";
 import { seenLayersOf } from "./design-layers-panel.js";
-import type { PanZoom } from "./design-pan-zoom.js";
+import type { PanZoom } from "widgetarium/studio";
 import { LIVE_SCREEN, hitsAt, parentsOf, pickedHit } from "./design-selection.js";
 import type { PickDepth } from "./design-selection.js";
 import { firstScreenOf, isSameSpot, lookOnto, screenBoxOf, spotOn } from "./design-spotlight.js";
@@ -26,7 +26,7 @@ interface ScreenUnder {
 	readonly widget: string;
 }
 
-const CHROME = ".wg-design-layers, .wg-design-topbar, .wg-design-zoom, .wg-design-hint";
+const CHROME = ".wg-design-layers, .wg-design-topbar, .wg-studio-zoom, .wg-design-hint";
 const SCREENS = ".wg-design-frame[data-wg-screen]";
 
 export function useCanvasSelection(layerRef: RefObject<HTMLDivElement | null>, pan: PanZoom): CanvasSelection {

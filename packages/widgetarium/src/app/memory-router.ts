@@ -14,6 +14,10 @@ export function createMemoryRouter(routesOf: RoutesOf, start: MemoryRouterStart)
 	return router;
 }
 
+export function createMemoryRouterWithoutArrival(routesOf: RoutesOf, start: MemoryRouterStart): ProjectRouter {
+	return createProjectRouter(routesOf, memoryLocationOf(start)).router;
+}
+
 function memoryLocationOf({ at, paramsKeyOf }: MemoryRouterStart): RouterLocation {
 	const held = { pathname: pathnameAgainst(at, "/") };
 	return {

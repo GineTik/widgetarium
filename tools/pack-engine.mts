@@ -6,6 +6,7 @@ import esbuild, { type Plugin } from "esbuild";
 import { TEXT_LOADERS } from "../apps/obsidian/build.mts";
 import { z } from "zod";
 import { SOURCE_CONDITION, fieldOf, isNodeExport, sourceOfExport } from "./export-source.mts";
+import { studioSplitOf } from "./studio-sheet.mts";
 
 export interface PackedPackage {
 	readonly name: string;
@@ -50,6 +51,7 @@ const BROWSER_STYLES = {
 	host: path.join(REPO, "packages/widgetarium/src/browser-host.css"),
 	board: path.join(REPO, "apps/obsidian/styles.css"),
 	into: path.join(REPO, "packages/widgetarium/dist/styles.css"),
+	studioInto: path.join(REPO, "packages/widgetarium/dist/studio.css"),
 };
 
 export async function packEngine(): Promise<PackedPackage[]> {
@@ -82,7 +84,9 @@ const builtIn = (folder: string): string => path.join(folder, BUILT_TO);
 // TRADE-OFF: the engine package's sheet is cut from the app's styles.css; moving that owner into core touches every paint gate
 function writeBrowserStyles(): void {
 	const sheets = [BROWSER_STYLES.host, BROWSER_STYLES.board].map((at) => fs.readFileSync(at, "utf8"));
-	fs.writeFileSync(BROWSER_STYLES.into, sheets.join("\n"));
+	const { app, studio } = studioSplitOf(sheets.join("\n"));
+	fs.writeFileSync(BROWSER_STYLES.into, app);
+	fs.writeFileSync(BROWSER_STYLES.studioInto, studio);
 }
 
 function manifestIn(folder: string): PackageManifest {

@@ -2,7 +2,7 @@ import { createElement as h } from "react";
 import type { ReactElement } from "react";
 import { routeElementOf } from "../app/widgetarium-app.js";
 import type { StartedProject } from "../app/widgetarium-app.js";
-import { CanvasPlaceholder } from "./canvas-placeholder.js";
+import { ProjectCanvas } from "./canvas/project-canvas.js";
 import type { StudioView } from "./studio-state.js";
 
 export interface StudioOutletProps {
@@ -12,6 +12,6 @@ export interface StudioOutletProps {
 }
 
 export function StudioOutlet({ project, pathname, view }: StudioOutletProps): ReactElement {
-	const shown = view === "canvas" ? h(CanvasPlaceholder) : routeElementOf(project, pathname);
+	const shown = view === "canvas" ? h(ProjectCanvas, { project }) : routeElementOf(project, pathname);
 	return h("main", { className: "wg-studio-outlet" }, shown);
 }

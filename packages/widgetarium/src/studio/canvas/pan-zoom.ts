@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef } from "react";
 import type { MutableRefObject, PointerEvent as ReactPointerEvent, RefObject } from "react";
-import type { Size } from "./design-canvas-shapes.js";
-import { movedNow, zoomSettledAt } from "./design-zoom.js";
-import { flightBetween } from "./design-flight.js";
+import type { Size } from "./frame-size.js";
+import { movedNow, zoomSettledAt } from "./zoom-settled.js";
+import { flightBetween } from "./flight.js";
 
 export interface Look {
 	readonly x: number;
@@ -21,6 +21,12 @@ export interface PanZoom {
 	readonly lookNow: () => Look;
 }
 
+export interface PanZoomGrips {
+	readonly isHand: boolean;
+	readonly pressable: string;
+	readonly ownScroll: string | null;
+}
+
 interface PointerMoves {
 	readonly onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void;
 	readonly onPointerMove: (event: ReactPointerEvent<HTMLElement>) => void;
@@ -37,15 +43,18 @@ const WHEEL_RATE = 0.003;
 const PINCH_DELTA_BELOW = 30;
 const SHARP_AFTER_MS = 150;
 const MOVING = "is-moving";
-const PRESSABLE = "button, input, textarea, [role=radio], [role=tab], [role=switch], .wg-design-layers, .wg-design-job";
-const OWN_SCROLL = ".wg-design-layers";
+export const PRESSABLE_CONTROLS = "button, input, textarea, [role=radio], [role=tab], [role=switch]";
 
 export function fitLook(field: Size, view: Size): Look {
 	const scale = Math.max(ZOOM_FLOOR, Math.min(1, view.width / field.width, view.height / field.height));
 	return { scale, x: (view.width - field.width * scale) / 2, y: (view.height - field.height * scale) / 2 };
 }
 
-export function usePanZoom(layerRef: RefObject<HTMLDivElement | null>, fit: Look | null, isHand: boolean): PanZoom {
+export function usePanZoom(
+	layerRef: RefObject<HTMLDivElement | null>,
+	fit: Look | null,
+	{ isHand, pressable, ownScroll }: PanZoomGrips,
+): PanZoom {
 	const fieldRef = useRef<HTMLDivElement | null>(null);
 	const percentRef = useRef<HTMLSpanElement | null>(null);
 	const held = useRef<Look | null>(null);
@@ -65,11 +74,11 @@ export function usePanZoom(layerRef: RefObject<HTMLDivElement | null>, fit: Look
 		if (look) painter(look);
 	}, [painter, fit]);
 	useFitLatchedAfterLayout(held, fit);
-	useNativeWheel(fieldRef, lookNow, moveTo);
+	useNativeWheel({ fieldRef, ownScroll, lookNow, moveTo });
 	return {
 		fieldRef,
 		percentRef,
-		moves: useDragMoves(lookNow, moveTo, isHand),
+		moves: useDragMoves(lookNow, moveTo, { isHand, pressable }),
 		zoomBy: (step) => moveTo(scaledAround(lookNow(), lookNow().scale + step, centreOf(fieldRef.current))),
 		zoomTo: (scale) => moveTo(scaledAround(lookNow(), scale, centreOf(fieldRef.current))),
 		refit: () => {
@@ -138,16 +147,19 @@ function usePainter(
 	);
 }
 
-function useNativeWheel(
-	fieldRef: RefObject<HTMLDivElement | null>,
-	lookNow: () => Look,
-	moveTo: (next: Look) => void,
-): void {
+interface Wheel {
+	readonly fieldRef: RefObject<HTMLDivElement | null>;
+	readonly ownScroll: string | null;
+	readonly lookNow: () => Look;
+	readonly moveTo: (next: Look) => void;
+}
+
+function useNativeWheel({ fieldRef, ownScroll, lookNow, moveTo }: Wheel): void {
 	useEffect(() => {
 		const field = fieldRef.current;
 		if (!field) return;
 		const onWheel = (event: WheelEvent): void => {
-			if (event.target instanceof Element && event.target.closest(OWN_SCROLL)) return;
+			if (ownScroll !== null && event.target instanceof Element && event.target.closest(ownScroll)) return;
 			event.preventDefault();
 			event.stopPropagation();
 			const box = field.getBoundingClientRect();
@@ -155,14 +167,18 @@ function useNativeWheel(
 		};
 		field.addEventListener("wheel", onWheel, { passive: false });
 		return () => field.removeEventListener("wheel", onWheel);
-	}, [fieldRef, lookNow, moveTo]);
+	}, [fieldRef, ownScroll, lookNow, moveTo]);
 }
 
-function useDragMoves(lookNow: () => Look, moveTo: (next: Look) => void, isHand: boolean): PointerMoves {
+function useDragMoves(
+	lookNow: () => Look,
+	moveTo: (next: Look) => void,
+	{ isHand, pressable }: Pick<PanZoomGrips, "isHand" | "pressable">,
+): PointerMoves {
 	const drag = useRef<{ x: number; y: number } | null>(null);
 	return {
 		onPointerDown: (event) => {
-			if (!isHand || (event.target instanceof Element && event.target.closest(PRESSABLE))) return;
+			if (!isHand || (event.target instanceof Element && event.target.closest(pressable))) return;
 			const look = lookNow();
 			drag.current = { x: event.clientX - look.x, y: event.clientY - look.y };
 			event.currentTarget.setPointerCapture(event.pointerId);

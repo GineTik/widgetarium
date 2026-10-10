@@ -1,5 +1,5 @@
-import type { Size } from "./design-canvas-shapes.js";
-import type { Look } from "./design-pan-zoom.js";
+import type { Size } from "./frame-size.js";
+import type { Look } from "./pan-zoom.js";
 
 export interface Flight {
 	readonly lookAt: (share: number) => Look;

@@ -1,8 +1,9 @@
 import { createElement as h } from "react";
 import type { ReactElement } from "react";
-import type { Drawing, DrawnState, Size } from "./design-canvas-shapes.js";
+import { StateDrawing } from "widgetarium/studio";
+import type { Size } from "widgetarium/studio";
+import type { Drawing, DrawnState } from "./design-canvas-shapes.js";
 import { ScreenBoard } from "./design-screen-board.js";
-import { StateDrawing } from "./design-state-drawing.js";
 import { DrawnWhenSeen } from "./design-drawn-when-seen.js";
 import { frameIdOf, snapshotKeyOf } from "./design-snapshots.js";
 

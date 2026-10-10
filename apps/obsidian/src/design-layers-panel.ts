@@ -1,13 +1,13 @@
 import { createElement as h, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement, RefObject } from "react";
 import { Icon, IconButton } from "@widgetarium/kit";
-import { DESKTOP_FRAME } from "./design-canvas-shapes.js";
-import type { Drawing, DrawnScreen, StatePicture } from "./design-canvas-shapes.js";
+import { DESKTOP_FRAME, StateDrawing } from "widgetarium/studio";
+import type { StatePicture } from "widgetarium/studio";
+import type { Drawing, DrawnScreen } from "./design-canvas-shapes.js";
 import { LIVE_SCREEN, ancestorsOf, hitOfMark, parentsOf } from "./design-selection.js";
 import type { Hit } from "./design-selection.js";
 import { DRAWS_AT_ONCE } from "./design-drawn-when-seen.js";
 import { LayerRow } from "./design-layer-row.js";
-import { StateDrawing } from "./design-state-drawing.js";
 import { layerMoveTo } from "./layer-moves.js";
 import { useLayerDrag } from "./design-layer-drag.js";
 import type { Projection } from "./layer-drag.js";

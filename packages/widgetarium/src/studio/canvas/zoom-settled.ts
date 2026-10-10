@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 
 const FAR_BELOW_SCALE = 0.5;
+// TRADE-OFF: one module-wide camera; one canvas moves at a time, and layer drag and snapshots read it
 const listeners = new Set<() => void>();
 let scaleNow = 1;
 let movedAt = 0;

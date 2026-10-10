@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 import { contentHash } from "@widgetarium/core/engine/content-hash.js";
 import type { Drawing } from "./design-canvas-shapes.js";
 import { framePictureOf, keepFramePicture } from "./design-pictures-store.js";
-import { msSinceMoved } from "./design-zoom.js";
+import { msSinceMoved } from "widgetarium/studio";
 import { canvasOf } from "./off-screen.js";
 
 export interface ShownPicture {

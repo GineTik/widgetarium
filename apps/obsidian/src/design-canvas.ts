@@ -1,8 +1,10 @@
-import { createElement as h, useEffect, useMemo, useRef, useState } from "react";
+import { createElement as h, useEffect, useMemo, useRef } from "react";
 import type { DragEvent, ReactElement, RefObject } from "react";
-import { Button, Icon, IconButton } from "@widgetarium/kit";
+import { Icon, IconButton } from "@widgetarium/kit";
+import { PRESSABLE_CONTROLS, ZoomBar, useLayerFit, usePanZoom } from "widgetarium/studio";
+import type { Box, PanZoom, Size } from "widgetarium/studio";
 import type { WidgetSurfaceProps } from "@widgetarium/core/surface/widget-surface.js";
-import type { DrawnReference, DrawnScreen, DrawnWidget, Size } from "./design-canvas-shapes.js";
+import type { DrawnReference, DrawnScreen, DrawnWidget } from "./design-canvas-shapes.js";
 import { imageFilesIn } from "./design-photos.js";
 import { COMPONENTS_PAGE, canvasTabsOf, regionsOfPage, shownPageOf } from "./design-canvas-page.js";
 import { pageLabelOf } from "./design-job.js";
@@ -15,13 +17,10 @@ import type { VariantPick } from "./design-variants.js";
 import { LayersPanel } from "./design-layers-panel.js";
 import type { LayerFocus } from "./design-layers-panel.js";
 import { Highlight, lookOnto } from "./design-spotlight.js";
-import type { Box } from "./design-flight.js";
 import { useCanvasSelection } from "./design-canvas-selection.js";
 import { CanvasTools } from "./design-tools.js";
 import type { CanvasMode } from "./design-tools.js";
 import type { LayerMove } from "./layer-moves.js";
-import { fitLook, usePanZoom } from "./design-pan-zoom.js";
-import type { PanZoom } from "./design-pan-zoom.js";
 import { PicturesProgress } from "./design-pictures-progress.js";
 import { AgentLookChip } from "./design-agent-look.js";
 import { TopBar } from "./design-top-bar.js";
@@ -54,17 +53,21 @@ export interface DesignCanvasProps {
 	readonly host: WidgetSurfaceProps["host"];
 }
 
-const ZOOM_STEP = 0.1;
 const SCREENS_SAID = "{count} screens · {frames} frames · read only";
 const HINT = "Answer a job on its page, or tell the agent in the chat";
 const LAYERS_SAID = "Layers";
 const PAGE_FADE_MS = 140;
 const FADED_ON_TURN = ".wg-design-layer, .wg-design-layers.is-open";
+const LAYERS_PANEL = ".wg-design-layers";
+const PRESSABLE_IN_DESIGN = `${PRESSABLE_CONTROLS}, ${LAYERS_PANEL}, .wg-design-job`;
 
 export function DesignCanvas(props: DesignCanvasProps): ReactElement {
-	const { layerRef, field } = useLayerSize();
-	const fit = useMemo(() => (field ? fitLook(field, props.size) : null), [field, props.size]);
-	const pan = usePanZoom(layerRef, fit, props.mode === "hand");
+	const layerRef = useRef<HTMLDivElement | null>(null);
+	const pan = usePanZoom(layerRef, useLayerFit(layerRef, props.size), {
+		isHand: props.mode === "hand",
+		pressable: PRESSABLE_IN_DESIGN,
+		ownScroll: LAYERS_PANEL,
+	});
 	const selection = useCanvasSelection(layerRef, pan);
 	const { screens, references, widgets, jobs, docs, controls, opener, pick, registry, host } = props;
 	const page = shownPageOf(props.page, { screens, references, jobs, docs, keptPage: props.keptPage });
@@ -96,7 +99,7 @@ export function DesignCanvas(props: DesignCanvasProps): ReactElement {
 				{ ...props, picked: selection.picked?.mark ?? null, onFocus: selection.onFocus, keepsLiveCopy: isPointer },
 				page,
 			),
-			zoomBar(pan),
+			h(ZoomBar, { key: "zoom", pan }),
 			h("div", { key: "hint", className: "wg-design-hint" }, HINT),
 		],
 	);
@@ -211,24 +214,6 @@ function fadedTurn(field: HTMLElement | null, turn: () => void): void {
 	void Promise.all(outs.map((out) => out.finished)).then(turn);
 }
 
-function useLayerSize() {
-	const layerRef = useRef<HTMLDivElement | null>(null);
-	const [field, setField] = useState<Size | null>(null);
-	useEffect(() => {
-		const layer = layerRef.current;
-		if (!layer) return;
-		const measure = (): void => {
-			if (layer.offsetWidth > 0 && layer.offsetHeight > 0)
-				setField({ width: layer.offsetWidth, height: layer.offsetHeight });
-		};
-		const watcher = new ResizeObserver(measure);
-		watcher.observe(layer);
-		measure();
-		return () => watcher.disconnect();
-	}, []);
-	return { layerRef, field };
-}
-
 function photoDrops(onAddPhotos: (photos: readonly File[]) => void) {
 	return {
 		onDragOver: (event: DragEvent): void => event.preventDefault(),
@@ -239,16 +224,6 @@ function photoDrops(onAddPhotos: (photos: readonly File[]) => void) {
 			onAddPhotos(photos);
 		},
 	};
-}
-
-function zoomBar(pan: PanZoom): ReactElement {
-	return h("div", { key: "zoom", className: "wg-design-zoom" }, [
-		h(Button, { key: "fit", size: "s", variant: "ghost", onClick: pan.refit }, "Fit"),
-		h(Button, { key: "one", size: "s", variant: "ghost", onClick: () => pan.zoomTo(1) }, "1:1"),
-		h(Button, { key: "out", size: "s", variant: "ghost", onClick: () => pan.zoomBy(-ZOOM_STEP) }, "−"),
-		h(Button, { key: "in", size: "s", variant: "ghost", onClick: () => pan.zoomBy(ZOOM_STEP) }, "+"),
-		h("span", { key: "said", className: "wg-design-percent", ref: pan.percentRef }),
-	]);
 }
 
 interface WidgetFlight {

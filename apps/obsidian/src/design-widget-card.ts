@@ -1,10 +1,10 @@
 import { createElement as h } from "react";
 import type { ReactElement } from "react";
+import { StateDrawing, cardPxOf } from "widgetarium/studio";
 import type { Drawing } from "./design-canvas-shapes.js";
 import { DefaultDrawing } from "./design-default-drawing.js";
 import { DrawnWhenSeen } from "./design-drawn-when-seen.js";
 import { frameIdOf, snapshotKeyOf } from "./design-snapshots.js";
-import { StateDrawing } from "./design-state-drawing.js";
 
 export interface WidgetCardProps extends Drawing {
 	readonly id: string;
@@ -12,12 +12,10 @@ export interface WidgetCardProps extends Drawing {
 	readonly props?: Readonly<Record<string, unknown>> | undefined;
 }
 
-const CARD_PX = { narrow: 400, wide: 800 } as const;
-const WIDE_FROM_PX = 560;
 const CARD_UNSEEN_PX = 160;
 
 export function WidgetCard({ id, label, props, registry, host }: WidgetCardProps): ReactElement {
-	const cardPx = isWide(registry.get(id)?.manifest["preferredSize"]) ? CARD_PX.wide : CARD_PX.narrow;
+	const cardPx = cardPxOf(registry.get(id));
 	return h("figure", { className: "wg-design-widget", style: { width: `${cardPx}px` } }, [
 		h("figcaption", { key: "name", className: "wg-design-state-name" }, label),
 		h(
@@ -36,10 +34,4 @@ export function WidgetCard({ id, label, props, registry, host }: WidgetCardProps
 			),
 		),
 	]);
-}
-
-function isWide(size: unknown): boolean {
-	if (typeof size !== "object" || size === null || !("preferredWidth" in size)) return false;
-	const preferred = size.preferredWidth;
-	return preferred === "full" || (typeof preferred === "number" && preferred >= WIDE_FROM_PX);
 }

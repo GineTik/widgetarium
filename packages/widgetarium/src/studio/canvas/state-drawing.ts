@@ -6,9 +6,17 @@ import { isObject } from "@widgetarium/core/engine/is-object.js";
 import { mountSpecsOf } from "@widgetarium/core/manifest-holds.js";
 import type { MountEntry } from "@widgetarium/core/gateway/host.js";
 import type { SlotState } from "@widgetarium/core/gateway/declared-types.js";
-import type { Drawing, StatePicture } from "./design-canvas-shapes.js";
+import type { WidgetSurfaceProps } from "@widgetarium/core/surface/widget-surface.js";
 
-export interface StateDrawingProps extends Pick<Drawing, "registry"> {
+type Registry = WidgetSurfaceProps["registry"];
+
+export interface StatePicture {
+	readonly widget: string;
+	readonly props: Readonly<Record<string, unknown>>;
+}
+
+export interface StateDrawingProps {
+	readonly registry: Registry;
 	readonly picture: StatePicture;
 }
 
@@ -26,7 +34,7 @@ export function StateDrawing({ picture, registry }: StateDrawingProps): ReactEle
 			),
 		);
 	const props = withSlotsDrawn(picture, registry);
-	return h(Contained, { instead }, h("div", { className: "wg-design-drawn" }, h(component, props)));
+	return h(Contained, { instead }, h("div", { className: "wg-studio-drawn" }, h(component, props)));
 }
 
 export function statePropsOf<Props>(
@@ -37,7 +45,7 @@ export function statePropsOf<Props>(
 	return states[state ?? first ?? ""];
 }
 
-function withSlotsDrawn(picture: StatePicture, registry: Drawing["registry"]): Readonly<Record<string, unknown>> {
+function withSlotsDrawn(picture: StatePicture, registry: Registry): Readonly<Record<string, unknown>> {
 	const props = isObject(picture.props) ? picture.props : {};
 	const slots = Object.keys(mountSpecsOf(registry.get(picture.widget)?.manifest));
 	if (slots.length === 0) return props;
@@ -56,7 +64,7 @@ function isSlotState(held: unknown): held is SlotState {
 	return isObject(held) && typeof held["widget"] === "string";
 }
 
-function entryOf(one: SlotState, at: number, registry: Drawing["registry"]): MountEntry {
+function entryOf(one: SlotState, at: number, registry: Registry): MountEntry {
 	const definition = registry.get(one.widget);
 	const props = { ...(statePropsOf(definition?.states ?? {}, one.state) ?? {}), ...one.props };
 	const title = definition?.manifest["title"];
@@ -79,5 +87,5 @@ function entryOf(one: SlotState, at: number, registry: Drawing["registry"]): Mou
 }
 
 function refused(said: string): ReactElement {
-	return h("p", { className: "wg-ai-spec-refused" }, said);
+	return h("p", { className: "wg-studio-refused" }, said);
 }

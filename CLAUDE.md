@@ -547,7 +547,9 @@ studio. `test:studio-render` measures both in Chrome and proves the app entry bu
 (`packages/widgetarium/src/studio/widgets`) over the `@studio` pack; the route is drawn below it by the
 same `routeElementOf` app mode calls, never merged into the band's tree, because a route nested one
 level down stops being regions and changes its spacing. The outlet's view and whether the AI sidebar is
-open live in `STUDIO_STATE`, written only by `@studio` commands. What the host can do is its
+open live in `STUDIO_STATE`, written only by `@studio` commands. The canvas view is the engine's `ProjectCanvas`
+(`packages/widgetarium/src/studio/canvas`): a frame per route on its own memory router and the
+widgets' `defineStates`, under the one pan-zoom the Obsidian design view imports too. What the host can do is its
 `StudioHostPort` (`packages/core/src/engine/studio-host.ts`): window-button insets, which the safe areas
 read as `--wg-studio-inset-left|right`, and the apps; a host without them answers "not available" and
 the shell stays. `@catalogue` ships inside the plugin (`tools/system-widget-files.mts`), read-only.

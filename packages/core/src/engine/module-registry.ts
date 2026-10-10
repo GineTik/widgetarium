@@ -11,6 +11,10 @@ export class ModuleRegistry implements WidgetLookup {
 		this.widgets = new Map(Object.entries(modules).map(([id, module]) => [id, definitionOfModule(id, module)]));
 	}
 
+	ids(): string[] {
+		return [...this.widgets.keys()];
+	}
+
 	list(): WidgetDefinition[] {
 		return [...this.widgets.values()];
 	}
