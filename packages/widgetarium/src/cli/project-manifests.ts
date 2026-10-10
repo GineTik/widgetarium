@@ -14,10 +14,10 @@ const JsonObjectSchema = z.record(z.string(), z.unknown());
 const DependenciesSchema = z.record(z.string(), z.string());
 
 export function writeProjectConfig(target: string, name: string, kitRoot: string): void {
-	const { paths } = ProjectConfigSchema.parse({ name });
+	const { app, paths } = ProjectConfigSchema.parse({ app: { name } });
 	const config = ProjectConfigSchema.parse({
 		$schema: CONFIG_SCHEMA_URL,
-		name,
+		app,
 		paths,
 		aliases: kitAliasesOf(kitRoot, paths.kit),
 	});

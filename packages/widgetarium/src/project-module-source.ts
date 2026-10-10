@@ -1,3 +1,4 @@
+import { publicIconHrefOf } from "./app-head.js";
 import { SOURCE_FILES } from "@widgetarium/core/engine/widget-build.js";
 import {
 	checkDiscovered,
@@ -23,6 +24,7 @@ interface ProjectToImport {
 	readonly widgets: readonly ImportedWidget[];
 }
 
+const APP_ICON_IMPORT = "appIcon";
 const NO_WIDGET_SOURCE = "{folder} was found as a widget, but holds no {files}";
 
 export async function projectModuleSourceOf(root: string, files: ProjectFiles, config: ProjectConfig): Promise<string> {
@@ -41,9 +43,11 @@ function moduleSourceOf(project: ProjectToImport): string {
 	return [...importLinesOf(project), `export const project = { ${fields} };`, ""].join("\n");
 }
 
-function importLinesOf({ root, map, widgets }: ProjectToImport): string[] {
+function importLinesOf({ root, config, map, widgets }: ProjectToImport): string[] {
 	const at = (relative: string): string => JSON.stringify(`${root}/${relative}`);
+	const bundledIcon = publicIconHrefOf(config.app.icon) === null ? [config.app.icon] : [];
 	return [
+		...bundledIcon.map((icon) => `import ${APP_ICON_IMPORT} from ${at(`${icon}?url`)};`),
 		...widgets.map(({ file }, index) => `import * as widget${index} from ${at(file)};`),
 		...map.handlers.map(({ name, path }, index) => `import { ${name} as handler${index} } from ${at(path)};`),
 		...map.routes.map(({ file }, index) => `import board${index} from ${at(file)};`),
@@ -56,11 +60,16 @@ function projectFieldsOf({ config, map, widgets }: ProjectToImport): string[] {
 			`{ path: ${JSON.stringify(path)}, params: ${JSON.stringify(params)}, board: board${index} }`,
 	);
 	return [
-		`name: ${JSON.stringify(config.name)}`,
+		`app: { name: ${JSON.stringify(config.app.name)}, iconHref: ${iconHrefSourceOf(config.app.icon)} }`,
 		`routes: [${routes.join(", ")}]`,
 		`widgets: { ${widgets.map(({ name }, index) => `${JSON.stringify(name)}: widget${index}`).join(", ")} }`,
 		`handlers: { ${map.handlers.map(({ name }, index) => `${JSON.stringify(name)}: handler${index}`).join(", ")} }`,
 	];
+}
+
+function iconHrefSourceOf(icon: string): string {
+	const publicHref = publicIconHrefOf(icon);
+	return publicHref === null ? APP_ICON_IMPORT : JSON.stringify(publicHref);
 }
 
 async function widgetSourceIn(files: ProjectFiles, folder: string): Promise<string> {

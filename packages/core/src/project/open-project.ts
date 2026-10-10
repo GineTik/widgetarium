@@ -40,7 +40,7 @@ async function openChecked(files: ProjectFiles, config: ProjectConfig, map: Proj
 	if (modules.refused.length > 0) return refused(modules.refused);
 	return {
 		ok: true,
-		project: { name: config.name, routes, widgets: modules.widgets, handlers: modules.handlers },
+		project: { name: config.app.name, routes, widgets: modules.widgets, handlers: modules.handlers },
 	};
 }
 

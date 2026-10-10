@@ -122,7 +122,7 @@ const HOME_BOARD = { v: 2, tiles: [], layout: { dir: "column", of: [] } };
 
 const PROJECT: VaultFiles = {
 	[`${APP}/widgetarium.json`]: JSON.stringify({
-		name: "demo",
+		app: { name: "demo" },
 		aliases: { "@schemas": "src/shared/schemas/index.ts", "@schemas/task": "src/shared/schemas/task.ts" },
 	}),
 	[`${APP}/src/shared/schemas/task.ts`]: SCHEMA,

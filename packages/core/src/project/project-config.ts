@@ -4,7 +4,11 @@ import { parseJson } from "./project-json.js";
 
 export const PROJECT_CONFIG_FILE = "widgetarium.json";
 
-const MISSING_CONFIG = `missing at the project root; create ${PROJECT_CONFIG_FILE} holding {"name": "<app>"}, every path has a default`;
+export const DEFAULT_APP_ICON = "public/icon.svg";
+
+const MISSING_CONFIG = `missing at the project root; create ${PROJECT_CONFIG_FILE} holding {"app": {"name": "<app>"}}, every path has a default`;
+const APP_NAME_MISSING = 'app.name: the app has no name; write {"app": {"name": "<app>"}}';
+const APP_NAMED_TWICE = "name: moved to app.name; keep only app.name";
 const ROOT_ISSUE_PATH = "(root)";
 
 const NOT_PROJECT_RELATIVE =
@@ -30,19 +34,37 @@ const CatalogueSchema = z.strictObject({
 	registries: z.array(z.string().min(1)).default([]),
 });
 
+const AppSchema = z.strictObject({
+	name: z.string().min(1).optional(),
+	icon: ProjectPathSchema.default(DEFAULT_APP_ICON),
+});
+
 export const ProjectConfigSchema = z.strictObject({
 	$schema: z.string().optional(),
-	name: z.string().min(1),
+	name: z.string().min(1).optional().meta({ deprecated: true, description: "moved to app.name" }),
+	app: AppSchema.prefault({}),
 	paths: ProjectPathsSchema.prefault({}),
 	aliases: AliasesSchema.optional(),
 	catalogue: CatalogueSchema.optional(),
 });
 
+// TRADE-OFF: editors are told app.name is required while the parser still reads a top-level name.
+const REQUIRED_WHEN_WRITTEN = new Map<z.core.$ZodType, string[]>([
+	[ProjectConfigSchema, ["app"]],
+	[AppSchema, ["name"]],
+]);
+
 export type ProjectPaths = z.output<typeof ProjectPathsSchema>;
 export type ProjectAliases = z.output<typeof AliasesSchema>;
-export type ProjectConfig = Omit<z.output<typeof ProjectConfigSchema>, "aliases"> & {
+export interface ProjectApp {
+	readonly name: string;
+	readonly icon: string;
+}
+export type ProjectConfig = Omit<z.output<typeof ProjectConfigSchema>, "name" | "app" | "aliases"> & {
+	readonly app: ProjectApp;
 	readonly aliases: ProjectAliases;
 };
+type AppReading = { readonly app: ProjectApp } | { readonly refusal: string };
 export type ProjectConfigReading = { readonly config: ProjectConfig } | { readonly refusal: string };
 
 export async function readProjectConfig(files: ProjectFiles): Promise<ProjectConfigReading> {
@@ -52,8 +74,10 @@ export async function readProjectConfig(files: ProjectFiles): Promise<ProjectCon
 	if ("error" in json) return { refusal: `is not valid JSON: ${json.error}` };
 	const parsed = ProjectConfigSchema.safeParse(json.value);
 	if (!parsed.success) return { refusal: refusalOf(parsed.error) };
-	const aliases = { ...defaultAliasesOf(parsed.data.paths), ...parsed.data.aliases };
-	return { config: { ...parsed.data, aliases } };
+	const { name: legacyName, app: declaredApp, aliases: declaredAliases, ...rest } = parsed.data;
+	const app = appOf(declaredApp, legacyName);
+	if ("refusal" in app) return app;
+	return { config: { ...rest, app: app.app, aliases: { ...defaultAliasesOf(rest.paths), ...declaredAliases } } };
 }
 
 export function defaultAliasesOf(paths: ProjectPaths): ProjectAliases {
@@ -67,11 +91,24 @@ export function defaultAliasesOf(paths: ProjectPaths): ProjectAliases {
 }
 
 export function projectConfigJsonSchema(): z.core.JSONSchema.BaseSchema {
-	return z.toJSONSchema(ProjectConfigSchema, { io: "input" });
+	return z.toJSONSchema(ProjectConfigSchema, {
+		io: "input",
+		override: ({ zodSchema, jsonSchema }) => {
+			const required = REQUIRED_WHEN_WRITTEN.get(zodSchema);
+			if (required !== undefined) jsonSchema.required = required;
+		},
+	});
 }
 
 function refusalOf(error: z.ZodError): string {
 	return error.issues
 		.map((issue) => `${issue.path.length > 0 ? issue.path.join(".") : ROOT_ISSUE_PATH}: ${issue.message}`)
 		.join("; ");
+}
+
+function appOf(declared: z.output<typeof AppSchema>, legacyName: string | undefined): AppReading {
+	if (declared.name !== undefined && legacyName !== undefined) return { refusal: APP_NAMED_TWICE };
+	const name = declared.name ?? legacyName;
+	if (name === undefined) return { refusal: APP_NAME_MISSING };
+	return { app: { name, icon: declared.icon } };
 }

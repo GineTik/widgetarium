@@ -12,6 +12,7 @@ import {
 	type ProjectConfig,
 	type ProjectFiles,
 } from "../packages/core/src/project/index.js";
+import { fieldOf } from "./export-source.mts";
 import { vaultProjectFiles, type ProjectAdapter } from "../apps/obsidian/src/project-files-vault.js";
 
 type FixtureFiles = Readonly<Record<string, string>>;
@@ -21,7 +22,7 @@ const BOARD = JSON.stringify({ v: 2, layout: { dir: "column", of: [] } });
 const WIDGET = "export default function Widget() { return null; }\n";
 
 const FIXTURE: FixtureFiles = {
-	"widgetarium.json": JSON.stringify({ name: "shop", paths: { widgets: "src/ui/widgets" } }),
+	"widgetarium.json": JSON.stringify({ app: { name: "shop" }, paths: { widgets: "src/ui/widgets" } }),
 	"src/ui/widgets/billing/plan-list/widget.tsx": WIDGET,
 	"src/ui/widgets/billing/plan-list/plan-row.tsx": WIDGET,
 	"src/ui/widgets/orders/order-board/widget.tsx": WIDGET,
@@ -132,6 +133,7 @@ check("widgetarium.json fills every unnamed path from the handbook", config.path
 	references: "docs/references",
 });
 check("the aliases follow the configured paths", config.aliases["@widgets"], "src/ui/widgets");
+check("app names the app and defaults its icon", config.app, { name: "shop", icon: "public/icon.svg" });
 check("the project map is exactly what the folders hold", await discoverProject(files, config), EXPECTED_MAP);
 check(
 	"a vault adapter finds the same map as Node",
@@ -139,7 +141,12 @@ check(
 	EXPECTED_MAP,
 );
 check("a clean project has no findings", await checkProject(files), []);
-check("the JSON schema names the project's name as required", projectConfigJsonSchema()["required"], ["name"]);
+const jsonSchema = projectConfigJsonSchema();
+check(
+	"the JSON schema names app and app.name as required",
+	[jsonSchema["required"], fieldOf(fieldOf(fieldOf(jsonSchema, "properties"), "app"), "required")],
+	[["app"], ["name"]],
+);
 
 await withFiles(
 	{
@@ -184,6 +191,26 @@ await withFiles({ "widgetarium.json": JSON.stringify({ name: "shop", paths: { wi
 		"a config refusal names the exact zod path",
 		formatFindings(await checkProject(files)),
 		"widgetarium.json: paths.widgets: Invalid input: expected string, received number",
+	),
+);
+
+await withFiles({ "widgetarium.json": JSON.stringify({ name: "shop" }) }, async () =>
+	check("a top-level name is read as app.name", (await configOf(files)).app.name, "shop"),
+);
+
+await withFiles({ "widgetarium.json": JSON.stringify({ name: "shop", app: { name: "shop" } }) }, async () =>
+	check(
+		"a name in both places is refused",
+		formatFindings(await checkProject(files)),
+		"widgetarium.json: name: moved to app.name; keep only app.name",
+	),
+);
+
+await withFiles({ "widgetarium.json": JSON.stringify({ app: { icon: "src/logo.svg" } }) }, async () =>
+	check(
+		"an app with no name is refused",
+		formatFindings(await checkProject(files)),
+		'widgetarium.json: app.name: the app has no name; write {"app": {"name": "<app>"}}',
 	),
 );
 
@@ -235,7 +262,8 @@ fs.rmSync(path.join(project, "widgetarium.json"));
 check("a missing config is a refusal naming the fix", await checkProject(files), [
 	{
 		path: "widgetarium.json",
-		message: 'missing at the project root; create widgetarium.json holding {"name": "<app>"}, every path has a default',
+		message:
+			'missing at the project root; create widgetarium.json holding {"app": {"name": "<app>"}}, every path has a default',
 	},
 ]);
 

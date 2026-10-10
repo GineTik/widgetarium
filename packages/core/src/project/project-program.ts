@@ -43,7 +43,7 @@ export async function loadProjectModules(
 	if (graph.refused.length > 0) return { ...NOTHING_LOADED, refused: graph.refused };
 	// TODO: draw with the project's kit copy
 	const load = runCode(moduleLoaderProgramOf(graph.compiled, graph.resolved), NO_LIBS, null);
-	if (!isLoader(load)) return { ...NOTHING_LOADED, refused: [{ path: config.name, message: NOT_A_LOADER }] };
+	if (!isLoader(load)) return { ...NOTHING_LOADED, refused: [{ path: config.app.name, message: NOT_A_LOADER }] };
 	const loadedWidgets = widgets.map((entry) => [entry.name, widgetModuleIn(load, entry)] as const);
 	const loadedHandlers = map.handlers.map(({ name, path }) => [name, handlerIn(load, path, name)] as const);
 	return {

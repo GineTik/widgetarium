@@ -9,9 +9,10 @@ import { createBrowserRouter } from "./browser-router.js";
 import type { BrowserRouter } from "./browser-router.js";
 import { NoRoute } from "./no-route.js";
 import { RouteBoard } from "./route-board.js";
-import type { ProjectRouteBoard, WidgetariumProject } from "./widgetarium-project.js";
+import type { ProjectRouteBoard, WidgetariumAppIdentity, WidgetariumProject } from "./widgetarium-project.js";
 
 export interface StartedProject {
+	readonly app: WidgetariumAppIdentity;
 	readonly routes: readonly ProjectRouteBoard[];
 	readonly registry: ModuleRegistry;
 	readonly router: BrowserRouter;
@@ -24,6 +25,7 @@ export interface WidgetariumAppProps {
 export function startProject(project: WidgetariumProject): StartedProject {
 	registerPacks(corePack, projectPackOf(project.handlers));
 	return {
+		app: project.app,
 		routes: project.routes,
 		registry: new ModuleRegistry(project.widgets),
 		router: createBrowserRouter(project.routes),

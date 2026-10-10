@@ -34,6 +34,7 @@ const WRITE_SCHEMA = process.argv.includes("--write-schema");
 const HANDBOOK_FOLDER = "docs/widgetarium";
 const UNFILLED = /\{(?:name|handbook|paths\.[a-z]+)\}/;
 const RecordSchema = z.record(z.string(), z.unknown()).catch({});
+const ICON = "public/icon.svg";
 const DUPLICATE_WIDGET = 'widget id "tasks" is declared 2 times';
 
 const EXPECTED_FILES = [
@@ -43,6 +44,7 @@ const EXPECTED_FILES = [
 	"docs/references/.gitkeep",
 	"index.html",
 	"package.json",
+	ICON,
 	"src/app/routes/board.json",
 	"src/logic/.gitkeep",
 	"src/main.tsx",
@@ -180,7 +182,7 @@ try {
 
 	const reading = await readProjectConfig(nodeProjectFiles(project, fileSystem));
 	const aliases = "config" in reading ? reading.config.aliases : {};
-	check("widgetarium.json reads back", "config" in reading, true);
+	check("widgetarium.json reads back and names the icon", "config" in reading && reading.config.app.icon, ICON);
 	check(
 		"every alias in widgetarium.json names a file or folder the project holds",
 		Object.entries(aliases).filter(([, at]) => !fs.existsSync(path.join(project, at))),

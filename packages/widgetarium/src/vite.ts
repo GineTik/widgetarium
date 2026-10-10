@@ -6,6 +6,7 @@ import {
 	type ProjectConfig,
 	type ProjectFiles,
 } from "@widgetarium/core/project/index.js";
+import { appHeadTagsOf, type AppHeadTag } from "./app-head.js";
 import { viteAliasesOf, type ResolvedAlias } from "./project-aliases.js";
 import { PROJECT_MODULE_ID, projectModuleSourceOf } from "./project-module-source.js";
 
@@ -14,6 +15,7 @@ export interface WidgetariumVitePlugin {
 	config(): Promise<{ resolve: { alias: ResolvedAlias[] } }>;
 	resolveId(id: string): string | null;
 	load(id: string): Promise<string | null>;
+	transformIndexHtml: { readonly order: "pre"; readonly handler: () => Promise<AppHeadTag[]> };
 }
 
 interface ReadProject {
@@ -34,6 +36,7 @@ export function widgetarium(root: string = process.cwd()): WidgetariumVitePlugin
 			const { files, config } = await projectIn(root);
 			return projectModuleSourceOf(root, files, config);
 		},
+		transformIndexHtml: { order: "pre", handler: async () => appHeadTagsOf((await projectIn(root)).config.app) },
 	};
 }
 

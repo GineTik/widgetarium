@@ -7,6 +7,7 @@ export {
 	projectConfigJsonSchema,
 	readProjectConfig,
 	type ProjectAliases,
+	type ProjectApp,
 	type ProjectConfig,
 	type ProjectConfigReading,
 	type ProjectPaths,

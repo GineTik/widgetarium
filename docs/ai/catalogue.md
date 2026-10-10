@@ -21,7 +21,7 @@ The registries read are, first to last: `--registry <folder or URL>`, then `cata
 in `widgetarium.json`, then the repository's `registry/` when the CLI runs inside it.
 
 ```json
-{ "name": "shop", "catalogue": { "registries": ["../widgetarium/registry"] } }
+{ "app": { "name": "shop" }, "catalogue": { "registries": ["../widgetarium/registry"] } }
 ```
 
 ## Adding one

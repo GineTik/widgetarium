@@ -21,8 +21,11 @@ src/shared/libs/<library>/             third-party code the project keeps
 docs/                                  the spec, the design, the references
 ```
 
-Only `name` is required: `{ "name": "shop", "paths": { "widgets": "src/ui/widgets" } }` moves one layer
-and keeps the rest; a path is relative to the root, never `..`. `@kit`, `@schemas`, `@libs`, `@logic`
+Only `app.name` is required: `{ "app": { "name": "shop" }, "paths": { "widgets": "src/ui/widgets" } }`
+moves one layer and keeps the rest; a path is relative to the root, never `..`. `app` is the app's
+one name and its icon, `public/icon.svg` by default: the Vite plugin writes both into the page's
+title, `application-name` and favicon, and `widgetarium/app` hands them to the running app as
+`project.app`, `{ name, iconHref }`. `@kit`, `@schemas`, `@libs`, `@logic`
 and `@widgets` point at their paths, and `aliases` adds to them. Discovery skips `node_modules`, `build`, `dist` and every dot-folder, and these
 names must be unique across the project:
 

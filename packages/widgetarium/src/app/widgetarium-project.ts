@@ -7,8 +7,13 @@ export interface ProjectRouteBoard {
 	readonly board: unknown;
 }
 
-export interface WidgetariumProject {
+export interface WidgetariumAppIdentity {
 	readonly name: string;
+	readonly iconHref: string;
+}
+
+export interface WidgetariumProject {
+	readonly app: WidgetariumAppIdentity;
 	readonly routes: readonly ProjectRouteBoard[];
 	readonly widgets: ImportedWidgets;
 	readonly handlers: ImportedHandlers;

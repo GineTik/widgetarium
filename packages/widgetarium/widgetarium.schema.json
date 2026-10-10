@@ -6,8 +6,26 @@
 			"type": "string"
 		},
 		"name": {
+			"deprecated": true,
+			"description": "moved to app.name",
 			"type": "string",
 			"minLength": 1
+		},
+		"app": {
+			"default": {},
+			"type": "object",
+			"properties": {
+				"name": {
+					"type": "string",
+					"minLength": 1
+				},
+				"icon": {
+					"default": "public/icon.svg",
+					"type": "string"
+				}
+			},
+			"additionalProperties": false,
+			"required": ["name"]
 		},
 		"paths": {
 			"default": {},
@@ -77,6 +95,6 @@
 			"additionalProperties": false
 		}
 	},
-	"required": ["name"],
-	"additionalProperties": false
+	"additionalProperties": false,
+	"required": ["app"]
 }

@@ -55,7 +55,7 @@ async function configWritten(target: string): Promise<ProjectConfig> {
 
 function templateValuesOf(config: ProjectConfig, handbook: string): TemplateValues {
 	const paths = Object.entries(config.paths).map(([layer, at]) => [`paths.${layer}`, at]);
-	return { name: config.name, handbook, ...Object.fromEntries(paths) };
+	return { name: config.app.name, handbook, ...Object.fromEntries(paths) };
 }
 
 function refuseOccupied(target: string): void {

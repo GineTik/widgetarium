@@ -9,6 +9,9 @@ const APP = "shop";
 const KIT_ALIAS = "@widgetarium/kit";
 const ALIAS_PROBE = "src/shared/kit/alias-probe.ts";
 const KIT_CONSUMER = "src/widgets/greeting/widget.tsx";
+const BUNDLED_ICON = "src/app-icon.svg";
+const RENAMED_APP = 'Farm & "Field"';
+const ICON_LINK = '<link rel="icon" type="image/svg+xml" href="/icon.svg">';
 const KIT_CONSUMER_SOURCE = `import { createWidget, defineLayout, defineMetadata } from "widgetarium";
 import { Card } from "widgetarium/kit";
 
@@ -44,6 +47,41 @@ function withKitAliasPointedAtProbe<T>(app: string, run: () => T): T {
 			kept.every(({ at, md5 }) => md5Of(at) === md5),
 			true,
 		);
+	}
+}
+
+function headOf(app: string): string {
+	const html = fs.readFileSync(path.join(app, "dist/index.html"), "utf8");
+	return html.slice(0, html.indexOf("</head>"));
+}
+
+function namesApp(head: string, name: string): boolean {
+	const text = name.replaceAll("&", "&amp;");
+	const attribute = text.replaceAll('"', "&quot;");
+	return (
+		head.includes(`<title>${text}</title>`) && head.includes(`<meta name="application-name" content="${attribute}">`)
+	);
+}
+
+function builtScriptsHold(app: string, text: string): boolean {
+	const assets = path.join(app, "dist/assets");
+	return fs
+		.readdirSync(assets)
+		.filter((name) => name.endsWith(".js"))
+		.some((name) => fs.readFileSync(path.join(assets, name), "utf8").includes(text));
+}
+
+function withApp<T>(app: string, fields: Readonly<Record<string, string>>, run: () => T): T {
+	const at = path.join(app, "widgetarium.json");
+	const kept = { text: fs.readFileSync(at, "utf8"), md5: md5Of(at) };
+	const json: unknown = JSON.parse(kept.text);
+	Object.assign(Object(fieldOf(json, "app")), fields);
+	fs.writeFileSync(at, JSON.stringify(json));
+	try {
+		return run();
+	} finally {
+		fs.writeFileSync(at, kept.text);
+		check("and widgetarium.json is restored byte for byte", md5Of(at), kept.md5);
 	}
 }
 
@@ -83,6 +121,26 @@ try {
 	const build = ran(app, "npm", ["run", "build"]);
 	check("npm run build succeeds", build.ok ? "" : build.said, "");
 	check("and dist/index.html exists", fs.existsSync(path.join(app, "dist/index.html")), true);
+	const head = headOf(app);
+	check("the built head names the app from widgetarium.json", namesApp(head, APP), true);
+	check("and links the icon widgetarium.json names", head.includes(ICON_LINK), true);
+	check("and the icon is built beside it", fs.existsSync(path.join(app, "dist/icon.svg")), true);
+	withApp(app, { name: RENAMED_APP }, () => {
+		const renamed = ran(app, path.join(app, "node_modules/.bin/vite"), ["build"]);
+		check(
+			"falsified: renamed in widgetarium.json, the head no longer names the old app",
+			[renamed.ok, namesApp(headOf(app), APP)].join(),
+			"true,false",
+		);
+		check("and names the new one, escaped", namesApp(headOf(app), RENAMED_APP), true);
+	});
+	fs.copyFileSync(path.join(app, "public/icon.svg"), path.join(app, BUNDLED_ICON));
+	withApp(app, { icon: BUNDLED_ICON }, () => {
+		const bundled = ran(app, path.join(app, "node_modules/.bin/vite"), ["build"]);
+		const href = /<link rel="icon" type="image\/svg\+xml" href="(\/assets\/[^"]+\.svg)">/.exec(headOf(app))?.[1];
+		check("an icon outside public/ is linked as a built asset", [bundled.ok, href !== undefined].join(), "true,true");
+		check("and the app module hands the same href", href !== undefined && builtScriptsHold(app, href), true);
+	});
 
 	withKitAliasPointedAtProbe(app, () => {
 		const broken = ran(app, "npm", ["run", "typecheck"]);
