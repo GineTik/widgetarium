@@ -17,7 +17,7 @@ action, as shadcn's own blocks do.
 | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | `<div style="background:#f6f6f6;border-radius:24px;padding:20px">`           | `<Card>…</Card>`                                                                                                                 | one grey plate holding one block                                 |
 | a card with a title, a line under it, an action and buttons at the foot      | `<Card><CardHeader><CardTitle/><CardDescription/><CardAction/></CardHeader><CardContent/><CardFooter/></Card>`                   | shadcn's card parts inside the kit's plate                       |
-| a list of rows with lines between                                            | `<Rows>{rows.map((r) => <LayoutItem key={r.ref}>…</LayoutItem>)}</Rows>`                                                         | one plate, a hairline between rows                               |
+| a list of rows with lines between                                            | `<ItemGroup>{rows.map((r) => <LayoutItem key={r.ref}>…</LayoutItem>)}</ItemGroup>`                                               | no plate, a hairline between rows; wrap in `Card` for one        |
 | `display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr))` | `<Grid min={220}>{…<LayoutItem>…}</Grid>`                                                                                        | a grid; every cell its own plate                                 |
 | a row of cards side by side                                                  | `<Layout kind="row">…</Layout>`                                                                                                  | one line of plates                                               |
 | a bare column with gaps                                                      | `<Layout kind="stack">…</Layout>`                                                                                                | no plate, the kit's spacing                                      |
@@ -27,7 +27,7 @@ action, as shadcn's own blocks do.
 | a navigation column                                                          | `<Sidebar><SidebarContent><SidebarGroup><SidebarGroupLabel/><SidebarMenu><SidebarMenuItem><SidebarMenuButton isActive asChild>`  | shadcn's sidebar; `SidebarProvider` and `SidebarTrigger` fold it |
 | a table                                                                      | `DataTable`, or `Table`, `TableHeader`, `TableRow`, `TableHead`, `TableBody`, `TableCell`                                        | the ready table, or shadcn's parts for one it cannot draw        |
 
-`Layout kind` switches between `stack`, `row`, `grid` and `rows` with one word, so the design can
+`Layout kind` switches between `stack`, `row` and `grid` with one word, so the design can
 change without rewriting the block.
 
 ## Controls
@@ -80,17 +80,17 @@ never restyled through its `className`.
 
 ## Our extras beyond shadcn
 
-| Piece                                                                                  | Use it for                                                                                                                          |
-| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `Layout`, `Rows`, `Grid`, `LayoutItem`, `LayoutHeader`, `Section`, `Page`, `Container` | the plates and spacing of a block and a page, chosen by one word                                                                    |
-| `Card type`, `tone`, `side`, `across`                                                  | a plate the surface laws judge: `type="none"` paints nothing, `tone` tints it                                                       |
-| `List`, `Row`, `RowText`, `RowLabel`, `RowSupporting`, `RowValue`                      | rows with a label, a second line and a value                                                                                        |
-| `<Hero title eyebrow text photo action corner />`                                      | the one opening of a page: a photo with the words on a dark fade, or 3D shapes without a photo                                      |
-| `<PhotoCard title subtitle meta photo badge shape="tall" onOpen />`                    | a record led by its photo, a frosted badge, a round open button; a shape stands in without a photo; `shape` is wide, tall or square |
-| `<EmptyState title text shape tones action />`                                         | where nothing is yet: a cluster of 3D shapes, a title, one line, one action                                                         |
-| `<Shape name seed tones />`, `<PhotoStack photos isRound />`                           | a 3D Material shape on a number or a record without a picture; overlapping faces at a card's corner                                 |
-| `isLoading`, `isDone` on `Button` and `IconButton`                                     | a press that is working, then done, drawn on the button itself                                                                      |
-| `brand`, `tone`                                                                        | the person's accent, and the state colours a plate or a badge can wear                                                              |
+| Piece                                                                          | Use it for                                                                                                                          |
+| ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `Layout`, `Grid`, `LayoutItem`, `LayoutHeader`, `Section`, `Page`, `Container` | the plates and spacing of a block and a page, chosen by one word                                                                    |
+| `Card type`, `tone`, `side`, `across`                                          | a plate the surface laws judge: `type="none"` paints nothing, `tone` tints it                                                       |
+| `List`, `Row`, `RowText`, `RowLabel`, `RowSupporting`, `RowValue`              | rows with a label, a second line and a value                                                                                        |
+| `<Hero title eyebrow text photo action corner />`                              | the one opening of a page: a photo with the words on a dark fade, or 3D shapes without a photo                                      |
+| `<PhotoCard title subtitle meta photo badge shape="tall" onOpen />`            | a record led by its photo, a frosted badge, a round open button; a shape stands in without a photo; `shape` is wide, tall or square |
+| `<EmptyState title text shape tones action />`                                 | where nothing is yet: a cluster of 3D shapes, a title, one line, one action                                                         |
+| `<Shape name seed tones />`, `<PhotoStack photos isRound />`                   | a 3D Material shape on a number or a record without a picture; overlapping faces at a card's corner                                 |
+| `isLoading`, `isDone` on `Button` and `IconButton`                             | a press that is working, then done, drawn on the button itself                                                                      |
+| `brand`, `tone`                                                                | the person's accent, and the state colours a plate or a badge can wear                                                              |
 
 These are visual: they take any data you hand them. Draw them from rows with `map`.
 

@@ -21,14 +21,13 @@ import {
 	RowSupporting,
 	RowText,
 	RowValue,
-	Rows,
 } from "../packages/kit/src/index";
 
 const NAMES = ["Inbox", "Drafts", "Archive"];
 
 function LayoutItemRows(): ReactElement {
 	return (
-		<Rows>
+		<ItemGroup>
 			{NAMES.map((name) => (
 				<LayoutItem key={name}>
 					<RowText>
@@ -37,13 +36,13 @@ function LayoutItemRows(): ReactElement {
 					</RowText>
 				</LayoutItem>
 			))}
-		</Rows>
+		</ItemGroup>
 	);
 }
 
 function ItemRows(): ReactElement {
 	return (
-		<Rows>
+		<ItemGroup>
 			{NAMES.map((name) => (
 				<Item key={name}>
 					<ItemContent>
@@ -52,7 +51,7 @@ function ItemRows(): ReactElement {
 					</ItemContent>
 				</Item>
 			))}
-		</Rows>
+		</ItemGroup>
 	);
 }
 

@@ -7,7 +7,7 @@ import { Card, Plate, Surface } from "./components/card";
 import { Emblem, EmblemDiceBear, EmblemFallback, EmblemImage, PlaceholderMark } from "./components/emblem";
 import { Field, MarkdownEditor, TextArea } from "./components/field";
 import { CodeBlock } from "./components/code-block";
-import { Grid, Layout, LayoutActions, LayoutHeader, LayoutItem, LayoutTitle, Rows } from "./components/layout";
+import { Grid, Layout, LayoutActions, LayoutHeader, LayoutItem, LayoutTitle } from "./components/layout";
 import { Heading } from "./components/heading";
 
 import { List, Row, RowBadge, RowLabel, RowSupporting, RowText, RowValue, SlotList } from "./components/list";
@@ -152,7 +152,6 @@ export const Kit = {
 	LayoutTitle,
 	LayoutActions,
 	LayoutItem,
-	Rows,
 	Grid,
 	LAYOUT_KINDS,
 	SlotList,

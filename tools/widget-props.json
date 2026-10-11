@@ -1792,7 +1792,7 @@
 			"control": "choice",
 			"type": "line",
 			"label": "How they stand",
-			"hint": "A column reads down with nothing under it. A row and a grid give each widget its own plate. Rows stand in one plate with a line between them.",
+			"hint": "A column reads down with nothing under it. A row and a grid give each widget its own plate.",
 			"aka": ["arrangement"],
 			"design": true,
 			"writes": ["get"],
@@ -1811,10 +1811,6 @@
 				{
 					"value": "grid",
 					"label": "A grid that wraps, a plate each"
-				},
-				{
-					"value": "rows",
-					"label": "Rows in one plate"
 				}
 			]
 		},

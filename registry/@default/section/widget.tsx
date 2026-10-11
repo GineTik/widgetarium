@@ -6,7 +6,7 @@ import { Body } from "./body";
 import { PER_ROW, PLACED } from "./body-modes";
 import { Head } from "./head";
 
-const ArrangementSchema = z.enum(["column", "row", "grid", "rows"]);
+const ArrangementSchema = z.enum(["column", "row", "grid"]);
 const BadgeToneSchema = z.enum([
 	"neutral",
 	"accent",
@@ -21,7 +21,7 @@ const BadgeToneSchema = z.enum([
 
 type Arrangement = z.infer<typeof ArrangementSchema>;
 
-const KIND_OF: Readonly<Record<Arrangement, LayoutKind>> = { column: "stack", row: "row", grid: "grid", rows: "rows" };
+const KIND_OF: Readonly<Record<Arrangement, LayoutKind>> = { column: "stack", row: "row", grid: "grid" };
 
 const STYLE = `
 .wg-section { display: flex; flex-direction: column; gap: var(--wg-gap-parts, 12px); }
@@ -38,7 +38,7 @@ const SectionWidget = createWidget({
 		getBadgeTone: IQuery.output(BadgeToneSchema.default("neutral")),
 		getBadge: IQuery.output(z.string().default("")),
 		getFilling: IQuery.output(z.enum([PLACED, PER_ROW]).default(PLACED)),
-		getArrangement: IQuery.output(ArrangementSchema.default("column")),
+		getArrangement: IQuery.output(ArrangementSchema.default("column").catch("column")),
 		getMinWidthPx: IQuery.output(z.number().default(240)),
 		getItems: IQuery.output(z.array(z.looseObject({}))),
 		getPageSize: IQuery.output(z.number().default(24)),
@@ -122,12 +122,11 @@ export const metadata = defineMetadata(SectionWidget, {
 			aka: ["arrangement"],
 			design: true,
 			label: "How they stand",
-			hint: "A column reads down with nothing under it. A row and a grid give each widget its own plate. Rows stand in one plate with a line between them.",
+			hint: "A column reads down with nothing under it. A row and a grid give each widget its own plate.",
 			options: [
 				{ value: "column", label: "Down the column" },
 				{ value: "row", label: "Across the row, a plate each" },
 				{ value: "grid", label: "A grid that wraps, a plate each" },
-				{ value: "rows", label: "Rows in one plate" },
 			],
 		},
 		getMinWidthPx: {

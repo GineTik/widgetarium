@@ -5127,68 +5127,27 @@ body.wg-tree-carrying .wg-tile-body {
 	grid-column: 1 / -1;
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-surface.wg-kit-layout.is-rows {
-	gap: 0;
-	padding: 0;
-	overflow: hidden;
-}
-
-:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows.is-on-plate {
-	gap: 0;
-}
-
-:is(.wg-root, .wg-portal, .wg-tree-page) [data-surface="group"][data-rows-flush~="inline"] {
-	padding-inline: 0;
-	overflow: hidden;
-}
-
-:is(.wg-root, .wg-portal, .wg-tree-page) [data-surface="group"][data-rows-flush~="top"] {
-	padding-top: 0;
-}
-
-:is(.wg-root, .wg-portal, .wg-tree-page) [data-surface="group"][data-rows-flush~="bottom"] {
-	padding-bottom: 0;
-}
-
-:is(.wg-root, .wg-portal) [data-surface] {
-	--wg-rows-inset: initial;
-}
-
-:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows.is-on-plate[data-shares-plate] {
-	--wg-rows-inset: var(--wg-kit-plate-pad);
-	margin-inline: calc(var(--wg-kit-plate-pad) * -1);
-	border-radius: var(--wg-kit-plate-pad);
-	overflow: clip;
-}
-
-:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows > * {
-	padding: var(--size-4-3, 12px) var(--wg-rows-inset, var(--wg-group-pad));
+:is(.wg-root, .wg-portal) .wg-kit-item-group {
+	display: flex;
+	flex-direction: column;
 	min-width: 0;
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows > * + * {
+:is(.wg-root, .wg-portal) .wg-kit-item-group > [data-slot="item"][data-variant="default"] {
+	padding-block: var(--size-4-3, 12px);
+	padding-inline: 0;
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal)
+	.wg-kit-item-group
+	> [data-slot="item"][data-variant="default"]
+	+ [data-slot="item"][data-variant="default"] {
 	border-top: 1px solid var(--wg-kit-group-line);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows > [data-slot="item"],
-:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows > [data-slot="item"]::before {
-	border-radius: 0;
-}
-
-:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows > [data-slot="item"]:first-child,
-:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows > [data-slot="item"]:first-child::before {
-	border-start-start-radius: inherit;
-	border-start-end-radius: inherit;
-}
-
-:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows > [data-slot="item"]:last-child,
-:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows > [data-slot="item"]:last-child::before {
-	border-end-start-radius: inherit;
-	border-end-end-radius: inherit;
-}
-
-:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows > .wg-kit-layout-item.wg-kit-tone {
-	color: inherit;
+:is(.wg-root, .wg-portal) .wg-kit-item-group > .wg-kit-row + .wg-kit-row::after {
+	content: none;
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-layout-head {
@@ -5196,17 +5155,6 @@ body.wg-tree-carrying .wg-tile-body {
 	align-items: center;
 	gap: var(--wg-gap-items, 8px);
 	min-width: 0;
-}
-
-:is(.wg-root, .wg-portal) .wg-kit-layout-block {
-	display: flex;
-	flex-direction: column;
-	gap: var(--wg-gap-items, 8px);
-	min-width: 0;
-}
-
-:is(.wg-root, .wg-portal) .wg-kit-layout-heads:empty {
-	display: none;
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-layout-title {
@@ -9324,8 +9272,11 @@ body.wg-tree-carrying .wg-tile-body {
 	transition: visibility 0s linear var(--wg-grow);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows > .wg-kit-accordion-item {
-	padding: 0;
+:is(.wg-root, .wg-portal) .wg-kit-layout.wg-kit-accordion {
+	gap: 0;
+}
+:is(.wg-root, .wg-portal) .wg-kit-accordion-item + .wg-kit-accordion-item {
+	border-top: 1px solid var(--wg-kit-group-line);
 }
 :is(.wg-root, .wg-portal) .wg-kit-accordion-header {
 	display: flex;
@@ -9333,7 +9284,7 @@ body.wg-tree-carrying .wg-tile-body {
 	font: inherit;
 }
 :is(.wg-root, .wg-portal) .wg-kit-accordion-trigger {
-	padding-inline: var(--wg-rows-inset, var(--wg-group-pad));
+	padding-inline: 0;
 }
 :is(.wg-root, .wg-portal) .wg-kit-accordion-trigger:disabled {
 	opacity: 0.5;
@@ -9351,7 +9302,7 @@ body.wg-tree-carrying .wg-tile-body {
 	transform: rotate(180deg) scale(0.85);
 }
 :is(.wg-root, .wg-portal) .wg-kit-accordion-body {
-	padding: 0 var(--wg-rows-inset, var(--wg-group-pad)) var(--size-4-4, 16px);
+	padding: 0 0 var(--size-4-4, 16px);
 	font-size: var(--wg-kit-text-s);
 	line-height: 1.55;
 	color: var(--wg-kit-text);
@@ -9749,9 +9700,6 @@ body.wg-tree-carrying .wg-tile-body {
 }
 :is(.wg-root, .wg-portal) .wg-kit-surface.wg-kit-row::before {
 	border-radius: inherit;
-}
-:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows > .wg-kit-row + .wg-kit-row::after {
-	content: none;
 }
 :is(.wg-root, .wg-portal) .wg-kit-row:has(> :is(.wg-kit-item-header, .wg-kit-item-footer)) {
 	flex-wrap: wrap;

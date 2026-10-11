@@ -197,8 +197,7 @@ layout:
 `projects` fills **per row**: `@flow/project-card` is drawn again for every note in the folder, and
 the grid wraps once a card would go under 280px. `today` fills **placed**: two widgets a person put
 there, each with its own props; its `controls` govern that section only. Neither section wears a
-plate: a `grid` gives every card one, a `column` leaves its widgets bare, `rows` would put one plate
-around all of them with a line between.
+plate: a `grid` gives every card one, a `column` leaves its widgets bare.
 
 ## Words on the screen
 
@@ -311,7 +310,7 @@ import {
 	defineStates,
 	useData,
 } from "widgetarium";
-import { Badge, EmptyState, LayoutItem, Rows, ShowMore } from "widgetarium/kit";
+import { Badge, EmptyState, ItemGroup, LayoutItem, ShowMore } from "widgetarium/kit";
 import { TaskFilterSchema, TaskSchema, TaskStatusSchema } from "../../../shared/schemas/task";
 
 const TaskList = createWidget({
@@ -324,14 +323,14 @@ const TaskList = createWidget({
 		if (failure) return <EmptyState title="The tasks could not be read" text={failure} />;
 		if (!isLoading && data.length === 0) return <EmptyState title="Nothing in this status" />;
 		return (
-			<Rows>
+			<ItemGroup>
 				{data.map((task) => (
 					<LayoutItem key={task.id}>
 						{task.title} <Badge size="s">{task.status}</Badge>
 					</LayoutItem>
 				))}
 				{hasMore ? <ShowMore isLoading={isLoading} onMore={more} /> : null}
-			</Rows>
+			</ItemGroup>
 		);
 	},
 });

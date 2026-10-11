@@ -221,9 +221,8 @@ await drawn({ getArrangement: soloGateway("grid", {}, "section-test:grid-plates"
 check("a grid gives every widget its own plate", plated(), ["group", "group"]);
 await drawn({ getArrangement: soloGateway("row", {}, "section-test:row-plates"), mounts: twoPlain });
 check("so does a row", plated(), ["group", "group"]);
-await drawn({ getArrangement: soloGateway("rows", {}, "section-test:rows-plates"), mounts: twoPlain });
-check("rows stand bare, each of them", plated(), [null, null]);
-check("inside the one plate the body wears", found(host, ".wg-kit-layout").getAttribute("data-surface"), "group");
+await drawn({ getArrangement: soloGateway("rows", {}, "section-test:rows-gone"), mounts: twoPlain });
+check("a note still naming rows falls back to the column, with no plate", plated(), [null, null]);
 
 console.log("\n— a placed widget is told the plate it stands on —");
 const toldOf = (arrangement: string) => {

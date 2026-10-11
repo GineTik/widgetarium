@@ -1,6 +1,6 @@
 import { createElement as h } from "react";
 import type { ReactElement } from "react";
-import { Card, LayoutItem, Rows } from "@widgetarium/kit";
+import { Card, ItemGroup, LayoutItem } from "@widgetarium/kit";
 import type { StudioApp } from "../../shared/studio-app.js";
 import { ActionLine } from "./action-line.js";
 import { AppMark, MARK_PX } from "./app-mark.js";
@@ -19,7 +19,7 @@ export interface CurrentAppProps {
 export function CurrentApp({ app, canvas }: CurrentAppProps): ReactElement {
 	return (
 		<Card data-name="Current app">
-			<Rows data-name="Profile and actions">
+			<ItemGroup data-name="Profile and actions">
 				<LayoutItem>
 					<span className="wg-studio-profile">
 						<AppMark app={app} px={MARK_PX.m} />
@@ -38,7 +38,7 @@ export function CurrentApp({ app, canvas }: CurrentAppProps): ReactElement {
 				<LayoutItem aria-disabled="true">
 					<ActionLine icon="plug" said="Connect services" isSoon />
 				</LayoutItem>
-			</Rows>
+			</ItemGroup>
 		</Card>
 	);
 }

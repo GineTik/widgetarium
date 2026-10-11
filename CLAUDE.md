@@ -436,8 +436,10 @@ and `apart` is a boundary with no plate. **The page is the theme's colour and a 
 is a 3% grey with no edge** — `--wg-kit-page` under the board and the pane of a screen,
 `--wg-kit-group-fill` on the plate, `--wg-kit-group-edge: none` — and a `group` on another group turns
 white (`--wg-kit-group-inset`). **The kit carries the rules for what is drawn inside a widget**:
-`Rows` is one plate with a line between its items (`--wg-kit-group-line`), `Grid` gives every cell a
-`Card`, and `Layout kind` is all of them behind one word, so a design changes by one prop.
+`ItemGroup` is a list with no plate and a line between its items (`--wg-kit-group-line`), `Grid` gives
+every cell a `Card`, and `Layout kind` (`stack`, `row`, `grid`) switches between them by one prop.
+`Rows` and `Layout kind="rows"` are gone: a second list primitive was one more choice for the agent,
+and the plate it forced was the loudest thing on a screen.
 **No region lays a plate.** `wearInRegion`, which put a `group` on every widget of an `indicators`
 region at lay time, is gone: the designer places every plate. The only CSS that decides the colour is `[data-surface="group"] [data-surface="group"]`. `object`, a plate lifted with a
 hairline, was a second plate nobody placed and is gone; `item` was a fourth name. Both are read once
@@ -621,7 +623,7 @@ a heading, a badge, controls as a mount list, and a body that is either the widg
 (`mounts.widgets`) or one widget drawn again for every row of the data (`slots.item`) — **one switch
 between them**, and `isVisible` is what makes the window ask only for the half in use. The body
 is drawn through the kit's `Layout`, and `arrangement` is its kind: a `column` stands bare, a `row`
-and a `grid` give every widget its own plate, `rows` stand in one plate with a line between them.
+and a `grid` give every widget its own plate; a note still naming `rows` reads as a `column`.
 The section itself wears no plate, so the heading stands outside every plate and the widget's own
 plate laws still count from there.
 

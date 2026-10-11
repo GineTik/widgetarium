@@ -18,7 +18,8 @@ import {
 	Textarea,
 	Row,
 	RowLabel,
-	Rows,
+	ItemGroup,
+	LayoutItem,
 } from "../packages/kit/src/index";
 import { InputGroup, InputGroupInput, NativeSelect, NativeSelectOption } from "../packages/kit/src/exports-inputs";
 
@@ -59,11 +60,11 @@ function Page() {
 					</QuestionnaireItem>
 				</Questionnaire>
 			</div>
-			<Rows id="rows">
+			<ItemGroup id="rows">
 				{QUESTIONS.map((question) => (
-					<Rows.Item key={question}>{question}</Rows.Item>
+					<LayoutItem key={question}>{question}</LayoutItem>
 				))}
-			</Rows>
+			</ItemGroup>
 			<List id="list">
 				<Row>
 					<RowLabel>{QUESTIONS[0]}</RowLabel>

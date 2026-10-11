@@ -4,26 +4,26 @@ The component kit every widget and every screen is drawn with. Change a componen
 
 ## What is in it
 
-| Entry                      | What it gives                                                                                                                                                                   |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@widgetarium/kit`         | `Card`, `Layout`, `Rows`, `Grid`, `Button`, `IconButton`, `Badge`, `Heading`, `Field`, `Segmented`, `Tabs`, `Popover`, `Calendar`, `ProgressBar`, `Switch`, `Icon` and the rest |
-| `@widgetarium/kit/surface` | The plate context: how many plates stand above a component and which one it may wear                                                                                            |
-| `@widgetarium/kit/plates`  | The plate laws: which surface may stand inside which, and how deep                                                                                                              |
-| `@widgetarium/kit/icons`   | The Lucide icon table the kit's `Icon` draws behind its own glyphs                                                                                                              |
-| `@widgetarium/kit/emojis`  | The Microsoft Fluent faces as drawings, on their own entry so nobody pays for them unasked                                                                                      |
-| `@widgetarium/kit/shapes`  | The store of which shape each path wears                                                                                                                                        |
+| Entry                      | What it gives                                                                                                                                                                        |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `@widgetarium/kit`         | `Card`, `Layout`, `ItemGroup`, `Grid`, `Button`, `IconButton`, `Badge`, `Heading`, `Field`, `Segmented`, `Tabs`, `Popover`, `Calendar`, `ProgressBar`, `Switch`, `Icon` and the rest |
+| `@widgetarium/kit/surface` | The plate context: how many plates stand above a component and which one it may wear                                                                                                 |
+| `@widgetarium/kit/plates`  | The plate laws: which surface may stand inside which, and how deep                                                                                                                   |
+| `@widgetarium/kit/icons`   | The Lucide icon table the kit's `Icon` draws behind its own glyphs                                                                                                                   |
+| `@widgetarium/kit/emojis`  | The Microsoft Fluent faces as drawings, on their own entry so nobody pays for them unasked                                                                                           |
+| `@widgetarium/kit/shapes`  | The store of which shape each path wears                                                                                                                                             |
 
 Inside a widget the same kit arrives as `widgetarium/kit`:
 
 ```tsx
-import { Card, Rows, Icon } from "widgetarium/kit";
+import { Card, ItemGroup, Icon } from "widgetarium/kit";
 ```
 
 ## Layout
 
 ```
 src/
-  components/   one file per kit item: emblem.tsx holds Emblem and its image, dice-bear and fallback parts, button.tsx every button, layout.tsx Layout with Rows and Grid, …
+  components/   one file per kit item: emblem.tsx holds Emblem and its image, dice-bear and fallback parts, button.tsx every button, layout.tsx Layout with Grid, …
   icons/        icon.tsx, the kit's own glyphs, the generated Lucide table
   emojis/       emoji.tsx and the generated Fluent table
   hooks/        one hook per file

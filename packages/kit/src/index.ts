@@ -37,7 +37,7 @@ export { CodeBlock } from "./components/code-block";
 
 export { Emblem, EmblemDiceBear, EmblemFallback, EmblemImage, PlaceholderMark } from "./components/emblem";
 
-export { Grid, Layout, LayoutActions, LayoutHeader, LayoutItem, LayoutTitle, Rows } from "./components/layout";
+export { Grid, Layout, LayoutActions, LayoutHeader, LayoutItem, LayoutTitle } from "./components/layout";
 export { Heading } from "./components/heading";
 export { Help } from "./components/help";
 
@@ -200,7 +200,6 @@ export {
 } from "./utils/class-names";
 export { cn, cn as cx, variants } from "./utils/cn";
 export { markOf } from "./utils/marks";
-export { plateEdgesTakenBy } from "./utils/plate-edges";
 export { progressState } from "./utils/progress";
 export { barGeometry, circleGeometry } from "./utils/progress-geometry";
 export { inkedClass, toneClass, toneOf } from "./utils/tones";

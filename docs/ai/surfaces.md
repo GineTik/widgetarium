@@ -17,7 +17,8 @@ white. A plate is never outlined. `apart` carries `side: start | end`.
    same thing. A single thing stands bare — a heading, prose, a chart, one block. `lint` names an
    unearned plate (law R).
 2. **A grid gives every cell its own plate.** The grid itself wears nothing.
-3. **Rows of data stand in one plate, with a line between them.** The rows wear nothing of their own.
+3. **Rows of data stand on the page, with a line between them** (`ItemGroup`). The rows wear nothing
+   of their own; a list earns a plate only by rule 1, as a `Card` around the `ItemGroup`.
 4. **A state replaces the grey.** `tone` paints the plate with a warning, an error, a success or the
    accent.
 5. **A control is not a plate.** A field, a switch, a count keep their own darker grey.
@@ -61,7 +62,7 @@ names.
 
 Every colour is a `--wg-kit-*` token: a theme repaints a token and cannot repaint a hex. Two text
 colours, `--wg-kit-text` and `--wg-kit-text-muted`; a tone is a state of a plate, never a kind of
-one. No cast shadow on a plate, no uppercase, never colour alone.
+one. No cast shadow on a plate, uppercase only as `clean-ui.md` allows, never colour alone.
 
 Big: large controls, large corners, generous spacing. One unusual shape per widget, on the thing the
 eye seeks. Motion answers a press — springy, interruptible — and nothing animates because a screen

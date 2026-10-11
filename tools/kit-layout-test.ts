@@ -241,9 +241,9 @@ function itemChecks(): void {
 	);
 	check("an item group is a list", attr("[data-slot='item-group']", "role"), "list");
 	check(
-		"in a group the plate's hairline is the separator, so an ItemSeparator draws nothing",
-		host.querySelector("[data-slot='item-separator']"),
-		null,
+		"a group has no plate of its own, so an ItemSeparator is drawn where it is written",
+		attr("[data-slot='item-group'] > [data-slot='item-separator']", "data-orientation"),
+		"horizontal",
 	);
 	mount(h(kit.ItemSeparator, { id: "apart" }));
 	check("alone it is a separator", attr("#apart", "data-orientation"), "horizontal");

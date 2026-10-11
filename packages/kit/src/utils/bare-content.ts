@@ -1,6 +1,8 @@
-import { holdsNothing, ROWS_TAKE_THE_PLATE_EDGE } from "./plate-edges";
-
 export const FULL_STEP_SIDES = "data-full-step";
+
+const NEVER_CONTENT = new Set(["STYLE", "SCRIPT", "TEMPLATE"]);
+
+const DRAWN_WITHOUT_TEXT = "svg, img, canvas, video, input, button, textarea, select";
 
 const SIDES = ["top", "right", "bottom", "left"] as const;
 
@@ -24,7 +26,7 @@ export interface FullStep {
 }
 
 export function fullStepsIn(plate: Element): FullStep[] {
-	if (plate.hasAttribute(ROWS_TAKE_THE_PLATE_EDGE) || !plate.querySelector(SHORTENS_THE_PLATE)) return [];
+	if (!plate.querySelector(SHORTENS_THE_PLATE)) return [];
 	const style = getComputedStyle(plate);
 	const shortened = SIDES.filter((side) => isShortenedAt(style, side));
 	if (shortened.length === 0) return [];
@@ -59,6 +61,15 @@ function bareContentIn(holder: Element): Element[] {
 		if (child.matches(STANDS_AS_A_PLATE) || platesKin.has(slotOf(child))) return [];
 		return child.querySelector(PLATE) ? bareContentIn(child) : [child];
 	});
+}
+
+function holdsNothing(node: Element): boolean {
+	if (NEVER_CONTENT.has(node.tagName)) return true;
+	return (
+		(node.textContent ?? "").trim() === "" &&
+		!node.matches(DRAWN_WITHOUT_TEXT) &&
+		!node.querySelector(DRAWN_WITHOUT_TEXT)
+	);
 }
 
 function slotOf(node: Element): string | null {

@@ -785,25 +785,22 @@ from `widgetarium/kit`:
 ```tsx skip-check
 <Card>…</Card>
 <Card tone="warning">…</Card>
-<Rows>{rows.map((row) => <LayoutItem key={row.ref}>…</LayoutItem>)}</Rows>
+<ItemGroup>{rows.map((row) => <LayoutItem key={row.ref}>…</LayoutItem>)}</ItemGroup>
 <Grid min={220}>{cards.map((card) => <LayoutItem key={card.ref}>…</LayoutItem>)}</Grid>
-<Layout kind="rows">…</Layout>
 <Card type="apart" side="start" across="column">…</Card>
 ```
 
-One block goes in `Card`, rows of data in `Rows`, a grid of things in `Grid`. `Layout kind` is the
-same behind one word, so a design changes by changing it. The rules they follow are in
-[surfaces.md](surfaces.md).
+One block goes in `Card`, rows of data in `ItemGroup`, a grid of things in `Grid`. The rules they
+follow are in [surfaces.md](surfaces.md).
 
 - `Card` is one plate: `type` `group` by default, `none` paints nothing, `apart` is a line taking
   `side` and `across`; `tone` is any kit tone.
-- `Rows` is one plate; each `LayoutItem` stands bare on it with a line above every item after the
-  first, and carries the side inset itself so a line and a toned row reach both edges. Rows standing
-  on a plate already paint no second one, and take the card's padding on every edge they touch.
-- `LayoutHeader` stands **above** the plate, flush with its edge: `LayoutTitle` (an `h3`) and
-  `LayoutActions` (anything at the end of the line; `ActionButton` is the small grey one).
+- `ItemGroup` is a list with no plate: its `LayoutItem`s or `Item`s stand on the page with a hairline
+  between them. A list that needs a plate goes inside a `Card`.
+- `LayoutHeader` is a line of its own: `LayoutTitle` (an `h3`) and `LayoutActions` (anything at the
+  end of the line; `ActionButton` is the small grey one).
 - `Grid` is bare; every `LayoutItem` is a `Card`. `min` is the narrowest a cell may be before it wraps.
-- `Layout kind` is `stack`, `row`, `grid` or `rows`, and `LayoutItem` becomes what the kind asks for.
+- `Layout kind` is `stack`, `row` or `grid`, and `LayoutItem` becomes what the kind asks for.
 
 **The laws decide it, not you.** Two plates stand from the region, the tile's own included, so a
 tile already wearing a `group` leaves you one plate and the next is refused: it paints nothing and

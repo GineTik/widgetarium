@@ -134,7 +134,6 @@ export type {
 } from "./utils/class-names";
 export type { ClassNameValue, ClassOf, VariantChoice, VariantGroups } from "./utils/cn";
 export type { Mark } from "./utils/marks";
-export type { PlateEdges } from "./utils/plate-edges";
 export type { DisplayValue, ProgressReading } from "./utils/progress";
 export type { BarGeometry, CircleGeometry } from "./utils/progress-geometry";
 export type { StyleProp, TokenStyle } from "./utils/token-style";

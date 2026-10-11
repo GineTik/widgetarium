@@ -13,7 +13,7 @@ const READY = `new Promise((done, fail) => {
 })`;
 
 const MEASURED = `(() => {
-	const rowsOf = (id) => [...document.querySelectorAll("#" + id + " .wg-kit-layout.is-rows > *")];
+	const rowsOf = (id) => [...document.querySelectorAll("#" + id + " .wg-kit-item-group > *")];
 	const frame = (el) => {
 		const style = getComputedStyle(el);
 		const after = getComputedStyle(el, "::after");
@@ -30,7 +30,7 @@ const MEASURED = `(() => {
 		const style = getComputedStyle(el);
 		return [style.backgroundColor, style.borderRadius, style.padding];
 	};
-	const group = document.querySelector("#item-group .wg-kit-layout.is-rows");
+	const group = document.querySelector("#item-group .wg-kit-item-group");
 	return {
 		layoutItems: rowsOf("rows-li").map(frame),
 		items: rowsOf("item-rows").map(frame),
@@ -38,6 +38,7 @@ const MEASURED = `(() => {
 		itemHeights: rowsOf("item-list").map((row) => height(row) - parseFloat(getComputedStyle(row).borderTopWidth)),
 		groupPlates: [...document.querySelectorAll("#item-group [data-surface]")].map((el) => el.getAttribute("data-surface")),
 		groupLines: rowsOf("item-group").map((row) => frame(row).line),
+		groupSeparators: document.querySelectorAll("#item-group [data-slot='item-separator']").length,
 		groupFill: group && getComputedStyle(group).backgroundColor,
 		card: plate(document.querySelector("#card [data-surface]")),
 		muted: plate(document.querySelector("#muted [data-surface]")),
@@ -51,6 +52,7 @@ interface Measured {
 	readonly itemHeights: readonly number[];
 	readonly groupPlates: readonly unknown[];
 	readonly groupLines: readonly string[];
+	readonly groupSeparators: number;
 	readonly groupFill: string | null;
 	readonly card: readonly string[] | null;
 	readonly muted: readonly string[] | null;
@@ -76,17 +78,17 @@ export async function itemTwinChecks(): Promise<readonly ItemTwin[]> {
 }
 
 function twinsOf(measured: Measured): readonly ItemTwin[] {
-	const [firstLine, ...nextLines] = measured.groupLines;
+	const afterSeparator = measured.groupLines.at(-1);
 	return [
-		["AN ITEM IN ROWS STANDS AT LAYOUTITEM'S PADDING, WIDTH AND HAIRLINE", measured.items, measured.layoutItems],
+		["AN ITEM IN A GROUP STANDS AT LAYOUTITEM'S PADDING, WIDTH AND HAIRLINE", measured.items, measured.layoutItems],
 		["and is as tall as the List Row holding the same parts", measured.itemHeights, measured.listRowHeights],
-		["AN ITEMGROUP IS ONE PLATE, A GROUP", measured.groupPlates, ["group"]],
+		["AN ITEMGROUP IS NO PLATE", measured.groupPlates, []],
 		[
-			"with one hairline between its items, a separator adding none",
-			[firstLine?.startsWith("0px"), nextLines.length, nextLines.every((line) => line.startsWith("1px solid"))],
-			[true, 1, true],
+			"a separator written in it is the one hairline, the item after it adding none",
+			[measured.groupSeparators, afterSeparator?.startsWith("0px")],
+			[1, true],
 		],
-		["and the plate is the Card's grey", measured.groupFill, measured.card?.[0]],
+		["and nothing is painted under it", measured.groupFill, "rgba(0, 0, 0, 0)"],
 		["A MUTED ITEM IS THE GREY CARD: fill, corner and padding", measured.muted, measured.card],
 	];
 }

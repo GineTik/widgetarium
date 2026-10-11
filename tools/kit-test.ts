@@ -61,6 +61,7 @@ const {
 	variants,
 	cn,
 	cx,
+	ItemGroup,
 } = await import("../packages/kit/src/index.ts");
 const { PLATES_ABOVE } = await import("../packages/kit/src/utils/surface.ts");
 
@@ -1058,41 +1059,30 @@ check(
 
 const itemsOf = () =>
 	[...host.querySelectorAll(".wg-kit-layout-item")].map((one) => [one.getAttribute("data-surface"), one.className]);
-render(
-	h(
-		Kit.Rows,
-		null,
-		h(Kit.LayoutHeader, { title: "Steps" }),
-		h(Kit.LayoutItem, null, "one"),
-		h(Kit.LayoutItem, { tone: "success" }, "two"),
-	),
-	host,
-);
-check("rows stand in the one plate", plated("data-surface"), ["group"]);
-check("and every row stands bare on it, a tone washing only its own", itemsOf(), [
+render(h(ItemGroup, null, h(Kit.LayoutItem, null, "one"), h(Kit.LayoutItem, { tone: "success" }, "two")), host);
+check("an item group is a list on the page, with no plate under it", plated("data-surface"), []);
+check("and every item stands bare, a tone washing only its own", itemsOf(), [
 	[null, "wg-kit-layout-item"],
 	[null, "wg-kit-layout-item wg-kit-tone is-ok"],
 ]);
-await settle();
-check(
-	"THE HEADER STANDS OUTSIDE THE PLATE, above it",
-	[
-		host.querySelector(".wg-kit-layout .wg-kit-layout-head") === null,
-		host.querySelector(".wg-kit-layout-block > .wg-kit-layout-heads + .wg-kit-layout")?.getAttribute("data-surface"),
-		host.querySelector(".wg-kit-layout-heads > .wg-kit-layout-head h3.wg-kit-heading.is-h4")?.textContent,
-	],
-	[true, "group", "Steps"],
-);
+check("it is announced as a list", found(host, ".wg-kit-item-group").getAttribute("role"), "list");
+render(h(Kit.Card, null, h(ItemGroup, null, h(Kit.LayoutItem, null, "x"))), host);
+check("in a card it adds no second plate", plated("data-surface"), ["group"]);
+
 render(
-	h(Kit.Rows, null, h(Kit.LayoutHeader, { title: "Steps", className: "mine" }), h(Kit.LayoutItem, null, "one")),
+	h(Kit.Layout, null, h(Kit.LayoutHeader, { title: "Steps", className: "mine" }), h(Kit.LayoutItem, null, "one")),
 	host,
 );
-await settle();
+check(
+	"a header stands where it is written, inside its layout",
+	host.querySelector(".wg-kit-layout > .wg-kit-layout-head h3.wg-kit-heading.is-h4")?.textContent,
+	"Steps",
+);
 check("and it still takes a caller's class", found(host, ".wg-kit-layout-head").classList.contains("mine"), true);
 
 render(
 	h(
-		Kit.Rows,
+		Kit.Layout,
 		null,
 		h(
 			Kit.LayoutHeader,
@@ -1104,8 +1094,7 @@ render(
 	),
 	host,
 );
-await settle();
-const headOf = () => found(host, ".wg-kit-layout-heads > .wg-kit-layout-head");
+const headOf = () => found(host, ".wg-kit-layout > .wg-kit-layout-head");
 check(
 	"a header is a row: its title, then its actions at the end",
 	[...headOf().children].map((part) => part.className),
@@ -1117,10 +1106,9 @@ check(
 	["wg-kit-icon is-s wg-kit-action", "Log a session"],
 );
 render(
-	h(Kit.Rows, null, h(Kit.LayoutHeader, { title: "Steps" }, h("button", null, "go")), h(Kit.LayoutItem, null, "one")),
+	h(Kit.Layout, null, h(Kit.LayoutHeader, { title: "Steps" }, h("button", null, "go")), h(Kit.LayoutItem, null, "one")),
 	host,
 );
-await settle();
 check(
 	"the short form puts what it holds in the actions",
 	[...headOf().children].map((part) => part.className),
@@ -1272,39 +1260,14 @@ check(
 	found(host, ".wg-kit-layout").className,
 	"wg-kit-layout is-stack",
 );
-check("the four layouts are named in one place", Kit.LAYOUT_KINDS, ["stack", "row", "grid", "rows"]);
-
-render(h(Kit.Card, null, h(Kit.Rows, null, h(Kit.LayoutItem, null, "x"))), host);
+check("the three layouts are named in one place", Kit.LAYOUT_KINDS, ["stack", "row", "grid"]);
+const rowsNoLonger: Record<string, unknown> = { kind: "rows" };
+render(h(Kit.Layout, rowsNoLonger, h(Kit.LayoutItem, null, "a")), host);
 check(
-	"rows already on a plate paint no second one, only their lines",
-	[plated("data-surface"), found(host, ".wg-kit-layout").className],
-	[["group"], "wg-kit-layout is-rows is-on-plate"],
+	"a layout still asking for rows is drawn as a stack, with no plate",
+	[found(host, ".wg-kit-layout").className, plated("data-surface")],
+	["wg-kit-layout is-stack", []],
 );
-const flushOf = () => host.querySelector('[data-surface="group"]')?.getAttribute("data-rows-flush") ?? null;
-check("rows alone in a card take its padding on every side", flushOf(), "inline top bottom");
-render(
-	h(Kit.Card, null, h("style", null, ".x{}"), h("div", null, h(Kit.Rows, null, h(Kit.LayoutItem, null, "x")))),
-	host,
-);
-check("a sheet and a wrapper before them are not content, so the top is still theirs", flushOf(), "inline top bottom");
-const sharesOf = () => found(host, ".wg-kit-layout").hasAttribute("data-shares-plate");
-check("rows alone in a card do not mark themselves as sharing it", sharesOf(), false);
-render(h(Kit.Card, null, h("p", null, "Above"), h(Kit.Rows, null, h(Kit.LayoutItem, null, "x"))), host);
-check(
-	"something above them leaves the card every edge, and the rows say they share it",
-	[flushOf(), sharesOf()],
-	[null, true],
-);
-render(h(Kit.Card, null, h(Kit.Rows, null, h(Kit.LayoutItem, null, "x")), h(Kit.Button, null, "More")), host);
-check(
-	"something below them leaves the card every edge, and the rows say they share it",
-	[flushOf(), sharesOf()],
-	[null, true],
-);
-render(h(Kit.Card, null, "plain"), host);
-check("a card with no rows keeps every edge", flushOf(), null);
-seeded(ONE_PLATE_ABOVE, h(Kit.Rows, null, h(Kit.LayoutItem, null, "x")));
-check("and so do rows in a tile the board already plated", plated("data-surface"), []);
 
 const surface = [
 	"Button",
@@ -1322,7 +1285,6 @@ const surface = [
 	"Card",
 	"Surface",
 	"Layout",
-	"Rows",
 	"Grid",
 	"Row",
 	"List",

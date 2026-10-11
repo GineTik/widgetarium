@@ -62,7 +62,6 @@ export function Accordion(props: AccordionProps): ReactElement {
 				data-slot="accordion"
 				data-orientation={orientation}
 				{...withoutCollapsible(rest)}
-				kind="rows"
 				className={cn("wg-kit-accordion", rest.className)}
 				onKeyDown={(event) => {
 					rest.onKeyDown?.(event);

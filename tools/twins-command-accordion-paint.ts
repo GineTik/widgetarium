@@ -167,7 +167,7 @@ function accordionTwins(seen: unknown): Twin[] {
 			{ hoverDecorations: [], focusedDecoration: "none" },
 		],
 		[
-			"AN ACCORDION TRIGGER STANDS AS A Rows ITEM: HEIGHT AND PADDING",
+			"AN ACCORDION TRIGGER STANDS AS AN ItemGroup ITEM: HEIGHT AND PADDING",
 			readingOf(seen, "row", "accordion"),
 			readingOf(seen, "row", "rows"),
 		],
@@ -177,7 +177,7 @@ function accordionTwins(seen: unknown): Twin[] {
 			readingOf(seen, "label", "list"),
 		],
 		[
-			"AN ACCORDION WEARS ONE PLATE WITH THE Rows HAIRLINE BETWEEN ITEMS",
+			"AN ACCORDION WEARS NO PLATE, WITH THE ItemGroup HAIRLINE BETWEEN ITEMS",
 			readingOf(seen, "plate", "accordion"),
 			readingOf(seen, "plate", "rows"),
 		],

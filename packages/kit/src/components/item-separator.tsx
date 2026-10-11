@@ -1,13 +1,10 @@
-import { createElement as h, useContext } from "react";
+import { createElement as h } from "react";
 import type { ReactElement } from "react";
-import { LAYOUT_KIND } from "../constants/layout";
 import { cn } from "../utils/cn";
 import { Separator } from "./separator";
 import type { SeparatorProps } from "./separator";
 
-export function ItemSeparator({ className, ...rest }: SeparatorProps): ReactElement | null {
-	const isInRows = useContext(LAYOUT_KIND) === "rows";
-	if (isInRows) return null;
+export function ItemSeparator({ className, ...rest }: SeparatorProps): ReactElement {
 	return (
 		<Separator
 			{...rest}

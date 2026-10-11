@@ -411,16 +411,16 @@ function accordionPainted(seen: unknown): Painted[] {
 function sharedPlatePainted(seen: unknown): Painted[] {
 	return [
 		[
-			"ROWS SHARING A CARD TAKE NONE OF ITS PADDING: TITLE AND NOTE KEEP THE FULL INSET, THE ROWS ARE THEIR OWN ROUNDED SHAPE WITH TEXT ON THE TITLE'S LINE; ROWS ALONE STILL TAKE EVERY EDGE",
+			"AN ACCORDION IN A CARD STANDS IN ITS PADDING LIKE ANY CONTENT: TITLE, NOTE AND ROWS SHARE ONE INSET, THE ROWS DRAW NO CORNER, AND A CARD HOLDING IT ALONE KEEPS ITS PADDING",
 			seen,
 			{
 				sharingPad: "16px",
 				titleIn: 16,
 				noteIn: 16,
-				rowsIn: 8,
+				rowsIn: 16,
 				rowTextIn: 16,
-				rowsCorner: "8px",
-				alonePad: "0px",
+				rowsCorner: "0px",
+				alonePad: "16px",
 			},
 		],
 	];
@@ -439,14 +439,14 @@ function fieldPainted(seen: unknown): Painted[] {
 function groupedItemsPainted(seen: unknown): Painted[] {
 	return [
 		[
-			"ITEMS IN A GROUP ARE ONE PLATE: THE FIRST ROUNDS ONLY ITS TOP, THE LAST ONLY ITS BOTTOM, CONCENTRIC WITH THE GROUP; THE MIDDLE ONE IS SQUARE; A LONE MUTED ITEM KEEPS ITS CORNERS",
+			"AN ITEM GROUP HAS NO PLATE AND NO CORNER: A MUTED ITEM IN IT KEEPS ALL FOUR OF ITS OWN, LIKE A LONE ONE",
 			seen,
 			{
-				group: 14,
+				group: 0,
 				items: [
-					[14, 14, 0, 0],
 					[0, 0, 0, 0],
-					[0, 0, 14, 14],
+					[14, 14, 14, 14],
+					[0, 0, 0, 0],
 				],
 				lone: 14,
 			},
