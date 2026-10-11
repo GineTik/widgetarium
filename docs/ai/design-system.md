@@ -22,8 +22,8 @@ Tables and text without an id are reference, read but not checked.
 
 ## The style in one line
 
-**Quiet and strict**: white page, grey plates, the theme's type and the kit's primary button; imagery
-carries the colour; one accent, purple, only where progress or a key value needs it.
+The look is `minimal/system.md` and the shell is picked from `shells.md`, both in the agent's
+handbook, unless you name another here. The rules below are checked on top of it.
 
 ## App shell
 

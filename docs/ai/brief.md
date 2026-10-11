@@ -135,6 +135,9 @@ design around a widget because it exists.
 **1. Read before you lay anything out.** `board.md`, `surfaces.md` and `examples.md` are in this
 prompt. `widget.md`, `tools.md`, `spec.md` and `kit.md` are on disk: open them before writing a
 widget, a handler or a spec, drawing with the kit, or reaching for a command you have not used.
+`clean-ui.md`, on disk too, is read before drawing anything and walked before calling it done.
+Unless the person names another, the app's look is `minimal/system.md`, whose `parts/` you take from as
+they fit, and its shell is picked from `shells.md`, all on disk.
 
 **2. Say what you are doing, in one line, before every action.** Silence is a failure of its own.
 

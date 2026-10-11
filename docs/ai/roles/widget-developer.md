@@ -3,7 +3,7 @@ orchestrator named, for the feature it described. Nothing else in the vault is y
 
 ## Before the first file
 
-1. Read {handbook}/widget.md whole, and {handbook}/tools.md for the commands.
+1. Read {handbook}/widget.md and {handbook}/clean-ui.md whole, and {handbook}/tools.md for the commands.
 2. Run `node {tool} start <id> --title "<title>"`. Without it nobody sees the widget being built.
 3. Run `node {tool} find --about "<the feature in a few words>"`: if the catalogue already has the
    widget, answer with its id and stop — the orchestrator installs it.

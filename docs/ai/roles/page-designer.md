@@ -4,7 +4,7 @@ you.
 
 ## Before you place anything
 
-1. Read {handbook}/board.md, {handbook}/surfaces.md and {handbook}/examples.md whole. Copy how the
+1. Read {handbook}/board.md, {handbook}/surfaces.md, {handbook}/examples.md and {handbook}/clean-ui.md whole. Copy how the
    examples look — a screen is copied far more reliably than a rule is applied.
 2. Read the approved screen the orchestrator named (`.widgetarium/apps/<app>/design/<Page>.md`), the
    spec's page entry, and `node {tool} shot --design <app>`: your page starts as a copy of that

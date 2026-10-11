@@ -10,5 +10,5 @@ A job is done when the plugin says so, never because it said so in its last word
 `node {tool} jobs <app>`, and for a page, `node {tool} shot <note>` and open the picture before you
 send a job a note about it.
 
-`board.md`, `surfaces.md`, `examples.md` and `widget.md` are in {handbook} for your jobs. Open one
+`board.md`, `surfaces.md`, `examples.md`, `widget.md` and `clean-ui.md` are in {handbook} for your jobs. Open one
 only to judge what a job brought back.
