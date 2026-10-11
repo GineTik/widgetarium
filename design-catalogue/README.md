@@ -9,8 +9,11 @@ design-catalogue/
   systems/<id>/
     system.md        the system: front matter to filter by, sections to read
     references/      the pictures it was written from, numbered; credit in system.md
+  shells/<id>.md     app shells: navigation levels, page header, detail, folding — structure only
   patterns/<id>.md   product structures (what stands in the centre, which regions serve it)
 ```
+
+An app has **one shell and one design system**, chosen once for the whole app. A shell never names a colour or a font; a system never decides where navigation stands, only how it is painted, and names the shells it suits. `docs/ai/clean-ui.md` holds under both.
 
 A source's screen structure goes to `patterns/`, never into its system.
 
@@ -24,6 +27,7 @@ From the person's description of the references and the pictures themselves. Eve
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Front matter           | `id`, `title`, `source`, `credit`, and fit parameters as arrays: `centre` (object · function · information · journey · atmosphere), `activity` (browse · edit · study · track · create · play · operate), `photogenic` (yes · user-photos · no), `session` (glance · browse · long-work), `density` (low · medium · high), `tone`, `device` |
 | Idea                   | one or two sentences a person would say about it                                                                                                                                                                                                                                                                                            |
+| Settings               | the few values a product picks and a person may switch later (ground, edges, density, fonts, base), each with its values and default; everything else in the system is fixed                                                                                                                                                                |
 | Colour algorithm       | how the colours are **derived**, never only the hex values: the steps, the job of each, their lightness and chroma ranges, what is free (hue) and what is fixed (semantic status colours). Written for **both light and dark themes**; the source's theme is one instance                                                                   |
 | Type                   | families, weights, the scale, and the patterns of emphasis                                                                                                                                                                                                                                                                                  |
 | Imagery                | the role (forms the design · domain content · decoration), the kind of picture, how a picture is brought in line, and where to get such pictures for another domain                                                                                                                                                                         |
@@ -35,6 +39,7 @@ From the person's description of the references and the pictures themselves. Eve
 | Motion and transitions | fades, edges, speed                                                                                                                                                                                                                                                                                                                         |
 | Fit                    | what products it suits and which it does not                                                                                                                                                                                                                                                                                                |
 | Do / don't             | the rules a copy most often breaks                                                                                                                                                                                                                                                                                                          |
+| Never                  | the defaults a generated screen falls into (a gradient card, an unchosen violet accent, a card per number), each refused by name                                                                                                                                                                                                            |
 
 Three layers stay apart: the **look** (this file), the **structure** of a product (which screen kinds exist), and **behaviour**. The source's own business features are not written down.
 
